@@ -1,37 +1,60 @@
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from .models import Company
+from apps.users.permissions import OrgAdminRequiredMixin, StaffRequiredMixin
 
 
-class CompanyListView(LoginRequiredMixin, ListView):
+class CompanyListView(StaffRequiredMixin, ListView):
     model = Company
     template_name = 'companies/list.html'
     context_object_name = 'companies'
-    paginate_by = 20
+
+    def get_queryset(self):
+        return Company.objects.filter(id=self.request.user.company_id)
 
 
-class CompanyDetailView(LoginRequiredMixin, DetailView):
+class CompanyDetailView(StaffRequiredMixin, DetailView):
     model = Company
     template_name = 'companies/detail.html'
     context_object_name = 'company'
 
+    def get_object(self):
+        obj = super().get_object()
+        if obj.id != self.request.user.company_id:
+            from django.http import Http404
+            raise Http404
+        return obj
 
-class CompanyCreateView(LoginRequiredMixin, CreateView):
+
+class CompanyCreateView(OrgAdminRequiredMixin, CreateView):
     model = Company
     template_name = 'companies/form.html'
-    fields = ['name', 'country', 'city', 'address', 'phone', 'email', 'plan_tier', 'is_active']
+    fields = ['name', 'country', 'city', 'address', 'phone', 'email']
     success_url = reverse_lazy('companies:list')
 
 
-class CompanyUpdateView(LoginRequiredMixin, UpdateView):
+class CompanyUpdateView(OrgAdminRequiredMixin, UpdateView):
     model = Company
     template_name = 'companies/form.html'
-    fields = ['name', 'country', 'city', 'address', 'phone', 'email', 'plan_tier', 'is_active']
+    fields = ['name', 'country', 'city', 'address', 'phone', 'email']
     success_url = reverse_lazy('companies:list')
 
+    def get_object(self):
+        obj = super().get_object()
+        if obj.id != self.request.user.company_id:
+            from django.http import Http404
+            raise Http404
+        return obj
 
-class CompanyDeleteView(LoginRequiredMixin, DeleteView):
+
+class CompanyDeleteView(OrgAdminRequiredMixin, DeleteView):
     model = Company
     template_name = 'companies/confirm_delete.html'
     success_url = reverse_lazy('companies:list')
+
+    def get_object(self):
+        obj = super().get_object()
+        if obj.id != self.request.user.company_id:
+            from django.http import Http404
+            raise Http404
+        return obj

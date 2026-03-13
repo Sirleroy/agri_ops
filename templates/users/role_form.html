@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Change Role — {{ profile.username }}{% endblock %}
+{% block page_title %}Change System Role{% endblock %}
+{% block content %}
+<div class="max-w-md">
+  <div class="bg-card border border-border rounded-xl p-6">
+    <p class="text-sm text-slate-400 mb-1">Changing role for</p>
+    <p class="text-base font-semibold text-slate-100 mb-6">{{ object.username }}</p>
+
+    <div class="mb-4 px-4 py-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+      <p class="text-xs font-mono text-yellow-400">
+        ⚠ This controls what the user can access across the platform.
+        Changes take effect immediately.
+      </p>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="mb-4">
+          <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">
+            {{ field.label }}
+          </label>
+          <select name="{{ field.html_name }}"
+            class="w-full bg-surface border border-border rounded-lg px-4 py-3 text-sm text-slate-100 outline-none focus:border-green transition-colors">
+            {% for val, label in field.field.choices %}
+              <option value="{{ val }}" {% if field.value == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      {% endfor %}
+      <div class="flex gap-3 mt-6">
+        <button type="submit"
+          class="flex-1 bg-green hover:bg-green-dim text-bg font-bold text-sm py-3 rounded-lg transition-colors">
+          Update Role
+        </button>
+        <a href="{% url 'users:list' %}"
+          class="flex-1 text-center border border-border text-slate-400 hover:text-slate-100 text-sm py-3 rounded-lg transition-colors">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

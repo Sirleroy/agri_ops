@@ -1,83 +1,64 @@
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
-from django.forms import inlineformset_factory
-from .models import PurchaseOrder, PurchaseOrderItem
+from .models import PurchaseOrder
+from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin
 
 
-PurchaseOrderItemFormSet = inlineformset_factory(
-    PurchaseOrder,
-    PurchaseOrderItem,
-    fields=['product', 'quantity', 'unit_price'],
-    extra=3,
-    can_delete=True,
-)
-
-
-class PurchaseOrderListView(LoginRequiredMixin, ListView):
+class PurchaseOrderListView(StaffRequiredMixin, ListView):
     model = PurchaseOrder
     template_name = 'purchase_orders/list.html'
     context_object_name = 'orders'
-    paginate_by = 20
+
+    def get_queryset(self):
+        return super().get_queryset().filter(company=self.request.user.company)
 
 
-class PurchaseOrderDetailView(LoginRequiredMixin, DetailView):
+class PurchaseOrderDetailView(StaffRequiredMixin, DetailView):
     model = PurchaseOrder
     template_name = 'purchase_orders/detail.html'
     context_object_name = 'order'
 
+    def get_object(self):
+        obj = super().get_object()
+        if obj.company != self.request.user.company:
+            from django.http import Http404
+            raise Http404
+        return obj
 
-class PurchaseOrderCreateView(LoginRequiredMixin, CreateView):
+
+class PurchaseOrderCreateView(StaffRequiredMixin, CreateView):
     model = PurchaseOrder
     template_name = 'purchase_orders/form.html'
-    fields = ['company', 'supplier', 'order_number', 'status', 'expected_delivery', 'notes']
+    fields = ['supplier', 'order_number', 'status', 'expected_delivery', 'notes']
     success_url = reverse_lazy('purchase_orders:list')
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        if self.request.POST:
-            context['formset'] = PurchaseOrderItemFormSet(self.request.POST)
-        else:
-            context['formset'] = PurchaseOrderItemFormSet()
-        return context
-
     def form_valid(self, form):
-        context = self.get_context_data()
-        formset = context['formset']
-        if formset.is_valid():
-            self.object = form.save()
-            formset.instance = self.object
-            formset.save()
-            return super().form_valid(form)
-        return self.form_invalid(form)
+        form.instance.company = self.request.user.company
+        return super().form_valid(form)
 
 
-class PurchaseOrderUpdateView(LoginRequiredMixin, UpdateView):
+class PurchaseOrderUpdateView(StaffRequiredMixin, UpdateView):
     model = PurchaseOrder
     template_name = 'purchase_orders/form.html'
-    fields = ['company', 'supplier', 'order_number', 'status', 'expected_delivery', 'notes']
+    fields = ['supplier', 'order_number', 'status', 'expected_delivery', 'notes']
     success_url = reverse_lazy('purchase_orders:list')
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        if self.request.POST:
-            context['formset'] = PurchaseOrderItemFormSet(self.request.POST, instance=self.object)
-        else:
-            context['formset'] = PurchaseOrderItemFormSet(instance=self.object)
-        return context
-
-    def form_valid(self, form):
-        context = self.get_context_data()
-        formset = context['formset']
-        if formset.is_valid():
-            self.object = form.save()
-            formset.instance = self.object
-            formset.save()
-            return super().form_valid(form)
-        return self.form_invalid(form)
+    def get_object(self):
+        obj = super().get_object()
+        if obj.company != self.request.user.company:
+            from django.http import Http404
+            raise Http404
+        return obj
 
 
-class PurchaseOrderDeleteView(LoginRequiredMixin, DeleteView):
+class PurchaseOrderDeleteView(ManagerRequiredMixin, DeleteView):
     model = PurchaseOrder
     template_name = 'purchase_orders/confirm_delete.html'
     success_url = reverse_lazy('purchase_orders:list')
+
+    def get_object(self):
+        obj = super().get_object()
+        if obj.company != self.request.user.company:
+            from django.http import Http404
+            raise Http404
+        return obj
