@@ -2,6 +2,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.urls import reverse_lazy
 from .models import Supplier
 from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin
+from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 
 
 class SupplierListView(StaffRequiredMixin, ListView):
@@ -26,7 +27,7 @@ class SupplierDetailView(StaffRequiredMixin, DetailView):
         return obj
 
 
-class SupplierCreateView(StaffRequiredMixin, CreateView):
+class SupplierCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = Supplier
     template_name = 'suppliers/form.html'
     fields = ['name', 'category', 'contact_person', 'phone', 'email',
@@ -38,7 +39,7 @@ class SupplierCreateView(StaffRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class SupplierUpdateView(StaffRequiredMixin, UpdateView):
+class SupplierUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = Supplier
     template_name = 'suppliers/form.html'
     fields = ['name', 'category', 'contact_person', 'phone', 'email',
@@ -53,7 +54,7 @@ class SupplierUpdateView(StaffRequiredMixin, UpdateView):
         return obj
 
 
-class SupplierDeleteView(ManagerRequiredMixin, DeleteView):
+class SupplierDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
     model = Supplier
     template_name = 'suppliers/confirm_delete.html'
     success_url = reverse_lazy('suppliers:list')

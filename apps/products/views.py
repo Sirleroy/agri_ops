@@ -2,6 +2,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.urls import reverse_lazy
 from .models import Product
 from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin
+from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 
 
 class ProductListView(StaffRequiredMixin, ListView):
@@ -26,7 +27,7 @@ class ProductDetailView(StaffRequiredMixin, DetailView):
         return obj
 
 
-class ProductCreateView(StaffRequiredMixin, CreateView):
+class ProductCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = Product
     template_name = 'products/form.html'
     fields = ['name', 'description', 'category', 'unit', 'unit_price', 'supplier', 'is_active']
@@ -37,7 +38,7 @@ class ProductCreateView(StaffRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class ProductUpdateView(StaffRequiredMixin, UpdateView):
+class ProductUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = Product
     template_name = 'products/form.html'
     fields = ['name', 'description', 'category', 'unit', 'unit_price', 'supplier', 'is_active']
@@ -51,7 +52,7 @@ class ProductUpdateView(StaffRequiredMixin, UpdateView):
         return obj
 
 
-class ProductDeleteView(ManagerRequiredMixin, DeleteView):
+class ProductDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
     model = Product
     template_name = 'products/confirm_delete.html'
     success_url = reverse_lazy('products:list')

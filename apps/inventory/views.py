@@ -2,6 +2,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.urls import reverse_lazy
 from .models import Inventory
 from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin
+from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 
 
 class InventoryListView(StaffRequiredMixin, ListView):
@@ -26,7 +27,7 @@ class InventoryDetailView(StaffRequiredMixin, DetailView):
         return obj
 
 
-class InventoryCreateView(StaffRequiredMixin, CreateView):
+class InventoryCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = Inventory
     template_name = 'inventory/form.html'
     fields = ['product', 'quantity', 'warehouse_location', 'low_stock_threshold']
@@ -37,7 +38,7 @@ class InventoryCreateView(StaffRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class InventoryUpdateView(StaffRequiredMixin, UpdateView):
+class InventoryUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = Inventory
     template_name = 'inventory/form.html'
     fields = ['product', 'quantity', 'warehouse_location', 'low_stock_threshold']
@@ -51,7 +52,7 @@ class InventoryUpdateView(StaffRequiredMixin, UpdateView):
         return obj
 
 
-class InventoryDeleteView(ManagerRequiredMixin, DeleteView):
+class InventoryDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
     model = Inventory
     template_name = 'inventory/confirm_delete.html'
     success_url = reverse_lazy('inventory:list')

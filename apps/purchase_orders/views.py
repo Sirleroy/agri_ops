@@ -2,6 +2,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.urls import reverse_lazy
 from .models import PurchaseOrder
 from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin
+from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 
 
 class PurchaseOrderListView(StaffRequiredMixin, ListView):
@@ -26,7 +27,7 @@ class PurchaseOrderDetailView(StaffRequiredMixin, DetailView):
         return obj
 
 
-class PurchaseOrderCreateView(StaffRequiredMixin, CreateView):
+class PurchaseOrderCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = PurchaseOrder
     template_name = 'purchase_orders/form.html'
     fields = ['supplier', 'order_number', 'status', 'expected_delivery', 'notes']
@@ -37,7 +38,7 @@ class PurchaseOrderCreateView(StaffRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class PurchaseOrderUpdateView(StaffRequiredMixin, UpdateView):
+class PurchaseOrderUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = PurchaseOrder
     template_name = 'purchase_orders/form.html'
     fields = ['supplier', 'order_number', 'status', 'expected_delivery', 'notes']
@@ -51,7 +52,7 @@ class PurchaseOrderUpdateView(StaffRequiredMixin, UpdateView):
         return obj
 
 
-class PurchaseOrderDeleteView(ManagerRequiredMixin, DeleteView):
+class PurchaseOrderDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
     model = PurchaseOrder
     template_name = 'purchase_orders/confirm_delete.html'
     success_url = reverse_lazy('purchase_orders:list')

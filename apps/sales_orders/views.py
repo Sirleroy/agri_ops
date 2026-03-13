@@ -2,6 +2,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.urls import reverse_lazy
 from .models import SalesOrder
 from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin
+from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 
 
 class SalesOrderListView(StaffRequiredMixin, ListView):
@@ -26,7 +27,7 @@ class SalesOrderDetailView(StaffRequiredMixin, DetailView):
         return obj
 
 
-class SalesOrderCreateView(StaffRequiredMixin, CreateView):
+class SalesOrderCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = SalesOrder
     template_name = 'sales_orders/form.html'
     fields = ['order_number', 'customer_name', 'customer_email',
@@ -38,7 +39,7 @@ class SalesOrderCreateView(StaffRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class SalesOrderUpdateView(StaffRequiredMixin, UpdateView):
+class SalesOrderUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = SalesOrder
     template_name = 'sales_orders/form.html'
     fields = ['order_number', 'customer_name', 'customer_email',
@@ -53,7 +54,7 @@ class SalesOrderUpdateView(StaffRequiredMixin, UpdateView):
         return obj
 
 
-class SalesOrderDeleteView(ManagerRequiredMixin, DeleteView):
+class SalesOrderDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
     model = SalesOrder
     template_name = 'sales_orders/confirm_delete.html'
     success_url = reverse_lazy('sales_orders:list')
