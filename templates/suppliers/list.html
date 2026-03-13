@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Suppliers — AgriOps{% endblock %}
+{% block page_title %}Suppliers{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+
+  <div class="flex items-center justify-between">
+    <p class="text-sm text-slate-400 font-mono">{{ page_obj.paginator.count }} supplier{{ page_obj.paginator.count|pluralize }}</p>
+    <a href="{% url 'suppliers:create' %}" class="flex items-center gap-2 bg-green hover:bg-green-dim text-bg text-sm font-bold px-4 py-2 rounded-lg transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Add Supplier
+    </a>
+  </div>
+
+  <div class="bg-card border border-border rounded-xl overflow-hidden">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-border bg-white/[0.02]">
+          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Name</th>
+          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Category</th>
+          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Contact</th>
+          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Country</th>
+          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Company</th>
+          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Status</th>
+          <th class="px-5 py-3"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for supplier in suppliers %}
+        <tr class="border-b border-border/50 hover:bg-white/[0.02] transition-colors">
+          <td class="px-5 py-3 font-semibold text-slate-100">
+            <a href="{% url 'suppliers:detail' supplier.pk %}" class="hover:text-green transition-colors">{{ supplier.name }}</a>
+          </td>
+          <td class="px-5 py-3">
+            <span class="px-2 py-1 rounded-md text-xs font-mono font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20">
+              {{ supplier.get_category_display }}
+            </span>
+          </td>
+          <td class="px-5 py-3 text-slate-400">{{ supplier.contact_person|default:"—" }}</td>
+          <td class="px-5 py-3 text-slate-400">{{ supplier.country|default:"—" }}</td>
+          <td class="px-5 py-3 text-slate-400">{{ supplier.company.name }}</td>
+          <td class="px-5 py-3">
+            {% if supplier.is_active %}
+              <span class="px-2 py-1 rounded-md text-xs font-mono font-semibold bg-green/10 text-green border border-green/20">Active</span>
+            {% else %}
+              <span class="px-2 py-1 rounded-md text-xs font-mono font-semibold bg-red-500/10 text-red-400 border border-red-500/20">Inactive</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3">
+            <div class="flex items-center gap-2 justify-end">
+              <a href="{% url 'suppliers:update' supplier.pk %}" class="text-slate-500 hover:text-slate-100 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+              </a>
+              <a href="{% url 'suppliers:delete' supplier.pk %}" class="text-slate-500 hover:text-red-400 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="px-5 py-12 text-center text-slate-500 font-mono text-sm">No suppliers registered yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="flex items-center justify-center gap-2">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">Previous</a>
+    {% endif %}
+    <span class="text-slate-500 text-sm font-mono">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">Next</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

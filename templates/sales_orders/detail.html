@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}SO-{{ order.order_number }} — AgriOps{% endblock %}
+{% block page_title %}SO-{{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="space-y-4 max-w-4xl">
+
+  <div class="flex items-center justify-between">
+    <a href="{% url 'sales_orders:list' %}" class="text-sm text-slate-500 hover:text-slate-100 transition-colors flex items-center gap-1">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      Back to Sales Orders
+    </a>
+    <div class="flex gap-2">
+      <a href="{% url 'sales_orders:update' order.pk %}" class="px-4 py-2 bg-card border border-border rounded-lg text-sm text-slate-300 hover:text-slate-100 transition-colors">Edit</a>
+      <a href="{% url 'sales_orders:delete' order.pk %}" class="px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400 hover:text-red-300 transition-colors">Delete</a>
+    </div>
+  </div>
+
+  <div class="bg-card border border-border rounded-xl p-6 space-y-4">
+    <div class="flex items-start justify-between">
+      <div>
+        <h2 class="text-xl font-black text-slate-100 font-mono">SO-{{ order.order_number }}</h2>
+        <p class="text-sm text-slate-500 mt-1">{{ order.company.name }}</p>
+      </div>
+      <span class="px-3 py-1 rounded-lg text-xs font-mono font-semibold
+        {% if order.status == 'completed' %}bg-green/10 text-green border border-green/20
+        {% elif order.status == 'cancelled' %}bg-red-500/10 text-red-400 border border-red-500/20
+        {% elif order.status == 'dispatched' %}bg-blue-500/10 text-blue-400 border border-blue-500/20
+        {% elif order.status == 'confirmed' %}bg-purple-500/10 text-purple-400 border border-purple-500/20
+        {% else %}bg-yellow-500/10 text-yellow-400 border border-yellow-500/20{% endif %}">
+        {{ order.get_status_display }}
+      </span>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-border">
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Customer</p>
+        <p class="text-sm text-slate-200">{{ order.customer_name }}</p>
+      </div>
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Email</p>
+        <p class="text-sm text-slate-200">{{ order.customer_email|default:"—" }}</p>
+      </div>
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Phone</p>
+        <p class="text-sm text-slate-200">{{ order.customer_phone|default:"—" }}</p>
+      </div>
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Order Date</p>
+        <p class="text-sm text-slate-200 font-mono">{{ order.order_date|date:"d M Y" }}</p>
+      </div>
+      {% if order.notes %}
+      <div class="col-span-2">
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Notes</p>
+        <p class="text-sm text-slate-200">{{ order.notes }}</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="bg-card border border-border rounded-xl overflow-hidden">
+    <div class="px-5 py-3 border-b border-border bg-white/[0.02]">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Line Items</p>
+    </div>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-border bg-white/[0.02]">
+          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Product</th>
+          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Quantity</th>
+          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Unit Price</th>
+          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr class="border-b border-border/50">
+          <td class="px-5 py-3 text-slate-200">{{ item.product.name }}</td>
+          <td class="px-5 py-3 text-slate-400 font-mono">{{ item.quantity }}</td>
+          <td class="px-5 py-3 text-slate-400 font-mono">₦{{ item.unit_price }}</td>
+          <td class="px-5 py-3 text-slate-200 font-mono font-semibold">₦{{ item.total_price }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" class="px-5 py-8 text-center text-slate-500 font-mono text-sm">No line items added yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

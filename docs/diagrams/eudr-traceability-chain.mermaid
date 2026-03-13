@@ -1,0 +1,40 @@
+```mermaid
+flowchart TD
+
+    CO[🏢 Company\nOperator / Exporter\nEUDR responsible party]
+
+    SUP[🤝 Supplier\nAggregator / Cooperative\nCommercial trading entity]
+
+    FARM[🌿 Farm\nPhysical plot of land\nEUDR unit of compliance\n─────────────────\n• GeoJSON polygon boundary\n• Deforestation risk: Low/Standard/High\n• Verification status + expiry\n• Compliance documents]
+
+    PROD[📦 Product\nCommodity\ne.g. Soy, Maize, Cocoa\n─────────────────\n• Category + unit\n• Unit price]
+
+    INV[🏭 Inventory\nStock held\n─────────────────\n• Quantity\n• Warehouse location\n• Low-stock threshold]
+
+    PO[📋 Purchase Order\nProcurement record\n─────────────────\n• Order number\n• Volume + date\n• Supplier reference\n• Status]
+
+    SO[💰 Sales Order\nDispatch to EU buyer\n─────────────────\n• Order number\n• Customer / buyer\n• Volume + date\n• Status]
+
+    DDS[📄 Due Diligence Statement\nFiled with EU Information System\n─────────────────\n• Operator details\n• Farm geolocation coordinates\n• Risk assessment\n• Commodity + volume\n• Reference documents]
+
+    CO -->|owns| SUP
+    SUP -->|has many| FARM
+    CO -->|owns| PROD
+    PROD -->|tracked in| INV
+    FARM -.->|source of commodity| PROD
+    INV -->|procured via| PO
+    PO -->|supplier reference| SUP
+    INV -->|dispatched via| SO
+    SO -->|EU buyer| DDS
+    FARM -->|geolocation + risk + docs| DDS
+    PO -->|volume + date| DDS
+
+    style CO fill:#1a2e1a,stroke:#3d7a3e,color:#f7f3ec
+    style SUP fill:#1a2e1a,stroke:#3d7a3e,color:#f7f3ec
+    style FARM fill:#213021,stroke:#6aab52,color:#f7f3ec
+    style PROD fill:#1a2e1a,stroke:#3d7a3e,color:#f7f3ec
+    style INV fill:#1a2e1a,stroke:#3d7a3e,color:#f7f3ec
+    style PO fill:#1a2e1a,stroke:#3d7a3e,color:#f7f3ec
+    style SO fill:#1a2e1a,stroke:#3d7a3e,color:#f7f3ec
+    style DDS fill:#2a1a0a,stroke:#c8a84b,color:#f7f3ec
+```

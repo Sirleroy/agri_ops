@@ -1,0 +1,193 @@
+// AgriOps — Entity Relationship Diagram
+// Format: DBML (Database Markup Language)
+// Render at: https://dbdiagram.io
+// Version: 1.0 — March 2026
+
+// ─────────────────────────────────────
+// TENANT ROOT
+// ─────────────────────────────────────
+
+Table companies_company {
+  id           int         [pk, increment]
+  name         varchar(255)
+  country      varchar(100)
+  city         varchar(100)
+  address      text
+  phone        varchar(20)
+  email        varchar(254)
+  plan_tier    varchar(20)  [note: 'free | growth | pro | enterprise']
+  is_active    boolean      [default: true]
+  created_at   timestamp
+  updated_at   timestamp
+}
+
+// ─────────────────────────────────────
+// USERS
+// ─────────────────────────────────────
+
+Table users_customuser {
+  id           int         [pk, increment]
+  company_id   int         [ref: > companies_company.id]
+  username     varchar(150)
+  email        varchar(254)
+  first_name   varchar(150)
+  last_name    varchar(150)
+  system_role  varchar(30)  [note: 'org_admin | manager | staff | viewer']
+  job_title    varchar(100) [note: 'Display only. No permission bearing.']
+  phone        varchar(20)
+  is_active    boolean
+  is_staff     boolean
+  date_joined  timestamp
+  last_login   timestamp
+}
+
+// ─────────────────────────────────────
+// SUPPLIERS & FARMS
+// ─────────────────────────────────────
+
+Table suppliers_supplier {
+  id              int         [pk, increment]
+  company_id      int         [ref: > companies_company.id]
+  name            varchar(255)
+  category        varchar(30)  [note: 'farmer | cooperative | processor | distributor | exporter']
+  contact_person  varchar(255)
+  phone           varchar(20)
+  email           varchar(254)
+  country         varchar(100)
+  city            varchar(100)
+  address         text
+  is_active       boolean
+  created_at      timestamp
+  updated_at      timestamp
+}
+
+Table suppliers_farm {
+  id                        int         [pk, increment]
+  company_id                int         [ref: > companies_company.id]
+  supplier_id               int         [ref: > suppliers_supplier.id]
+  name                      varchar(255)
+  farmer_name               varchar(255)
+  geolocation               jsonb        [note: 'GeoJSON Polygon. SW Maps / NCAN Farm Mapper export.']
+  area_hectares             decimal(10,2)
+  country                   varchar(100)
+  state_region              varchar(100)
+  commodity                 varchar(100)
+  deforestation_risk_status varchar(20)  [note: 'low | standard | high']
+  mapping_date              date
+  mapped_by_id              int         [ref: > users_customuser.id]
+  is_eudr_verified          boolean      [default: false]
+  verified_by_id            int         [ref: > users_customuser.id]
+  verified_date             date
+  verification_expiry       date
+  created_at                timestamp
+  updated_at                timestamp
+}
+
+Table suppliers_compliancedocument {
+  id           int         [pk, increment]
+  company_id   int         [ref: > companies_company.id]
+  farm_id      int         [ref: > suppliers_farm.id]
+  doc_type     varchar(30)  [note: 'farm_map | satellite_image | land_registry | certification | declaration | other']
+  file         varchar(255)
+  description  varchar(255)
+  uploaded_by_id int       [ref: > users_customuser.id]
+  uploaded_at  timestamp
+  is_current   boolean      [default: true]
+}
+
+// ─────────────────────────────────────
+// PRODUCTS
+// ─────────────────────────────────────
+
+Table products_product {
+  id           int         [pk, increment]
+  company_id   int         [ref: > companies_company.id]
+  supplier_id  int         [ref: > suppliers_supplier.id, null]
+  name         varchar(255)
+  description  text
+  category     varchar(30)
+  unit         varchar(20)  [note: 'kg | tonne | bag | litre | unit']
+  unit_price   decimal(12,2)
+  is_active    boolean
+  created_at   timestamp
+  updated_at   timestamp
+}
+
+// ─────────────────────────────────────
+// INVENTORY
+// ─────────────────────────────────────
+
+Table inventory_inventory {
+  id                   int         [pk, increment]
+  company_id           int         [ref: > companies_company.id]
+  product_id           int         [ref: > products_product.id]
+  quantity             decimal(12,2)
+  warehouse_location   varchar(255)
+  low_stock_threshold  decimal(12,2)
+  last_updated         timestamp
+}
+
+// ─────────────────────────────────────
+// PURCHASE ORDERS
+// ─────────────────────────────────────
+
+Table purchase_orders_purchaseorder {
+  id                int         [pk, increment]
+  company_id        int         [ref: > companies_company.id]
+  supplier_id       int         [ref: > suppliers_supplier.id, null]
+  order_number      varchar(100)
+  status            varchar(20)  [note: 'draft | approved | ordered | received | cancelled']
+  order_date        date
+  expected_delivery date
+  notes             text
+}
+
+Table purchase_orders_purchaseorderitem {
+  id                  int         [pk, increment]
+  purchase_order_id   int         [ref: > purchase_orders_purchaseorder.id]
+  product_id          int         [ref: > products_product.id]
+  quantity            decimal(12,2)
+  unit_price          decimal(12,2)
+}
+
+// ─────────────────────────────────────
+// SALES ORDERS
+// ─────────────────────────────────────
+
+Table sales_orders_salesorder {
+  id               int         [pk, increment]
+  company_id       int         [ref: > companies_company.id]
+  order_number     varchar(100)
+  customer_name    varchar(255)
+  customer_email   varchar(254)
+  customer_phone   varchar(20)
+  status           varchar(20)  [note: 'draft | confirmed | dispatched | completed | cancelled']
+  order_date       date
+  notes            text
+}
+
+Table sales_orders_salesorderitem {
+  id               int         [pk, increment]
+  sales_order_id   int         [ref: > sales_orders_salesorder.id]
+  product_id       int         [ref: > products_product.id]
+  quantity         decimal(12,2)
+  unit_price       decimal(12,2)
+}
+
+// ─────────────────────────────────────
+// AUDIT LOG
+// ─────────────────────────────────────
+
+Table audit_auditlog {
+  id           int         [pk, increment]
+  company_id   int         [ref: > companies_company.id]
+  user_id      int         [ref: > users_customuser.id]
+  action       varchar(10)  [note: 'create | update | delete']
+  model_name   varchar(100)
+  object_id    int
+  object_repr  varchar(255)
+  changes      jsonb        [note: 'Before/after field values for updates']
+  ip_address   varchar(45)
+  timestamp    timestamp
+}
+

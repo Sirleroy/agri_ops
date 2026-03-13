@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}{{ company.name }} — AgriOps{% endblock %}
+{% block page_title %}{{ company.name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-4 max-w-3xl">
+
+  <div class="flex items-center justify-between">
+    <a href="{% url 'companies:list' %}" class="text-sm text-slate-500 hover:text-slate-100 transition-colors flex items-center gap-1">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      Back to Companies
+    </a>
+    <div class="flex gap-2">
+      <a href="{% url 'companies:update' company.pk %}" class="px-4 py-2 bg-card border border-border rounded-lg text-sm text-slate-300 hover:text-slate-100 transition-colors">Edit</a>
+      <a href="{% url 'companies:delete' company.pk %}" class="px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400 hover:text-red-300 transition-colors">Delete</a>
+    </div>
+  </div>
+
+  <div class="bg-card border border-border rounded-xl p-6 space-y-4">
+    <div class="flex items-start justify-between">
+      <div>
+        <h2 class="text-xl font-black text-slate-100">{{ company.name }}</h2>
+        <p class="text-sm text-slate-500 font-mono mt-1">ID: {{ company.pk }}</p>
+      </div>
+      <div class="flex gap-2">
+        <span class="px-3 py-1 rounded-lg text-xs font-mono font-semibold
+          {% if company.plan_tier == 'enterprise' %}bg-purple-500/10 text-purple-400 border border-purple-500/20
+          {% elif company.plan_tier == 'pro' %}bg-blue-500/10 text-blue-400 border border-blue-500/20
+          {% else %}bg-slate-500/10 text-slate-400 border border-slate-500/20{% endif %}">
+          {{ company.get_plan_tier_display }}
+        </span>
+        {% if company.is_active %}
+          <span class="px-3 py-1 rounded-lg text-xs font-mono font-semibold bg-green/10 text-green border border-green/20">Active</span>
+        {% else %}
+          <span class="px-3 py-1 rounded-lg text-xs font-mono font-semibold bg-red-500/10 text-red-400 border border-red-500/20">Inactive</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-border">
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Country</p>
+        <p class="text-sm text-slate-200">{{ company.country|default:"—" }}</p>
+      </div>
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">City</p>
+        <p class="text-sm text-slate-200">{{ company.city|default:"—" }}</p>
+      </div>
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Phone</p>
+        <p class="text-sm text-slate-200">{{ company.phone|default:"—" }}</p>
+      </div>
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Email</p>
+        <p class="text-sm text-slate-200">{{ company.email|default:"—" }}</p>
+      </div>
+      <div class="col-span-2">
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Address</p>
+        <p class="text-sm text-slate-200">{{ company.address|default:"—" }}</p>
+      </div>
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Created</p>
+        <p class="text-sm text-slate-200 font-mono">{{ company.created_at|date:"d M Y, H:i" }}</p>
+      </div>
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Last Updated</p>
+        <p class="text-sm text-slate-200 font-mono">{{ company.updated_at|date:"d M Y, H:i" }}</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

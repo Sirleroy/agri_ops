@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}{{ profile.username }} — AgriOps{% endblock %}
+{% block page_title %}{{ profile.username }}{% endblock %}
+
+{% block content %}
+<div class="space-y-4 max-w-3xl">
+
+  <div class="flex items-center justify-between">
+    <a href="{% url 'users:list' %}" class="text-sm text-slate-500 hover:text-slate-100 transition-colors flex items-center gap-1">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      Back to Users
+    </a>
+    <div class="flex gap-2">
+      <a href="{% url 'users:update' profile.pk %}" class="px-4 py-2 bg-card border border-border rounded-lg text-sm text-slate-300 hover:text-slate-100 transition-colors">Edit</a>
+      <a href="{% url 'users:delete' profile.pk %}" class="px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400 hover:text-red-300 transition-colors">Delete</a>
+    </div>
+  </div>
+
+  <div class="bg-card border border-border rounded-xl p-6 space-y-4">
+    <div class="flex items-center gap-4">
+      <div class="w-14 h-14 rounded-full bg-gradient-to-br from-green to-green-dim flex items-center justify-center text-xl font-black text-white flex-shrink-0">
+        {{ profile.username|first|upper }}
+      </div>
+      <div>
+        <h2 class="text-xl font-black text-slate-100">{{ profile.username }}</h2>
+        <p class="text-sm text-slate-500 mt-1">{{ profile.email|default:"No email set" }}</p>
+      </div>
+      <div class="ml-auto flex gap-2">
+        {% if profile.role %}
+        <span class="px-3 py-1 rounded-lg text-xs font-mono font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20">{{ profile.get_role_display }}</span>
+        {% endif %}
+        {% if profile.is_active %}
+          <span class="px-3 py-1 rounded-lg text-xs font-mono font-semibold bg-green/10 text-green border border-green/20">Active</span>
+        {% else %}
+          <span class="px-3 py-1 rounded-lg text-xs font-mono font-semibold bg-red-500/10 text-red-400 border border-red-500/20">Inactive</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-border">
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">First Name</p>
+        <p class="text-sm text-slate-200">{{ profile.first_name|default:"—" }}</p>
+      </div>
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Last Name</p>
+        <p class="text-sm text-slate-200">{{ profile.last_name|default:"—" }}</p>
+      </div>
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Phone</p>
+        <p class="text-sm text-slate-200">{{ profile.phone|default:"—" }}</p>
+      </div>
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Company</p>
+        <p class="text-sm text-slate-200">{{ profile.company.name|default:"—" }}</p>
+      </div>
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Date Joined</p>
+        <p class="text-sm text-slate-200 font-mono">{{ profile.date_joined|date:"d M Y" }}</p>
+      </div>
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Last Login</p>
+        <p class="text-sm text-slate-200 font-mono">{{ profile.last_login|date:"d M Y, H:i"|default:"—" }}</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

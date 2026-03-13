@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard — AgriOps{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Stats Row -->
+  <div class="grid grid-cols-4 gap-4">
+    <div class="bg-card border border-border rounded-xl p-5">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Total Companies</p>
+      <p class="text-3xl font-black text-slate-100">—</p>
+      <p class="text-xs text-slate-500 mt-1">Registered tenants</p>
+    </div>
+    <div class="bg-card border border-border rounded-xl p-5">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Products</p>
+      <p class="text-3xl font-black text-slate-100">—</p>
+      <p class="text-xs text-slate-500 mt-1">Active SKUs</p>
+    </div>
+    <div class="bg-card border border-border rounded-xl p-5">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Purchase Orders</p>
+      <p class="text-3xl font-black text-slate-100">—</p>
+      <p class="text-xs text-slate-500 mt-1">All time</p>
+    </div>
+    <div class="bg-card border border-border rounded-xl p-5">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Sales Orders</p>
+      <p class="text-3xl font-black text-slate-100">—</p>
+      <p class="text-xs text-slate-500 mt-1">All time</p>
+    </div>
+  </div>
+
+  <!-- Placeholder message -->
+  <div class="bg-card border border-border rounded-xl p-8 text-center">
+    <p class="text-green font-mono text-sm tracking-widest uppercase mb-2">Phase 2</p>
+    <p class="text-slate-400 text-sm">Live stats, charts, and recent activity will populate here as data flows in.</p>
+  </div>
+
+</div>
+{% endblock %}

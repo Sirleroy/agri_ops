@@ -1,0 +1,59 @@
+```mermaid
+%% AgriOps — Tenant Isolation (Multi-Tenant Security)
+sequenceDiagram
+
+    actor UserA as User (Company A)
+    actor UserB as User (Company B)
+    participant Django
+    participant View as ListView / DetailView
+    participant DB as PostgreSQL
+
+    %% ─────────────────────────────────────
+    %% LEGITIMATE REQUEST — OWN DATA
+    %% ─────────────────────────────────────
+
+    UserA->>Django: GET /suppliers/ [authenticated, company_id=1]
+    Django->>View: SupplierListView.get_queryset()
+    View->>View: filter(company=request.user.company)
+    Note over View: company_id=1 applied to queryset
+    View->>DB: SELECT * FROM suppliers WHERE company_id=1
+    DB-->>View: 12 suppliers (all belong to Company A)
+    View-->>UserA: 200 — Supplier list (Company A data only)
+
+    %% ─────────────────────────────────────
+    %% CROSS-TENANT URL ENUMERATION ATTEMPT
+    %% ─────────────────────────────────────
+
+    UserB->>Django: GET /suppliers/99/ [authenticated, company_id=2]
+    Note over UserB: Supplier #99 belongs to Company A
+    Django->>View: SupplierDetailView.get_object()
+    View->>DB: SELECT * FROM suppliers WHERE id=99
+    DB-->>View: Supplier record (company_id=1)
+    View->>View: Check: obj.company == request.user.company?
+    Note over View: company_id=1 ≠ company_id=2
+    View->>View: Raise Http404
+    Note over View: 404 not 403 — reveals nothing about existence
+    View-->>UserB: 404 Not Found
+
+    %% ─────────────────────────────────────
+    %% CREATE — COMPANY AUTO-ASSIGNED
+    %% ─────────────────────────────────────
+
+    UserA->>Django: POST /suppliers/new/ {name: "New Supplier"}
+    Note over UserA: No company field in POST data
+    Django->>View: SupplierCreateView.form_valid()
+    View->>View: form.instance.company = request.user.company
+    Note over View: company_id=1 assigned automatically
+    View->>DB: INSERT INTO suppliers (company_id=1, name=...)
+    DB-->>View: Supplier created
+    View-->>UserA: 302 Redirect to /suppliers/
+
+    %% ─────────────────────────────────────
+    %% PHASE 4 — PostgreSQL RLS (additional layer)
+    %% ─────────────────────────────────────
+
+    Note over Django,DB: Phase 4: Row-Level Security added at DB layer
+    Note over Django,DB: Even if application filter is bypassed,
+    Note over Django,DB: PostgreSQL refuses cross-tenant reads.
+    Note over Django,DB: Defence-in-depth: two independent isolation layers.
+```

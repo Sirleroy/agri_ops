@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}{% if object %}Edit {{ object.name }}{% else %}New Supplier{% endif %} — AgriOps{% endblock %}
+{% block page_title %}{% if object %}Edit Supplier{% else %}New Supplier{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl space-y-4">
+
+  <a href="{% url 'suppliers:list' %}" class="text-sm text-slate-500 hover:text-slate-100 transition-colors flex items-center gap-1 w-fit">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    Back to Suppliers
+  </a>
+
+  <div class="bg-card border border-border rounded-xl p-6">
+    <h2 class="text-base font-bold text-slate-100 mb-5">{% if object %}Edit {{ object.name }}{% else %}Register New Supplier{% endif %}</h2>
+
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      {% for field in form %}
+      <div>
+        <label class="block text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+          <p class="text-xs text-red-400 mt-1">{{ field.errors.0 }}</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+
+      <div class="flex gap-3 pt-2">
+        <button type="submit" class="px-5 py-2 bg-green hover:bg-green-dim text-bg font-bold text-sm rounded-lg transition-colors">
+          {% if object %}Save Changes{% else %}Add Supplier{% endif %}
+        </button>
+        <a href="{% url 'suppliers:list' %}" class="px-5 py-2 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<style>
+  input, select, textarea {
+    width: 100%;
+    background: #0a0f1a;
+    border: 1px solid #1e2d40;
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #f1f5f9;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: #22c55e; }
+  select option { background: #111827; }
+  input[type="checkbox"] { width: auto; }
+</style>
+{% endblock %}

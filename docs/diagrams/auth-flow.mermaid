@@ -1,0 +1,76 @@
+```mermaid
+%% AgriOps — Authentication Flow (Phase 2)
+sequenceDiagram
+
+    actor User
+    participant Browser
+    participant Django
+    participant DB as PostgreSQL
+    participant Axes as django-axes
+
+    %% ─────────────────────────────────────
+    %% LOGIN FLOW
+    %% ─────────────────────────────────────
+
+    User->>Browser: Navigate to /login/
+    Browser->>Django: GET /login/
+    Django-->>Browser: Render login page (styled template)
+
+    User->>Browser: Submit username + password
+    Browser->>Django: POST /login/ {username, password}
+
+    Django->>Axes: Check brute-force lockout status for IP/username
+    Axes-->>Django: Not locked
+
+    Django->>DB: SELECT CustomUser WHERE username=?
+    DB-->>Django: User record
+
+    Django->>Django: Validate password hash (bcrypt)
+
+    alt Credentials valid
+        Django->>DB: UPDATE last_login
+        Django->>Django: Create session / issue JWT (Phase 2: JWT)
+        Django->>DB: INSERT AuditLog {action: login, user, ip}
+        Django-->>Browser: 302 Redirect to dashboard
+        Browser->>Django: GET /
+        Django-->>Browser: Render dashboard
+    else Credentials invalid
+        Django->>Axes: Record failed attempt {ip, username}
+        Axes->>Axes: Increment failure counter
+        alt Failure threshold reached
+            Axes-->>Django: Account/IP locked
+            Django-->>Browser: 403 Account locked message
+        else Under threshold
+            Django-->>Browser: 200 Login page with error message
+        end
+    end
+
+    %% ─────────────────────────────────────
+    %% AUTHENTICATED REQUEST FLOW
+    %% ─────────────────────────────────────
+
+    User->>Browser: Navigate to /suppliers/
+    Browser->>Django: GET /suppliers/ + session cookie / JWT header
+
+    Django->>Django: Validate session / JWT
+    alt Token invalid or expired
+        Django-->>Browser: 302 Redirect to /login/
+    else Token valid
+        Django->>Django: Load request.user from token
+        Django->>Django: Check LoginRequiredMixin
+        Django->>DB: SELECT Supplier WHERE company=request.user.company
+        Note over Django,DB: Tenant isolation enforced here
+        DB-->>Django: Supplier queryset (own org only)
+        Django-->>Browser: Render suppliers list
+    end
+
+    %% ─────────────────────────────────────
+    %% LOGOUT FLOW
+    %% ─────────────────────────────────────
+
+    User->>Browser: Click logout
+    Browser->>Django: POST /logout/
+    Django->>Django: Invalidate session / blacklist JWT refresh token
+    Django->>DB: INSERT AuditLog {action: logout, user, ip}
+    Django-->>Browser: 302 Redirect to /login/
+```
