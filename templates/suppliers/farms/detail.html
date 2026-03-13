@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% block title %}{{ farm.name }} — AgriOps{% endblock %}
+{% block page_title %}{{ farm.name }}{% endblock %}
+{% block content %}
+
+<div class="max-w-3xl space-y-6">
+
+  <!-- Status banner -->
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      {% if farm.compliance_status == 'compliant' %}
+        <span class="px-3 py-1 rounded-full text-xs font-mono bg-green/10 text-green border border-green/20">✓ EUDR Verified</span>
+      {% elif farm.compliance_status == 'expired' %}
+        <span class="px-3 py-1 rounded-full text-xs font-mono bg-orange-500/10 text-orange-400 border border-orange-500/20">⚠ Verification Expired</span>
+      {% elif farm.compliance_status == 'high_risk' %}
+        <span class="px-3 py-1 rounded-full text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20">⚠ High Risk</span>
+      {% else %}
+        <span class="px-3 py-1 rounded-full text-xs font-mono bg-slate-500/10 text-slate-400 border border-slate-500/20">Pending Verification</span>
+      {% endif %}
+
+      {% if farm.deforestation_risk_status == 'low' %}
+        <span class="px-3 py-1 rounded-full text-xs font-mono bg-green/10 text-green border border-green/20">Low Risk</span>
+      {% elif farm.deforestation_risk_status == 'standard' %}
+        <span class="px-3 py-1 rounded-full text-xs font-mono bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">Standard Risk</span>
+      {% else %}
+        <span class="px-3 py-1 rounded-full text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20">High Risk</span>
+      {% endif %}
+    </div>
+    <a href="{% url 'suppliers:farm_update' farm.pk %}"
+       class="bg-green hover:bg-green-dim text-bg font-bold text-xs px-4 py-2 rounded-lg transition-colors">
+      Edit Farm
+    </a>
+  </div>
+
+  <!-- Details card -->
+  <div class="bg-card border border-border rounded-xl p-6">
+    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Farm Details</p>
+    <dl class="grid grid-cols-2 gap-4 text-sm">
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Supplier</dt>
+        <dd class="text-slate-100">
+          <a href="{% url 'suppliers:detail' farm.supplier.pk %}"
+             class="hover:text-green transition-colors">{{ farm.supplier.name }}</a>
+        </dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Farmer Name</dt>
+        <dd class="text-slate-100">{{ farm.farmer_name|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Commodity</dt>
+        <dd class="text-slate-100">{{ farm.commodity }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Area</dt>
+        <dd class="text-slate-100">{% if farm.area_hectares %}{{ farm.area_hectares }} ha{% else %}—{% endif %}</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Country</dt>
+        <dd class="text-slate-100">{{ farm.country }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">State / Region</dt>
+        <dd class="text-slate-100">{{ farm.state_region|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Mapping Date</dt>
+        <dd class="text-slate-100">{{ farm.mapping_date|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Mapped By</dt>
+        <dd class="text-slate-100">{{ farm.mapped_by|default:"—" }}</dd>
+      </div>
+    </dl>
+  </div>
+
+  <!-- EUDR Verification card -->
+  <div class="bg-card border border-border rounded-xl p-6">
+    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">EUDR Verification</p>
+    <dl class="grid grid-cols-2 gap-4 text-sm">
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Verified</dt>
+        <dd>{% if farm.is_eudr_verified %}
+          <span class="text-green font-mono text-xs">Yes</span>
+        {% else %}
+          <span class="text-slate-500 font-mono text-xs">No</span>
+        {% endif %}</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Verified By</dt>
+        <dd class="text-slate-100">{{ farm.verified_by|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Verification Date</dt>
+        <dd class="text-slate-100">{{ farm.verified_date|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Expiry Date</dt>
+        <dd class="text-slate-100">{{ farm.verification_expiry|default:"—" }}</dd>
+      </div>
+    </dl>
+  </div>
+
+  <!-- Geolocation card -->
+  {% if farm.geolocation %}
+  <div class="bg-card border border-border rounded-xl p-6">
+    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Geolocation Data</p>
+    <pre class="text-xs font-mono text-slate-400 bg-surface rounded-lg p-4 overflow-x-auto">{{ farm.geolocation }}</pre>
+  </div>
+  {% endif %}
+
+  <!-- Documents card -->
+  <div class="bg-card border border-border rounded-xl p-6">
+    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Compliance Documents</p>
+    {% if documents %}
+      <ul class="space-y-2">
+        {% for doc in documents %}
+        <li class="flex items-center justify-between py-2 border-b border-border last:border-0">
+          <div>
+            <p class="text-sm text-slate-100">{{ doc.get_doc_type_display }}</p>
+            <p class="text-xs text-slate-500 font-mono">{{ doc.description|default:"No description" }} · {{ doc.uploaded_at|date:"d M Y" }}</p>
+          </div>
+          <a href="{{ doc.file.url }}" target="_blank"
+             class="text-xs text-green hover:text-green-dim font-mono transition-colors">
+            Download
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-sm text-slate-500">No compliance documents uploaded yet.</p>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

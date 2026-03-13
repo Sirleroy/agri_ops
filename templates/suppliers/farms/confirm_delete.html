@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Delete Farm — AgriOps{% endblock %}
+{% block page_title %}Delete Farm{% endblock %}
+{% block content %}
+<div class="max-w-md">
+  <div class="bg-card border border-red-500/20 rounded-xl p-6">
+    <p class="text-sm text-slate-300 mb-1">You are about to permanently delete:</p>
+    <p class="text-base font-bold text-slate-100 mb-4">{{ farm.name }}</p>
+    <div class="mb-6 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20">
+      <p class="text-xs font-mono text-red-400">
+        ⚠ This will also delete all compliance documents linked to this farm.
+        This action cannot be undone.
+      </p>
+    </div>
+    <form method="post">
+      {% csrf_token %}
+      <div class="flex gap-3">
+        <button type="submit"
+          class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold text-sm py-3 rounded-lg transition-colors">
+          Delete Farm
+        </button>
+        <a href="{% url 'suppliers:farm_list' %}"
+          class="flex-1 text-center border border-border text-slate-400 hover:text-slate-100 text-sm py-3 rounded-lg transition-colors">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
