@@ -1,6 +1,6 @@
 # AgriOps — Documentation
 
-**Version:** 1.0 | **Last Updated:** March 2026
+**Version:** 2.0 | **Last Updated:** March 2026
 
 Welcome to the AgriOps technical documentation. This folder contains the complete architectural, design, security and operational record of the platform — from the first decision made to the current state of the build.
 
@@ -33,7 +33,6 @@ If you are **responding to an incident**, go directly to:
 ---
 
 ## Folder Structure
-
 ```
 /docs
   README.md                        ← You are here
@@ -52,6 +51,7 @@ If you are **responding to an incident**, go directly to:
     tenant-model.md                ← Tenant isolation implementation detail
     api-contract.md                ← REST API endpoints and contracts
     compliance-module.md           ← EUDR compliance module specification
+    rbac.md                        ← Permission matrix, mixin hierarchy
 
   /diagrams                        ← Visual architecture diagrams
     erd.dbml                       ← Entity relationship diagram (dbdiagram.io)
@@ -136,7 +136,7 @@ Documentation and code ship together. A PR that adds a new model without updatin
 | Phase | Status | Documentation |
 |---|---|---|
 | Phase 1 — Local Prototype | ✅ Complete | Fully documented |
-| Phase 2 — Auth, RBAC, API | 🔄 Starting | Design docs complete, implementation pending |
+| Phase 2 — Auth, RBAC, API | ✅ Complete | Fully documented |
 | Phase 3 — Cloud Deployment | Planned | Runbook placeholder exists |
 | Phase 4 — Freemium Launch | Planned | — |
 | Phase 5 — Revenue & Growth | Planned | — |

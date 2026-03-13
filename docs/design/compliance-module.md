@@ -1,8 +1,8 @@
 # AgriOps — EUDR Compliance Module
 
-**Version:** 1.0
+**Version:** 2.0
 **Date:** March 2026
-**Status:** Design complete — implementation starting Phase 2
+**Status:** Phase 2 Complete — Farm model, ComplianceDocument, and Farm CRUD UI live
 
 ---
 
@@ -29,7 +29,6 @@ The EUDR requires operators to:
 ## AgriOps Compliance Data Model
 
 ### The Traceability Chain
-
 ```
 Company (Operator/Exporter)
   └── Supplier (Aggregator/Cooperative)
@@ -65,16 +64,19 @@ Each `Farm` record stores:
 - `verified_date` — when verification was performed
 - `verification_expiry` — when re-verification is due
 
+**Computed properties:**
+- `is_verification_current` — False if expired
+- `compliance_status` — returns: `compliant`, `pending`, `expired`, or `high_risk`
+
 **Compliance Documents:**
 - Farm maps, satellite imagery, land registry documents
 - Stored as file attachments per `ComplianceDocument` model
 
 ---
 
-## ComplianceDocument Model *(Phase 2)*
+## ComplianceDocument Model ✅ Phase 2 Complete
 
 Farm compliance documentation with version history.
-
 ```python
 class ComplianceDocument(models.Model):
     DOC_TYPE_CHOICES = [
@@ -102,10 +104,9 @@ class ComplianceDocument(models.Model):
 
 ---
 
-## Compliance Dashboard Widget *(Phase 2)*
+## Compliance Dashboard Widget *(Phase 3)*
 
 The main dashboard will surface a compliance summary panel showing:
-
 ```
 EUDR COMPLIANCE STATUS
 ━━━━━━━━━━━━━━━━━━━━━
@@ -116,6 +117,17 @@ EUDR COMPLIANCE STATUS
 ```
 
 Clicking any figure navigates to a filtered farm list.
+
+---
+
+## API Compliance Endpoints ✅ Phase 2 Complete
+
+The REST API exposes two EUDR-specific custom actions:
+
+- `GET /api/v1/farms/eudr-pending/` — all farms with `is_eudr_verified=False`
+- `GET /api/v1/farms/high-risk/` — all farms with `deforestation_risk_status=high`
+
+Both endpoints are tenant-scoped and JWT-authenticated.
 
 ---
 
@@ -174,19 +186,20 @@ Based on the operational process used by the founding company:
 
 ## Phase Implementation Plan
 
-| Feature | Phase |
-|---|---|
-| Farm model + EUDR fields | 2 |
-| ComplianceDocument model | 2 |
-| Farm CRUD UI | 2 |
-| Compliance dashboard widget | 2 |
-| GeoJSON import from SW Maps | 3 |
-| Compliance Report (PDF/CSV) | 3 |
-| Expiry alerting (email) | 3 |
-| DDS draft generator | 3 |
-| Farm map visualisation (Leaflet.js) | 4 |
-| PostGIS polygon migration | 4 |
-| Full DDS filing workflow | 4 |
+| Feature | Phase | Status |
+|---|---|---|
+| Farm model + EUDR fields | 2 | ✅ Complete |
+| ComplianceDocument model | 2 | ✅ Complete |
+| Farm CRUD UI | 2 | ✅ Complete |
+| EUDR API endpoints | 2 | ✅ Complete |
+| Compliance dashboard widget | 3 | Planned |
+| GeoJSON import from SW Maps | 3 | Planned |
+| Compliance Report (PDF/CSV) | 3 | Planned |
+| Expiry alerting (email) | 3 | Planned |
+| DDS draft generator | 3 | Planned |
+| Farm map visualisation (Leaflet.js) | 4 | Planned |
+| PostGIS polygon migration | 4 | Planned |
+| Full DDS filing workflow | 4 | Planned |
 
 ---
 

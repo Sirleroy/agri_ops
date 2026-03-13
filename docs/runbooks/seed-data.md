@@ -1,7 +1,7 @@
 # Runbook — Seed Data
 
 **Last Updated:** March 2026
-**Applies to:** Phase 1 and Phase 2 codebase
+**Applies to:** Phase 2 codebase
 
 ---
 
@@ -19,15 +19,13 @@ The command is **idempotent** — running it multiple times will not create dupl
 ---
 
 ## Usage
-
 ```bash
 python manage.py seed_data
 ```
 
-Optional flags:
+To wipe existing seed data and rebuild from scratch:
 ```bash
-python manage.py seed_data --reset    # Clear existing seed data first
-python manage.py seed_data --minimal  # Create minimum viable dataset only
+python manage.py seed_data --flush
 ```
 
 ---
@@ -35,80 +33,86 @@ python manage.py seed_data --minimal  # Create minimum viable dataset only
 ## What Gets Created
 
 ### Companies (2)
-- **Plateau Agri Collective** — Growth tier, Jos, Plateau State
-- **Kano Grains Cooperative** — Free tier, Kano, Kano State
 
-### Users (4)
-| Username | Role | Company |
+| Company | Plan | City |
 |---|---|---|
-| admin_plateau | org_admin | Plateau Agri Collective |
-| manager_plateau | manager | Plateau Agri Collective |
-| staff_kano | staff | Kano Grains Cooperative |
-| viewer_kano | viewer | Kano Grains Cooperative |
+| Ake Collective | Pro | Kano |
+| Agro Foods Nigeria Ltd | Free | Ibadan |
 
-All seed users have password: `seedpass123` — **never use in production.**
+### Users (6)
 
-### Suppliers (4 total — 2 per company)
-- Ake Collective — cooperative, Jos
-- Lamingo Farms Aggregator — farmer, Plateau State
-- Danbatta Grain Suppliers — cooperative, Kano
-- Hadejia Valley Produce — distributor, Kano
+| Username | Role | Company | Password |
+|---|---|---|---|
+| ake_admin | org_admin | Ake Collective | agriops2026! |
+| ake_manager | manager | Ake Collective | agriops2026! |
+| ake_staff | staff | Ake Collective | agriops2026! |
+| ake_viewer | viewer | Ake Collective | agriops2026! |
+| agro_admin | org_admin | Agro Foods Nigeria Ltd | agriops2026! |
+| agro_staff | staff | Agro Foods Nigeria Ltd | agriops2026! |
 
-### Farms (6 total — EUDR compliance data)
-- 3 farms linked to Ake Collective (soy, mixed risk)
-- 2 farms linked to Lamingo Farms Aggregator
-- 1 farm linked to Danbatta Grain Suppliers
+**Never use seed passwords in production.**
 
-Each farm includes a sample GeoJSON polygon in SW Maps export format.
+### Suppliers (4 total)
 
-### Products (6 total)
-- Soy (tonne)
-- White Maize (tonne)
-- Guinea Corn / Sorghum (tonne)
-- Groundnut (kg)
-- Sesame (kg)
-- Cowpea (kg)
+**Ake Collective:**
+- Kano Agro Inputs Ltd — fertilizer
+- Sahel Seeds Co-op — seeds
+- West Africa Packaging — packaging
 
-### Inventory (6 records)
-One inventory record per product with realistic stock levels and low-stock thresholds.
+**Agro Foods Nigeria Ltd:**
+- Oyo Agro Supplies — fertilizer
 
-### Purchase Orders (4)
-- 2 per company with 2–3 line items each
-- Mixed statuses: draft, approved, received
+### Farms (2 — EUDR compliance data)
 
-### Sales Orders (3)
-- 2 for Plateau Agri Collective (1 completed EU buyer order)
-- 1 for Kano Grains Cooperative
+| Farm | Supplier | Commodity | Risk | Verified |
+|---|---|---|---|---|
+| Sule Family Farm | Sahel Seeds Co-op | Soy | Low | ✅ Yes |
+| Abubakar Cooperative Plot B | Sahel Seeds Co-op | Maize | Standard | ❌ No |
+
+### Products (4 total)
+
+**Ake Collective:** NPK Fertilizer 20-10-10 (bag), Certified Soybean Seed (kg), Woven Polypropylene Bag 50kg (piece)
+
+**Agro Foods Nigeria Ltd:** Urea Fertilizer 46% (bag)
+
+### Inventory
+
+One record per product with realistic quantities and low-stock thresholds. Certified Soybean Seed is intentionally seeded below threshold to demonstrate the low-stock alert.
+
+### Purchase Orders (2 — Ake Collective)
+
+- AKE-PO-2026-001 — Kano Agro Inputs Ltd — delivered
+- AKE-PO-2026-002 — Sahel Seeds Co-op — pending
+
+### Sales Orders (1 — Ake Collective)
+
+- AKE-SO-2026-001 — Kano State Farmers Cooperative — confirmed
 
 ---
 
 ## Demo Scenario
 
-The seed data tells a coherent story:
+The seed data tells a coherent story designed to demonstrate all platform features:
 
-**Plateau Agri Collective** is an agricultural cooperative in Jos that procures soy and maize from local farmers and cooperatives. They hold an EU soy supply contract and have completed EUDR farm mapping for their primary farms. They are in the process of verifying a third farm.
+**Ake Collective** is a Pro-tier agricultural cooperative in Kano procuring fertilizer, seeds, and packaging from Nigerian suppliers. They have two farms registered — one EUDR-verified, one pending — demonstrating the compliance workflow. Their soybean seed inventory is below threshold, triggering the low-stock API endpoint. They have an active purchase order and a confirmed sales order.
 
-**Kano Grains Cooperative** is a smaller operation on the free tier, managing groundnut and sesame procurement for domestic buyers.
-
-This scenario is specifically designed to demonstrate EUDR compliance features — verified farms, pending farms, and a completed sales order to an EU buyer.
+**Agro Foods Nigeria Ltd** is a Free-tier operator in Ibadan with minimal data — useful for demonstrating tenant isolation (their data is completely invisible to Ake Collective users and vice versa).
 
 ---
 
-## Resetting Seed Data
+## Tenant Isolation Test
 
-To remove all seed data and start fresh:
+To verify tenant isolation is working:
 
-```bash
-python manage.py seed_data --reset
-```
-
-This removes only records created by the seed command — identified by a `_seed` flag in a related metadata field. It does not affect manually created records.
+1. Log in as `ake_admin` — you should see only Ake Collective's data
+2. Log in as `agro_admin` — you should see only Agro Foods data
+3. Attempt to access `http://localhost:8001/suppliers/1/` as `agro_admin` — should return 404
 
 ---
 
 ## Notes
 
 - Seed data is for development and demo only
-- Never run seed_data on a production database
-- Seed user passwords are intentionally weak — they are not valid in a production environment
-- The `--reset` flag should never be available in the production settings module
+- Never run `seed_data` on a production database
+- The `--flush` flag deletes by username and company name — it will not affect manually created records with different names
+- Seed user passwords are intentionally simple — they are not valid in a production environment

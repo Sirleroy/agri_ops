@@ -111,3 +111,11 @@ This decision directly mitigates privilege escalation via role field manipulatio
 
 - ADR 003 — Tenant Isolation Strategy
 - Design doc: `/docs/design/system-overview.md` (RBAC permission matrix)
+
+---
+
+## Phase 2 Implementation Note
+
+During Phase 2, the original Phase 1 `role` field (which held business job titles like `ceo`, `operations_manager`) was migrated to the hybrid architecture specified in this ADR. Migration `0002_add_system_role_job_title` removed the `role` field and added `system_role` (fixed choices, RBAC-bearing) and `job_title` (free text, display only). All existing users were assigned `system_role='staff'` as the safe default during migration.
+
+The permission layer is implemented in `apps/users/permissions.py` via `RoleRequiredMixin` and its subclasses (`StaffRequiredMixin`, `ManagerRequiredMixin`, `OrgAdminRequiredMixin`). The API permission layer mirrors this in `apps/api/permissions.py` via `IsTenantMember`, `IsManagerOrAbove`, and `IsOrgAdmin`.
