@@ -7,3 +7,4 @@ media/
 *.sqlite3
 .DS_Store
 agri_ops_project/settings.py
+*.log

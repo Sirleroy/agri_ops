@@ -114,3 +114,11 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS':  True,
     'AUTH_HEADER_TYPES':      ('Bearer',),
 }
+
+# ── Security defaults (dev + prod) ───────────────────────────
+SECURE_BROWSER_XSS_FILTER   = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS             = 'DENY'
+SESSION_COOKIE_HTTPONLY     = True
+CSRF_COOKIE_HTTPONLY        = True
+SESSION_COOKIE_AGE          = 28800  # 8 hours
