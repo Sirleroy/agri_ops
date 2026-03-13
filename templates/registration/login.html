@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In — AgriOps</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg:      '#0a0f1a',
+            surface: '#111827',
+            card:    '#131f2e',
+            border:  '#1e2d40',
+            green:   '#22c55e',
+            'green-dim': '#16a34a',
+          },
+          fontFamily: {
+            sans: ['Syne', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0a0f1a; }
+    input:-webkit-autofill {
+      -webkit-box-shadow: 0 0 0 30px #131f2e inset !important;
+      -webkit-text-fill-color: #f1f5f9 !important;
+    }
+  </style>
+</head>
+
+<body class="font-sans text-slate-100 min-h-screen bg-bg flex items-center justify-center p-4">
+
+  <div class="w-full max-w-sm">
+
+    <!-- Logo mark -->
+    <div class="flex items-center gap-3 mb-8">
+      <div class="w-9 h-9 bg-green rounded-xl flex items-center justify-center text-bg font-black text-sm">A</div>
+      <div>
+        <p class="font-bold text-slate-100 tracking-wide leading-tight">AgriOps</p>
+        <p class="text-xs font-mono text-slate-500">Supply Chain Intelligence</p>
+      </div>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-card border border-border rounded-2xl p-8">
+
+      <h1 class="text-lg font-bold text-slate-100 mb-1">Welcome back</h1>
+      <p class="text-sm text-slate-500 mb-6">Sign in to your organisation</p>
+
+      <!-- Non-field errors -->
+      {% if form.non_field_errors %}
+        <div class="mb-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20">
+          {% for error in form.non_field_errors %}
+            <p class="text-sm text-red-400 font-mono">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- Next parameter preserved -->
+      <form method="post" action="{% url 'login' %}">
+        {% csrf_token %}
+        {% if next %}
+          <input type="hidden" name="next" value="{{ next }}" />
+        {% endif %}
+
+        <!-- Username -->
+        <div class="mb-4">
+          <label class="block text-xs font-mono text-slate-400 mb-2 tracking-wide uppercase">
+            Username
+          </label>
+          <input
+            type="text"
+            name="username"
+            autofocus
+            autocomplete="username"
+            value="{{ form.username.value|default:'' }}"
+            class="w-full bg-surface border rounded-lg px-4 py-3 text-sm text-slate-100 placeholder-slate-600 outline-none transition-colors
+                   {% if form.username.errors %}border-red-500/50 focus:border-red-500{% else %}border-border focus:border-green{% endif %}"
+            placeholder="your username"
+          />
+          {% if form.username.errors %}
+            <p class="mt-1 text-xs font-mono text-red-400">{{ form.username.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Password -->
+        <div class="mb-6">
+          <label class="block text-xs font-mono text-slate-400 mb-2 tracking-wide uppercase">
+            Password
+          </label>
+          <input
+            type="password"
+            name="password"
+            autocomplete="current-password"
+            class="w-full bg-surface border rounded-lg px-4 py-3 text-sm text-slate-100 placeholder-slate-600 outline-none transition-colors
+                   {% if form.password.errors %}border-red-500/50 focus:border-red-500{% else %}border-border focus:border-green{% endif %}"
+            placeholder="••••••••"
+          />
+          {% if form.password.errors %}
+            <p class="mt-1 text-xs font-mono text-red-400">{{ form.password.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Submit -->
+        <button
+          type="submit"
+          class="w-full bg-green hover:bg-green-dim text-bg font-bold text-sm py-3 rounded-lg transition-colors tracking-wide"
+        >
+          Sign In
+        </button>
+
+      </form>
+
+    </div>
+
+    <!-- Footer -->
+    <p class="text-center text-xs font-mono text-slate-600 mt-6">
+      AgriOps · Agricultural Supply Chain Intelligence
+    </p>
+
+  </div>
+
+</body>
+</html>
