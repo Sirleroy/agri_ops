@@ -3,9 +3,10 @@ __pycache__/
 *.pyc
 *.pyo
 .env
+.git/
+.gitignore
 media/
-*.sqlite3
-.DS_Store
-agri_ops_project/settings.py
-*.log
 staticfiles/
+logs/
+*.log
+*.sqlite3

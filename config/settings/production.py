@@ -1,6 +1,17 @@
 from .base import *
 from decouple import config
+import dj_database_url
+import os
 
+# Railway injects DATABASE_URL automatically
+if os.environ.get('DATABASE_URL'):
+    DATABASES = {
+        'default': dj_database_url.parse(
+            os.environ.get('DATABASE_URL'),
+            conn_max_age=600,
+            ssl_require=True,
+        )
+    }
 DEBUG = False
 ALLOWED_HOSTS = config('ALLOWED_HOSTS').split(',')
 
