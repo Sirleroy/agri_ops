@@ -19,4 +19,6 @@ RUN pip install --upgrade pip \
 
 COPY . .
 
-RUN mkdir -p logs
+RUN mkdir -p logs static staticfiles
+
+CMD ["/bin/sh", "/app/entrypoint.sh"]
