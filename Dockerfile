@@ -25,9 +25,6 @@ RUN pip install --upgrade pip \
 # Copy project
 COPY . .
 
-# Collect static files
-RUN python manage.py collectstatic --noinput --settings=config.settings.production
-
 # Create logs directory
 RUN mkdir -p logs
 
