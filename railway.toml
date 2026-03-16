@@ -6,3 +6,4 @@ dockerfilePath = "Dockerfile"
 healthcheckPath = "/health/"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
+releaseCommand = "python manage.py migrate --noinput"

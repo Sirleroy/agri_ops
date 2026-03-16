@@ -1,7 +1,5 @@
 #!/bin/sh
 set -e
-echo "Running migrations..."
-python manage.py migrate --noinput
 echo "Starting gunicorn on port 8000..."
 exec gunicorn agri_ops_project.wsgi:application \
     --bind 0.0.0.0:8000 \
@@ -10,4 +8,3 @@ exec gunicorn agri_ops_project.wsgi:application \
     --log-level debug \
     --access-logfile - \
     --error-logfile -
-# bust Sun Mar 15 21:30:15 WAT 2026
