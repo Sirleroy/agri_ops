@@ -2,6 +2,7 @@ from .base import *
 from decouple import config
 import dj_database_url
 import os
+import logging.handlers
 
 # Railway injects DATABASE_URL automatically
 if os.environ.get('DATABASE_URL'):
@@ -62,8 +63,8 @@ LOGGING = {
     'handlers': {
         'file': {
             'level': 'WARNING',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs' / 'agriops.log',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/tmp/agriops.log',
             'formatter': 'verbose',
         },
         'console': {
