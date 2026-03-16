@@ -3,7 +3,4 @@ builder = "dockerfile"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-healthcheckPath = "/health/"
-healthcheckTimeout = 300
 restartPolicyType = "on_failure"
-releaseCommand = "python manage.py migrate --noinput"
