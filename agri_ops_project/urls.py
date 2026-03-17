@@ -8,6 +8,7 @@ urlpatterns = [
     path('health/', health_check, name='health'),
     path('admin/', admin.site.urls),
     path('api/v1/', include('apps.api.urls')),
+    path('reports/', include('apps.reports.urls', namespace='reports')),
 
     # Authentication
     path('login/', auth_views.LoginView.as_view(), name='login'),
