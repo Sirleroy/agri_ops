@@ -1,39 +1,134 @@
 {% extends 'base.html' %}
-
 {% block title %}Dashboard — AgriOps{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
-
 {% block content %}
 <div class="space-y-6">
 
-  <!-- Stats Row -->
+  <!-- Core Stats Row -->
   <div class="grid grid-cols-4 gap-4">
     <div class="bg-card border border-border rounded-xl p-5">
-      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Total Companies</p>
-      <p class="text-3xl font-black text-slate-100">—</p>
-      <p class="text-xs text-slate-500 mt-1">Registered tenants</p>
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Suppliers</p>
+      <p class="text-3xl font-black text-slate-100">{{ total_suppliers }}</p>
+      <p class="text-xs text-slate-500 mt-1">Active trading entities</p>
     </div>
     <div class="bg-card border border-border rounded-xl p-5">
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Products</p>
-      <p class="text-3xl font-black text-slate-100">—</p>
+      <p class="text-3xl font-black text-slate-100">{{ total_products }}</p>
       <p class="text-xs text-slate-500 mt-1">Active SKUs</p>
     </div>
     <div class="bg-card border border-border rounded-xl p-5">
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Purchase Orders</p>
-      <p class="text-3xl font-black text-slate-100">—</p>
+      <p class="text-3xl font-black text-slate-100">{{ total_purchase_orders }}</p>
       <p class="text-xs text-slate-500 mt-1">All time</p>
     </div>
     <div class="bg-card border border-border rounded-xl p-5">
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Sales Orders</p>
-      <p class="text-3xl font-black text-slate-100">—</p>
+      <p class="text-3xl font-black text-slate-100">{{ total_sales_orders }}</p>
       <p class="text-xs text-slate-500 mt-1">All time</p>
     </div>
   </div>
 
-  <!-- Placeholder message -->
-  <div class="bg-card border border-border rounded-xl p-8 text-center">
-    <p class="text-green font-mono text-sm tracking-widest uppercase mb-2">Phase 2</p>
-    <p class="text-slate-400 text-sm">Live stats, charts, and recent activity will populate here as data flows in.</p>
+  <!-- Second Stats Row -->
+  <div class="grid grid-cols-4 gap-4">
+    <div class="bg-card border border-border rounded-xl p-5">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Farms</p>
+      <p class="text-3xl font-black text-slate-100">{{ total_farms }}</p>
+      <p class="text-xs text-slate-500 mt-1">Registered plots</p>
+    </div>
+    <div class="bg-card border border-border rounded-xl p-5">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Team Members</p>
+      <p class="text-3xl font-black text-slate-100">{{ total_users }}</p>
+      <p class="text-xs text-slate-500 mt-1">Active users</p>
+    </div>
+    <div class="bg-card border border-border rounded-xl p-5">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Low Stock</p>
+      <p class="text-3xl font-black {% if low_stock_count > 0 %}text-yellow-400{% else %}text-slate-100{% endif %}">
+        {{ low_stock_count }}
+      </p>
+      <p class="text-xs text-slate-500 mt-1">Items below threshold</p>
+    </div>
+    <div class="bg-card border border-border rounded-xl p-5">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">EUDR Expiring</p>
+      <p class="text-3xl font-black {% if farms_expiring_soon > 0 %}text-orange-400{% else %}text-slate-100{% endif %}">
+        {{ farms_expiring_soon }}
+      </p>
+      <p class="text-xs text-slate-500 mt-1">Within 30 days</p>
+    </div>
+  </div>
+
+  <!-- EUDR Compliance Panel + Recent Activity -->
+  <div class="grid grid-cols-3 gap-4">
+
+    <!-- EUDR Compliance Status -->
+    <div class="bg-card border border-border rounded-xl p-5">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">EUDR Compliance</p>
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-green flex-shrink-0"></span>
+            <span class="text-sm text-slate-300">Verified</span>
+          </div>
+          <span class="text-sm font-bold text-green">{{ farms_verified }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-slate-500 flex-shrink-0"></span>
+            <span class="text-sm text-slate-300">Pending</span>
+          </div>
+          <span class="text-sm font-bold text-slate-400">{{ farms_pending }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-red-400 flex-shrink-0"></span>
+            <span class="text-sm text-slate-300">High Risk</span>
+          </div>
+          <span class="text-sm font-bold text-red-400">{{ farms_high_risk }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0"></span>
+            <span class="text-sm text-slate-300">Expiring Soon</span>
+          </div>
+          <span class="text-sm font-bold text-orange-400">{{ farms_expiring_soon }}</span>
+        </div>
+      </div>
+      <div class="mt-4 pt-4 border-t border-border">
+        <a href="{% url 'suppliers:farm_list' %}"
+           class="text-xs font-mono text-green hover:text-green-dim transition-colors">
+          View all farms →
+        </a>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="col-span-2 bg-card border border-border rounded-xl p-5">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Recent Activity</p>
+      {% if recent_activity %}
+      <div class="space-y-2">
+        {% for log in recent_activity %}
+        <div class="flex items-center justify-between py-2 border-b border-border last:border-0">
+          <div class="flex items-center gap-3">
+            <span class="px-2 py-0.5 rounded text-xs font-mono
+              {% if log.action == 'create' %}bg-green/10 text-green
+              {% elif log.action == 'update' %}bg-blue-500/10 text-blue-400
+              {% else %}bg-red-500/10 text-red-400{% endif %}">
+              {{ log.action }}
+            </span>
+            <span class="text-sm text-slate-300">{{ log.model_name }}</span>
+            <span class="text-xs text-slate-500 truncate max-w-32">{{ log.object_repr }}</span>
+          </div>
+          <div class="flex items-center gap-3 flex-shrink-0">
+            <span class="text-xs text-slate-500">{{ log.user.username }}</span>
+            <span class="text-xs text-slate-600 font-mono">{{ log.timestamp|date:"d M H:i" }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-sm text-slate-500">No activity recorded yet.</p>
+      {% endif %}
+    </div>
+
   </div>
 
 </div>
