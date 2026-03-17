@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgriOps — Agricultural Supply Chain Intelligence</title>
+  <meta name="description" content="From farm to market — traceable, compliant, intelligent. AgriOps is the supply chain platform built for African agricultural SMEs and cooperatives.">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg: #080d14;
+      --surface: #0f1923;
+      --card: #131f2e;
+      --border: #1e2d40;
+      --green: #22c55e;
+      --green-dim: #16a34a;
+      --green-glow: rgba(34,197,94,0.15);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: #e2e8f0;
+      font-family: 'Lora', Georgia, serif;
+      overflow-x: hidden;
+    }
+
+    /* Grid background */
+    .grid-bg {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(34,197,94,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34,197,94,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+    }
+
+    /* Glow orbs */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+    }
+
+    /* Scroll reveal */
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Stagger delays */
+    .delay-1 { transition-delay: 0.1s; }
+    .delay-2 { transition-delay: 0.2s; }
+    .delay-3 { transition-delay: 0.3s; }
+    .delay-4 { transition-delay: 0.4s; }
+
+    /* Hero text animation */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(32px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .hero-animate { animation: fadeUp 0.9s ease forwards; }
+    .hero-animate-2 { animation: fadeUp 0.9s ease 0.2s forwards; opacity: 0; }
+    .hero-animate-3 { animation: fadeUp 0.9s ease 0.4s forwards; opacity: 0; }
+    .hero-animate-4 { animation: fadeUp 0.9s ease 0.6s forwards; opacity: 0; }
+
+    /* Nav */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      background: rgba(8,13,20,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Feature card hover */
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+    .feature-card:hover {
+      border-color: rgba(34,197,94,0.4);
+      transform: translateY(-4px);
+    }
+
+    /* Stat card */
+    .stat-card {
+      background: linear-gradient(135deg, var(--card), var(--surface));
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--green), transparent);
+    }
+
+    /* CTA button */
+    .btn-primary {
+      background: var(--green);
+      color: #080d14;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 14px 28px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-primary:hover {
+      background: var(--green-dim);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: #94a3b8;
+      font-family: 'Syne', sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      padding: 14px 28px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-secondary:hover {
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    /* Form */
+    input[type="text"], input[type="email"] {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-family: 'Lora', serif;
+      font-size: 14px;
+      padding: 12px 16px;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      border-color: var(--green);
+    }
+    input::placeholder { color: #475569; }
+
+    /* Tag */
+    .tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      color: var(--green);
+      background: rgba(34,197,94,0.1);
+      border: 1px solid rgba(34,197,94,0.2);
+      padding: 4px 10px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    /* Ticker */
+    .live-dot {
+      width: 7px; height: 7px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+      display: inline-block;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* Divider */
+    .section-divider {
+      width: 40px; height: 2px;
+      background: var(--green);
+      margin: 16px 0 24px;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div style="max-width:1200px; margin:0 auto; padding:0 24px; height:64px; display:flex; align-items:center; justify-content:space-between;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div style="width:32px;height:32px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+        <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:#080d14;">A</span>
+      </div>
+      <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#f1f5f9;">AgriOps</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span class="live-dot"></span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);letter-spacing:0.1em;">LIVE AT APP.AGRIOPS.IO</span>
+      <a href="/login/" class="btn-secondary" style="padding:8px 18px;font-size:13px;">Sign In</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section style="position:relative;min-height:100vh;display:flex;align-items:center;padding:100px 24px 60px;">
+  <div class="grid-bg"></div>
+  <div class="orb" style="width:600px;height:600px;background:rgba(34,197,94,0.06);top:-200px;right:-200px;"></div>
+  <div class="orb" style="width:400px;height:400px;background:rgba(34,197,94,0.04);bottom:-100px;left:-100px;"></div>
+
+  <div style="max-width:1200px;margin:0 auto;width:100%;position:relative;z-index:1;">
+    <div style="max-width:760px;">
+      <div class="hero-animate" style="margin-bottom:20px;">
+        <span class="tag">Agricultural Supply Chain Intelligence</span>
+      </div>
+      <h1 class="hero-animate-2" style="font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(42px,6vw,72px);line-height:1.08;color:#f8fafc;margin-bottom:24px;">
+        From farm<br>
+        <span style="color:var(--green);">to market.</span><br>
+        Traceable.
+      </h1>
+      <p class="hero-animate-3" style="font-size:18px;color:#94a3b8;line-height:1.7;max-width:560px;margin-bottom:40px;">
+        AgriOps gives agricultural cooperatives and exporters real-time visibility across their supply chains — with built-in EUDR compliance, farm-level GPS traceability, and a full audit trail from field to dispatch.
+      </p>
+      <div class="hero-animate-4" style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a href="#request-access" class="btn-primary">Request Access</a>
+        <a href="/login/" class="btn-secondary">Sign In →</a>
+      </div>
+    </div>
+
+    <!-- Live stats ticker -->
+    <div class="hero-animate-4" style="margin-top:64px;display:flex;gap:32px;flex-wrap:wrap;">
+      <div>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--green);">Multi-tenant</p>
+        <p style="font-size:12px;color:#64748b;margin-top:2px;">Secure, isolated environments</p>
+      </div>
+      <div style="width:1px;background:var(--border);"></div>
+      <div>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--green);">Real-time</p>
+        <p style="font-size:12px;color:#64748b;margin-top:2px;">Supply chain visibility</p>
+      </div>
+      <div style="width:1px;background:var(--border);"></div>
+      <div>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--green);">Live</p>
+        <p style="font-size:12px;color:#64748b;margin-top:2px;">app.agriops.io</p>
+      </div>
+      <div style="width:1px;background:var(--border);"></div>
+      <div>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--green);">EUDR</p>
+        <p style="font-size:12px;color:#64748b;margin-top:2px;">Compliance ready</p>
+      </div>
+    </div>
+</section>
+
+<!-- PROBLEM -->
+<section style="padding:100px 24px;position:relative;">
+  <div style="max-width:1200px;margin:0 auto;">
+    <div class="reveal">
+      <span class="tag">The Problem</span>
+      <div class="section-divider"></div>
+      <h2 style="font-family:'Syne',sans-serif;font-weight:700;font-size:clamp(28px,4vw,44px);color:#f8fafc;margin-bottom:16px;">
+        African agri-SMEs are flying blind
+      </h2>
+      <p style="font-size:16px;color:#94a3b8;max-width:600px;line-height:1.7;">
+        Operations managed over WhatsApp and Excel. No traceability. No compliance documentation. EU buyers demanding farm-level GPS data they can't provide.
+      </p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:48px;">
+      <div class="feature-card reveal delay-1">
+        <p style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:600;color:var(--green);margin-bottom:8px;">550M+</p>
+        <p style="font-size:14px;font-weight:600;color:#f1f5f9;margin-bottom:8px;">Smallholder farmers</p>
+        <p style="font-size:13px;color:#64748b;line-height:1.6;">in Sub-Saharan Africa with zero digital supply chain traceability</p>
+      </div>
+      <div class="feature-card reveal delay-2">
+        <p style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:600;color:var(--green);margin-bottom:8px;">€2.3T</p>
+        <p style="font-size:14px;font-weight:600;color:#f1f5f9;margin-bottom:8px;">Global agri-food trade</p>
+        <p style="font-size:13px;color:#64748b;line-height:1.6;">at risk of EUDR non-compliance — the regulation is already in force</p>
+      </div>
+      <div class="feature-card reveal delay-3">
+        <p style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:600;color:var(--green);margin-bottom:8px;">$0</p>
+        <p style="font-size:14px;font-weight:600;color:#f1f5f9;margin-bottom:8px;">Affordable solutions</p>
+        <p style="font-size:13px;color:#64748b;line-height:1.6;">purpose-built for agricultural SMEs in emerging markets at an accessible price</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section style="padding:100px 24px;background:var(--surface);position:relative;">
+  <div class="grid-bg" style="opacity:0.5;"></div>
+  <div style="max-width:1200px;margin:0 auto;position:relative;z-index:1;">
+    <div class="reveal" style="text-align:center;margin-bottom:60px;">
+      <span class="tag">The Platform</span>
+      <div class="section-divider" style="margin:16px auto 24px;"></div>
+      <h2 style="font-family:'Syne',sans-serif;font-weight:700;font-size:clamp(28px,4vw,44px);color:#f8fafc;">
+        Everything your supply chain needs
+      </h2>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">
+
+      <div class="feature-card reveal delay-1">
+        <div style="width:40px;height:40px;background:rgba(34,197,94,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+          <svg width="20" height="20" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </div>
+        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#f1f5f9;margin-bottom:8px;">Farm GPS Mapping</h3>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;">SW Maps integration — walk the farm boundary, export GeoJSON, upload to AgriOps. Farm-level coordinates stored per commodity batch.</p>
+      </div>
+
+      <div class="feature-card reveal delay-2">
+        <div style="width:40px;height:40px;background:rgba(34,197,94,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+          <svg width="20" height="20" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        </div>
+        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#f1f5f9;margin-bottom:8px;">EUDR Compliance</h3>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;">Deforestation risk classification, verification tracking, document vault, and expiry alerts. Compliance report PDF generated on demand.</p>
+      </div>
+
+      <div class="feature-card reveal delay-3">
+        <div style="width:40px;height:40px;background:rgba(34,197,94,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+          <svg width="20" height="20" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        </div>
+        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#f1f5f9;margin-bottom:8px;">Full Traceability Chain</h3>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;">Farm → Supplier → Inventory → Purchase Order → Sales Order. Every step recorded, every actor logged, complete audit trail.</p>
+      </div>
+
+      <div class="feature-card reveal delay-1">
+        <div style="width:40px;height:40px;background:rgba(34,197,94,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+          <svg width="20" height="20" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+        </div>
+        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#f1f5f9;margin-bottom:8px;">Multi-Tenant Security</h3>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;">Each organisation gets a completely isolated environment. Role-based access control — org admin, manager, staff, viewer. Audit log on every write.</p>
+      </div>
+
+      <div class="feature-card reveal delay-2">
+        <div style="width:40px;height:40px;background:rgba(34,197,94,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+          <svg width="20" height="20" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        </div>
+        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#f1f5f9;margin-bottom:8px;">REST API</h3>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;">JWT-authenticated, tenant-scoped API. EUDR pending farms, low-stock alerts, and full supply chain data available programmatically.</p>
+      </div>
+
+      <div class="feature-card reveal delay-3">
+        <div style="width:40px;height:40px;background:rgba(34,197,94,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+          <svg width="20" height="20" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        </div>
+        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#f1f5f9;margin-bottom:8px;">Smart Alerts</h3>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;">Low stock notifications, EUDR verification expiry warnings, and team alerts delivered by email to the right people automatically.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- EUDR SECTION -->
+<section style="padding:100px 24px;">
+  <div style="max-width:1200px;margin:0 auto;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;">
+      <div class="reveal">
+        <span class="tag">EUDR Ready</span>
+        <div class="section-divider"></div>
+        <h2 style="font-family:'Syne',sans-serif;font-weight:700;font-size:clamp(28px,3.5vw,40px);color:#f8fafc;margin-bottom:20px;">
+          The EU Deforestation Regulation is in force.<br>
+          <span style="color:var(--green);">Are your suppliers ready?</span>
+        </h2>
+        <p style="font-size:15px;color:#94a3b8;line-height:1.8;margin-bottom:24px;">
+          EUDR Regulation 2023/1115 requires operators placing soy, cocoa, coffee, palm oil, cattle, wood, and rubber on the EU market to prove their commodities did not contribute to deforestation. That proof starts at the farm boundary.
+        </p>
+        <p style="font-size:15px;color:#94a3b8;line-height:1.8;">
+          AgriOps collects, stores, and presents that proof — farm GPS coordinates, risk classifications, verification status, and compliance documents — in a format EU buyers and auditors can act on.
+        </p>
+      </div>
+      <div class="reveal delay-2">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:32px;">
+          <p style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);letter-spacing:0.2em;margin-bottom:20px;">EUDR COMPLIANCE STATUS</p>
+          <div style="space-y:12px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:var(--green);"></div>
+                <span style="font-size:14px;color:#e2e8f0;">Verified farms</span>
+              </div>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--green);">24</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:#f59e0b;"></div>
+                <span style="font-size:14px;color:#e2e8f0;">Pending verification</span>
+              </div>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:14px;color:#f59e0b;">8</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:#ef4444;"></div>
+                <span style="font-size:14px;color:#e2e8f0;">High risk</span>
+              </div>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:14px;color:#ef4444;">2</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:#f97316;"></div>
+                <span style="font-size:14px;color:#e2e8f0;">Expiring (30 days)</span>
+              </div>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:14px;color:#f97316;">3</span>
+            </div>
+          </div>
+          <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <svg width="14" height="14" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <span style="font-size:12px;color:var(--green);font-family:'JetBrains Mono',monospace;">Compliance PDF — download on demand</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section style="padding:100px 24px;background:var(--surface);">
+  <div style="max-width:700px;margin:0 auto;text-align:center;">
+    <div class="reveal">
+      <span class="tag">Pricing</span>
+      <div class="section-divider" style="margin:16px auto 24px;"></div>
+      <h2 style="font-family:'Syne',sans-serif;font-weight:700;font-size:clamp(28px,4vw,44px);color:#f8fafc;margin-bottom:16px;">
+        Transparent pricing coming soon
+      </h2>
+      <p style="font-size:16px;color:#64748b;line-height:1.8;margin-bottom:32px;">
+        We are currently in closed beta working directly with agricultural cooperatives and exporters to understand what pricing model works best for the market. Pricing will be published here when we launch publicly.
+      </p>
+      <p style="font-size:14px;color:#94a3b8;line-height:1.7;">
+        If you want to discuss pricing for your organisation, request access below and we will reach out directly.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- REQUEST ACCESS -->
+<section id="request-access" style="padding:100px 24px;">
+  <div style="max-width:600px;margin:0 auto;text-align:center;">
+    <div class="reveal">
+      <span class="tag">Early Access</span>
+      <div class="section-divider" style="margin:16px auto 24px;"></div>
+      <h2 style="font-family:'Syne',sans-serif;font-weight:700;font-size:clamp(28px,4vw,40px);color:#f8fafc;margin-bottom:16px;">
+        Request access
+      </h2>
+      <p style="font-size:15px;color:#64748b;line-height:1.7;margin-bottom:40px;">
+        AgriOps is currently in closed beta. Leave your details and we'll be in touch within 48 hours.
+      </p>
+    </div>
+    <div class="reveal delay-1" style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:36px;text-align:left;">
+      <form id="access-form" style="display:flex;flex-direction:column;gap:16px;">
+        {% csrf_token %}
+        <div>
+          <label style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#64748b;letter-spacing:0.15em;display:block;margin-bottom:8px;">FULL NAME</label>
+          <input type="text" name="name" placeholder="Ezinna Ohah" required>
+        </div>
+        <div>
+          <label style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#64748b;letter-spacing:0.15em;display:block;margin-bottom:8px;">EMAIL ADDRESS</label>
+          <input type="email" name="email" placeholder="you@yourcompany.com" required>
+        </div>
+        <div>
+          <label style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#64748b;letter-spacing:0.15em;display:block;margin-bottom:8px;">ORGANISATION</label>
+          <input type="text" name="company" placeholder="Your cooperative or company">
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%;text-align:center;padding:14px;">
+          Request Access →
+        </button>
+        <p id="form-msg" style="font-size:13px;color:var(--green);text-align:center;display:none;"></p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer style="border-top:1px solid var(--border);padding:40px 24px;">
+  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:28px;height:28px;background:var(--green);border-radius:6px;display:flex;align-items:center;justify-content:center;">
+        <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:12px;color:#080d14;">A</span>
+      </div>
+      <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#94a3b8;">AgriOps</span>
+    </div>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;">
+      <a href="/login/" style="font-size:13px;color:#64748b;text-decoration:none;">Sign In</a>
+      <a href="https://docs.agriops.io" style="font-size:13px;color:#64748b;text-decoration:none;">Docs</a>
+      <a href="https://api.agriops.io/api/v1/" style="font-size:13px;color:#64748b;text-decoration:none;">API</a>
+    </div>
+    <p style="font-size:12px;color:#334155;font-family:'JetBrains Mono',monospace;">
+      © 2026 AgriOps · Agricultural Supply Chain Intelligence
+    </p>
+  </div>
+</footer>
+
+<script>
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // Request access form
+  document.getElementById('access-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const msg = document.getElementById('form-msg');
+    msg.textContent = '✓ Request received. We will be in touch within 48 hours.';
+    msg.style.display = 'block';
+    this.reset();
+  });
+</script>
+
+</body>
+</html>
