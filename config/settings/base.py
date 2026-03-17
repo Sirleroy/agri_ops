@@ -16,6 +16,8 @@ INSTALLED_APPS = [
     # Third party
     'rest_framework',
     'django_filters',
+    'axes',
+    'corsheaders',
 
     # Local apps
     'apps.companies',
@@ -31,6 +33,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -39,6 +42,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'axes.middleware.AxesMiddleware',
 ]
 
 ROOT_URLCONF = 'agri_ops_project.urls'
@@ -138,3 +142,25 @@ SESSION_COOKIE_AGE          = 28800  # 8 hours
 STATIC_URL  = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# ── django-axes — brute force protection ─────────────────────
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1  # hours
+AXES_LOCKOUT_PARAMETERS = ['username', 'ip_address']
+AXES_RESET_ON_SUCCESS = True
+AXES_LOCKOUT_TEMPLATE = None
+AXES_VERBOSE = False
+
+# ── CORS ─────────────────────────────────────────────────────
+CORS_ALLOWED_ORIGINS = [
+    'https://app.agriops.io',
+    'https://api.agriops.io',
+    'http://localhost:3000',
+    'http://localhost:8001',
+]
+CORS_ALLOW_CREDENTIALS = True
+
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
