@@ -224,7 +224,7 @@
     <div style="display:flex;align-items:center;gap:12px;">
       <span class="live-dot"></span>
       <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);letter-spacing:0.1em;">LIVE AT APP.AGRIOPS.IO</span>
-      <a href="/login/" class="btn-secondary" style="padding:8px 18px;font-size:13px;">Sign In</a>
+      {% if user.is_authenticated %}<a href="/dashboard/" class="btn-primary" style="padding:8px 18px;font-size:13px;">Dashboard</a>{% else %}<a href="/login/" class="btn-secondary" style="padding:8px 18px;font-size:13px;">Sign In</a>{% endif %}
     </div>
   </div>
 </nav>
@@ -250,7 +250,7 @@
       </p>
       <div class="hero-animate-4" style="display:flex;gap:12px;flex-wrap:wrap;">
         <a href="#request-access" class="btn-primary">Request Access</a>
-        <a href="/login/" class="btn-secondary">Sign In →</a>
+        {% if user.is_authenticated %}<a href="/dashboard/" class="btn-secondary">Go to Dashboard →</a>{% else %}<a href="/login/" class="btn-secondary">Sign In →</a>{% endif %}
       </div>
     </div>
 
@@ -507,7 +507,7 @@
       <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#94a3b8;">AgriOps</span>
     </div>
     <div style="display:flex;gap:24px;flex-wrap:wrap;">
-      <a href="/login/" style="font-size:13px;color:#64748b;text-decoration:none;">Sign In</a>
+      {% if user.is_authenticated %}<a href="/dashboard/" style="font-size:13px;color:#64748b;text-decoration:none;">Dashboard</a>{% else %}<a href="/login/" style="font-size:13px;color:#64748b;text-decoration:none;">Sign In</a>{% endif %}
       <a href="https://docs.agriops.io" style="font-size:13px;color:#64748b;text-decoration:none;">Docs</a>
       <a href="https://api.agriops.io/api/v1/" style="font-size:13px;color:#64748b;text-decoration:none;">API</a>
     </div>

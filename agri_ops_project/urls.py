@@ -1,3 +1,4 @@
+from apps.dashboard.landing import LandingView
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
@@ -5,6 +6,7 @@ from django.urls import path, include
 from agri_ops_project.health import health_check
 
 urlpatterns = [
+    path('', LandingView.as_view(), name='landing'),
     path('health/', health_check, name='health'),
     path('admin/', admin.site.urls),
     path('api/v1/', include('apps.api.urls')),

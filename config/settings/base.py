@@ -168,3 +168,8 @@ AUTHENTICATION_BACKENDS = [
 # ── Email ─────────────────────────────────────────────────────
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'AgriOps <noreply@agriops.io>'
+
+# ── Auth redirects ────────────────────────────────────────────
+LOGIN_REDIRECT_URL = '/dashboard/'
+LOGIN_URL = '/login/'
+LOGOUT_REDIRECT_URL = '/login/'
