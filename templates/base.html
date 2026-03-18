@@ -109,7 +109,7 @@
           ? (mobileOpen ? 'position:fixed;left:0;top:0;bottom:0;z-index:40;' : 'position:fixed;left:-224px;top:0;bottom:0;z-index:40;')
           : 'position:relative;'
       "
-      :class="sidebarOpen ? 'w-56' : 'w-16'"
+      :class="(sidebarOpen || mobileOpen) ? 'w-56' : 'w-16'"
       class="w-56 bg-sidebar border-r border-border flex flex-col transition-all duration-300 overflow-hidden flex-shrink-0"
     >
 
