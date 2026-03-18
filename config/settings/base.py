@@ -183,3 +183,6 @@ LOGOUT_REDIRECT_URL = '/login/'
 
 # ── Site URL ──────────────────────────────────────────────────
 SITE_URL = 'http://localhost:8001'
+
+# ── Founder notifications ─────────────────────────────────────
+FOUNDER_EMAIL = 'ohahezinna@gmail.com'

@@ -4,6 +4,7 @@ from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from agri_ops_project.health import health_check
 from apps.sales_orders.batch_views import PublicTraceView
+from apps.dashboard.access_views import RequestAccessView
 
 urlpatterns = [
     path('', LandingView.as_view(), name='landing'),
@@ -12,6 +13,7 @@ urlpatterns = [
     path('api/v1/', include('apps.api.urls')),
     path('reports/', include('apps.reports.urls', namespace='reports')),
     path('trace/<uuid:token>/', PublicTraceView.as_view(), name='public_trace'),
+    path('request-access/', RequestAccessView.as_view(), name='request_access'),
 
     # Authentication
     path('login/', auth_views.LoginView.as_view(), name='login'),

@@ -474,7 +474,7 @@
       </p>
     </div>
     <div class="reveal delay-1" style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:36px;text-align:left;">
-      <form id="access-form" style="display:flex;flex-direction:column;gap:16px;">
+      <form id="access-form" method="post" action="/request-access/" style="display:flex;flex-direction:column;gap:16px;">
         {% csrf_token %}
         <div>
           <label style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#64748b;letter-spacing:0.15em;display:block;margin-bottom:8px;">FULL NAME</label>
@@ -534,9 +534,30 @@
   document.getElementById('access-form').addEventListener('submit', function(e) {
     e.preventDefault();
     const msg = document.getElementById('form-msg');
-    msg.textContent = '✓ Request received. We will be in touch within 48 hours.';
-    msg.style.display = 'block';
-    this.reset();
+    const btn = this.querySelector('button[type="submit"]');
+    btn.textContent = 'Submitting...';
+    btn.disabled = true;
+
+    fetch('/request-access/', {
+      method: 'POST',
+      body: new FormData(this),
+      headers: { 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '' }
+    })
+    .then(r => r.json())
+    .then(data => {
+      msg.textContent = data.message || '✓ Request received.';
+      msg.style.display = 'block';
+      msg.style.color = data.error ? '#ef4444' : '#22c55e';
+      if (!data.error) this.reset();
+      btn.textContent = 'Request Access →';
+      btn.disabled = false;
+    })
+    .catch(() => {
+      msg.textContent = 'Something went wrong. Please try again.';
+      msg.style.display = 'block';
+      btn.textContent = 'Request Access →';
+      btn.disabled = false;
+    });
   });
 </script>
 
