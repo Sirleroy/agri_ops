@@ -116,11 +116,17 @@ def _farm_status_color(farm):
     return YELLOW_LIGHT, colors.HexColor("#ca8a04")
 
 
-def generate_compliance_report(company, user):
+def generate_compliance_report(company, user, filters=None):
     """
     Generate a PDF compliance report for the given company.
+    Accepts optional filters dict:
+      - sales_order: SalesOrder instance — filter to a single order
+      - date_from: date — filter purchase/sales orders from this date
+      - date_to: date — filter purchase/sales orders to this date
     Returns a BytesIO buffer ready to stream as HTTP response.
     """
+    if filters is None:
+        filters = {}
     from apps.suppliers.models import Supplier, Farm
     from apps.purchase_orders.models import PurchaseOrder
     from apps.sales_orders.models import SalesOrder
@@ -139,6 +145,22 @@ def generate_compliance_report(company, user):
     # ── Header ────────────────────────────────────────────────
     story.append(_header_table(company, user.get_full_name() or user.username, st))
     story.append(HRFlowable(width="100%", thickness=1, color=GREEN, spaceAfter=4*mm))
+
+    # Filter summary banner
+    if filters:
+        filter_parts = []
+        if filters.get('sales_order'):
+            filter_parts.append(f"Sales Order: {filters['sales_order'].order_number}")
+        if filters.get('date_from'):
+            filter_parts.append(f"From: {filters['date_from']}")
+        if filters.get('date_to'):
+            filter_parts.append(f"To: {filters['date_to']}")
+        if filter_parts:
+            story.append(Paragraph(
+                f"Filter applied: {' · '.join(filter_parts)}",
+                ParagraphStyle("filter", fontName="Helvetica", fontSize=9,
+                               textColor=GREEN, spaceAfter=4*mm)
+            ))
 
     # ── Company summary ───────────────────────────────────────
     story.append(Paragraph("1. Operator Details", st["section"]))
@@ -214,7 +236,23 @@ def generate_compliance_report(company, user):
         story.append(Spacer(1, 4*mm))
 
     # ── Purchase orders ───────────────────────────────────────
-    pos = PurchaseOrder.objects.filter(company=company).select_related("supplier").order_by("-created_at")[:20]
+    # ── Apply filters to orders ───────────────────────────────
+    po_qs = PurchaseOrder.objects.filter(company=company).select_related("supplier").order_by("-created_at")
+    so_qs = SalesOrder.objects.filter(company=company).order_by("-created_at")
+
+    if filters.get('sales_order'):
+        so_qs = so_qs.filter(pk=filters['sales_order'].pk)
+        po_qs = po_qs.none()
+
+    if filters.get('date_from'):
+        po_qs = po_qs.filter(order_date__gte=filters['date_from'])
+        so_qs = so_qs.filter(order_date__gte=filters['date_from'])
+
+    if filters.get('date_to'):
+        po_qs = po_qs.filter(order_date__lte=filters['date_to'])
+        so_qs = so_qs.filter(order_date__lte=filters['date_to'])
+
+    pos = po_qs[:20]
     story.append(Paragraph("4. Recent Purchase Orders", st["section"]))
     if pos.exists():
         po_data = [["Order Number", "Supplier", "Status", "Order Date"]]
@@ -242,7 +280,7 @@ def generate_compliance_report(company, user):
         story.append(Paragraph("No purchase orders recorded.", st["body"]))
 
     # ── Sales orders ──────────────────────────────────────────
-    sos = SalesOrder.objects.filter(company=company).order_by("-created_at")[:20]
+    sos = so_qs[:20]
     story.append(Paragraph("5. Recent Sales Orders", st["section"]))
     if sos.exists():
         so_data = [["Order Number", "Customer", "Status", "Order Date"]]
