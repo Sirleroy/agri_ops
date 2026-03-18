@@ -3,10 +3,12 @@ AgriOps Email Notifications
 Called from management commands or views.
 All emails are tenant-scoped and plain-text + HTML.
 """
+import html
 from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
 from django.utils import timezone
-from datetime import timedelta
+
+SITE_URL = getattr(settings, 'SITE_URL', 'https://app.agriops.io')
 
 
 def _send(subject, body_text, body_html, recipient_list):
@@ -20,10 +22,16 @@ def _send(subject, body_text, body_html, recipient_list):
     msg.send(fail_silently=False)
 
 
+def _e(value):
+    """HTML-escape a value for safe interpolation into email templates."""
+    return html.escape(str(value))
+
+
 # ── Low Stock Alert ───────────────────────────────────────────
 def send_low_stock_alert(inventory_item, recipient_emails):
     product = inventory_item.product
     subject = f"[AgriOps] Low Stock Alert — {product.name}"
+    inventory_url = f"{SITE_URL}/inventory/"
 
     body_text = (
         f"Low Stock Alert\n\n"
@@ -32,7 +40,7 @@ def send_low_stock_alert(inventory_item, recipient_emails):
         f"Low Stock Threshold: {inventory_item.low_stock_threshold} {product.unit}\n"
         f"Warehouse: {inventory_item.warehouse_location or 'Not specified'}\n\n"
         f"Please reorder to avoid supply disruption.\n\n"
-        f"View inventory: https://app.agriops.io/inventory/\n\n"
+        f"View inventory: {inventory_url}\n\n"
         f"AgriOps · app.agriops.io"
     )
 
@@ -45,29 +53,29 @@ def send_low_stock_alert(inventory_item, recipient_emails):
       <div style="background: #ffffff; padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
         <div style="background: #fef9c3; border: 1px solid #fde047; border-radius: 6px; padding: 12px 16px; margin-bottom: 20px;">
           <p style="margin: 0; color: #854d0e; font-size: 13px;">
-            ⚠ <strong>{product.name}</strong> is below the minimum stock threshold.
+            ⚠ <strong>{_e(product.name)}</strong> is below the minimum stock threshold.
           </p>
         </div>
         <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
           <tr style="background: #f8fafc;">
             <td style="padding: 8px 12px; color: #64748b; font-weight: bold; width: 40%;">Product</td>
-            <td style="padding: 8px 12px; color: #1e293b;">{product.name}</td>
+            <td style="padding: 8px 12px; color: #1e293b;">{_e(product.name)}</td>
           </tr>
           <tr>
             <td style="padding: 8px 12px; color: #64748b; font-weight: bold;">Current Quantity</td>
-            <td style="padding: 8px 12px; color: #ef4444; font-weight: bold;">{inventory_item.quantity} {product.unit}</td>
+            <td style="padding: 8px 12px; color: #ef4444; font-weight: bold;">{_e(inventory_item.quantity)} {_e(product.unit)}</td>
           </tr>
           <tr style="background: #f8fafc;">
             <td style="padding: 8px 12px; color: #64748b; font-weight: bold;">Threshold</td>
-            <td style="padding: 8px 12px; color: #1e293b;">{inventory_item.low_stock_threshold} {product.unit}</td>
+            <td style="padding: 8px 12px; color: #1e293b;">{_e(inventory_item.low_stock_threshold)} {_e(product.unit)}</td>
           </tr>
           <tr>
             <td style="padding: 8px 12px; color: #64748b; font-weight: bold;">Warehouse</td>
-            <td style="padding: 8px 12px; color: #1e293b;">{inventory_item.warehouse_location or 'Not specified'}</td>
+            <td style="padding: 8px 12px; color: #1e293b;">{_e(inventory_item.warehouse_location or 'Not specified')}</td>
           </tr>
         </table>
         <div style="margin-top: 24px;">
-          <a href="https://app.agriops.io/inventory/"
+          <a href="{inventory_url}"
              style="background: #22c55e; color: #0a0f1a; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px;">
             View Inventory
           </a>
@@ -83,8 +91,13 @@ def send_low_stock_alert(inventory_item, recipient_emails):
 
 # ── EUDR Expiry Warning ───────────────────────────────────────
 def send_eudr_expiry_warning(farm, recipient_emails):
+    # Fix 1 — guard against None verification_expiry
+    if not farm.verification_expiry:
+        return
+
     days_left = (farm.verification_expiry - timezone.now().date()).days
     subject = f"[AgriOps] EUDR Verification Expiring — {farm.name} ({days_left} days)"
+    farm_url = f"{SITE_URL}/suppliers/farms/{farm.pk}/edit/"
 
     body_text = (
         f"EUDR Verification Expiry Warning\n\n"
@@ -93,9 +106,8 @@ def send_eudr_expiry_warning(farm, recipient_emails):
         f"Commodity: {farm.commodity}\n"
         f"Expiry Date: {farm.verification_expiry}\n"
         f"Days Remaining: {days_left}\n\n"
-        f"Please renew the EUDR verification before the expiry date "
-        f"to maintain compliance status.\n\n"
-        f"View farm: https://app.agriops.io/suppliers/farms/{farm.pk}/\n\n"
+        f"Please renew the EUDR verification before the expiry date.\n\n"
+        f"Renew: {farm_url}\n\n"
         f"AgriOps · app.agriops.io"
     )
 
@@ -108,25 +120,25 @@ def send_eudr_expiry_warning(farm, recipient_emails):
       <div style="background: #ffffff; padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
         <div style="background: #ffedd5; border: 1px solid #fb923c; border-radius: 6px; padding: 12px 16px; margin-bottom: 20px;">
           <p style="margin: 0; color: #9a3412; font-size: 13px;">
-            📅 <strong>{farm.name}</strong> EUDR verification expires in <strong>{days_left} days</strong>.
+            📅 <strong>{_e(farm.name)}</strong> EUDR verification expires in <strong>{days_left} days</strong>.
           </p>
         </div>
         <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
           <tr style="background: #f8fafc;">
             <td style="padding: 8px 12px; color: #64748b; font-weight: bold; width: 40%;">Farm</td>
-            <td style="padding: 8px 12px; color: #1e293b;">{farm.name}</td>
+            <td style="padding: 8px 12px; color: #1e293b;">{_e(farm.name)}</td>
           </tr>
           <tr>
             <td style="padding: 8px 12px; color: #64748b; font-weight: bold;">Supplier</td>
-            <td style="padding: 8px 12px; color: #1e293b;">{farm.supplier.name}</td>
+            <td style="padding: 8px 12px; color: #1e293b;">{_e(farm.supplier.name)}</td>
           </tr>
           <tr style="background: #f8fafc;">
             <td style="padding: 8px 12px; color: #64748b; font-weight: bold;">Commodity</td>
-            <td style="padding: 8px 12px; color: #1e293b;">{farm.commodity}</td>
+            <td style="padding: 8px 12px; color: #1e293b;">{_e(farm.commodity)}</td>
           </tr>
           <tr>
             <td style="padding: 8px 12px; color: #64748b; font-weight: bold;">Expiry Date</td>
-            <td style="padding: 8px 12px; color: #f97316; font-weight: bold;">{farm.verification_expiry}</td>
+            <td style="padding: 8px 12px; color: #f97316; font-weight: bold;">{_e(farm.verification_expiry)}</td>
           </tr>
           <tr style="background: #f8fafc;">
             <td style="padding: 8px 12px; color: #64748b; font-weight: bold;">Days Remaining</td>
@@ -134,7 +146,7 @@ def send_eudr_expiry_warning(farm, recipient_emails):
           </tr>
         </table>
         <div style="margin-top: 24px;">
-          <a href="https://app.agriops.io/suppliers/farms/{farm.pk}/edit/"
+          <a href="{farm_url}"
              style="background: #22c55e; color: #0a0f1a; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px;">
             Renew Verification
           </a>
@@ -150,6 +162,7 @@ def send_eudr_expiry_warning(farm, recipient_emails):
 
 # ── User Invitation ───────────────────────────────────────────
 def send_user_invitation(invited_user, invited_by, temporary_password):
+    login_url = f"{SITE_URL}/login/"
     subject = f"[AgriOps] You have been invited to {invited_by.company.name}"
 
     body_text = (
@@ -159,7 +172,7 @@ def send_user_invitation(invited_user, invited_by, temporary_password):
         f"Your username: {invited_user.username}\n"
         f"Temporary password: {temporary_password}\n\n"
         f"Please log in and change your password immediately.\n\n"
-        f"Login: https://app.agriops.io/login/\n\n"
+        f"Login: {login_url}\n\n"
         f"AgriOps · app.agriops.io"
     )
 
@@ -171,22 +184,22 @@ def send_user_invitation(invited_user, invited_by, temporary_password):
       </div>
       <div style="background: #ffffff; padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
         <p style="color: #1e293b; font-size: 14px;">
-          <strong>{invited_by.get_full_name() or invited_by.username}</strong> has invited you to join
-          <strong>{invited_by.company.name}</strong> on AgriOps.
+          <strong>{_e(invited_by.get_full_name() or invited_by.username)}</strong> has invited you to join
+          <strong>{_e(invited_by.company.name)}</strong> on AgriOps.
         </p>
         <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 16px; margin: 20px 0;">
           <table style="width: 100%; font-size: 13px;">
             <tr>
               <td style="color: #64748b; font-weight: bold; padding: 4px 0; width: 40%;">Username</td>
-              <td style="color: #1e293b; font-family: monospace;">{invited_user.username}</td>
+              <td style="color: #1e293b; font-family: monospace;">{_e(invited_user.username)}</td>
             </tr>
             <tr>
               <td style="color: #64748b; font-weight: bold; padding: 4px 0;">Temporary Password</td>
-              <td style="color: #1e293b; font-family: monospace;">{temporary_password}</td>
+              <td style="color: #1e293b; font-family: monospace;">{_e(temporary_password)}</td>
             </tr>
             <tr>
               <td style="color: #64748b; font-weight: bold; padding: 4px 0;">Organisation</td>
-              <td style="color: #1e293b;">{invited_by.company.name}</td>
+              <td style="color: #1e293b;">{_e(invited_by.company.name)}</td>
             </tr>
           </table>
         </div>
@@ -195,7 +208,7 @@ def send_user_invitation(invited_user, invited_by, temporary_password):
             ⚠ Please change your password immediately after first login.
           </p>
         </div>
-        <a href="https://app.agriops.io/login/"
+        <a href="{login_url}"
            style="background: #22c55e; color: #0a0f1a; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px;">
           Log In to AgriOps
         </a>

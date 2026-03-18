@@ -2,7 +2,6 @@ from apps.dashboard.landing import LandingView
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
-from django.urls import path, include
 from agri_ops_project.health import health_check
 
 urlpatterns = [

@@ -89,3 +89,6 @@ LOGGING = {
         },
     },
 }
+
+# ── Site URL ──────────────────────────────────────────────────
+SITE_URL = 'https://app.agriops.io'

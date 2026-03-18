@@ -139,7 +139,6 @@ CSRF_COOKIE_HTTPONLY        = True
 SESSION_COOKIE_AGE          = 28800  # 8 hours
 
 # ── Static files ──────────────────────────────────────────────
-STATIC_URL  = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
@@ -173,3 +172,6 @@ DEFAULT_FROM_EMAIL = 'AgriOps <noreply@agriops.io>'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGIN_URL = '/login/'
 LOGOUT_REDIRECT_URL = '/login/'
+
+# ── Site URL ──────────────────────────────────────────────────
+SITE_URL = 'http://localhost:8001'

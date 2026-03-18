@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -17,11 +17,6 @@ from .permissions import IsTenantMember, IsManagerOrAbove
 
 
 class TenantScopedViewSet(viewsets.ModelViewSet):
-    """
-    Base viewset — all querysets auto-filtered to request.user.company.
-    Writes are logged to AuditLog.
-    Deletes require Manager or above.
-    """
     permission_classes = [IsTenantMember]
 
     def get_queryset(self):
@@ -32,7 +27,8 @@ class TenantScopedViewSet(viewsets.ModelViewSet):
         log_action(self.request, 'create', instance)
 
     def perform_update(self, serializer):
-        instance = serializer.save()
+        # Fix 3 — explicitly pass company to prevent tenant drift
+        instance = serializer.save(company=self.request.user.company)
         log_action(self.request, 'update', instance)
 
     def perform_destroy(self, instance):
@@ -54,14 +50,12 @@ class FarmViewSet(TenantScopedViewSet):
 
     @action(detail=False, methods=['get'], url_path='eudr-pending')
     def eudr_pending(self, request):
-        """Farms not yet EUDR verified — useful for compliance dashboards."""
         qs = self.get_queryset().filter(is_eudr_verified=False)
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=['get'], url_path='high-risk')
     def high_risk(self, request):
-        """Farms flagged as high deforestation risk."""
         qs = self.get_queryset().filter(deforestation_risk_status='high')
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
@@ -78,7 +72,6 @@ class InventoryViewSet(TenantScopedViewSet):
 
     @action(detail=False, methods=['get'], url_path='low-stock')
     def low_stock(self, request):
-        """Inventory items at or below their low stock threshold."""
         from django.db.models import F
         qs = self.get_queryset().filter(quantity__lte=F('low_stock_threshold'))
         serializer = self.get_serializer(qs, many=True)
