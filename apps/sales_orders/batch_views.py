@@ -1,0 +1,175 @@
+from django.views.generic import ListView, DetailView, CreateView, UpdateView
+from django.views import View
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.urls import reverse_lazy
+from django.utils import timezone
+from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin
+from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin
+from .batch import Batch
+
+
+class BatchListView(StaffRequiredMixin, ListView):
+    model = Batch
+    template_name = 'sales_orders/batches/list.html'
+    context_object_name = 'batches'
+
+    def get_queryset(self):
+        return Batch.objects.filter(company=self.request.user.company).select_related('sales_order')
+
+
+class BatchDetailView(StaffRequiredMixin, DetailView):
+    model = Batch
+    template_name = 'sales_orders/batches/detail.html'
+    context_object_name = 'batch'
+
+    def get_object(self):
+        obj = super().get_object()
+        if obj.company != self.request.user.company:
+            from django.http import Http404
+            raise Http404
+        return obj
+
+
+class BatchCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
+    model = Batch
+    template_name = 'sales_orders/batches/form.html'
+    fields = ['sales_order', 'commodity', 'farms', 'notes']
+    success_url = reverse_lazy('sales_orders:batch_list')
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        from apps.suppliers.models import Farm
+        from apps.sales_orders.models import SalesOrder
+        company = self.request.user.company
+        form.fields['farms'].queryset = Farm.objects.filter(company=company)
+        form.fields['sales_order'].queryset = SalesOrder.objects.filter(company=company)
+        return form
+
+    def form_valid(self, form):
+        form.instance.company = self.request.user.company
+        return super().form_valid(form)
+
+
+class BatchUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
+    model = Batch
+    template_name = 'sales_orders/batches/form.html'
+    fields = ['sales_order', 'commodity', 'farms', 'notes']
+    success_url = reverse_lazy('sales_orders:batch_list')
+
+    def get_object(self):
+        obj = super().get_object()
+        if obj.company != self.request.user.company:
+            from django.http import Http404
+            raise Http404
+        return obj
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        from apps.suppliers.models import Farm
+        from apps.sales_orders.models import SalesOrder
+        company = self.request.user.company
+        form.fields['farms'].queryset = Farm.objects.filter(company=company)
+        form.fields['sales_order'].queryset = SalesOrder.objects.filter(company=company)
+        return form
+
+
+class BatchCertificateView(StaffRequiredMixin, View):
+    """Download PDF certificate for a batch."""
+    def get(self, request, pk):
+        batch = get_object_or_404(Batch, pk=pk, company=request.user.company)
+        from .certificate_pdf import generate_certificate
+        buffer = generate_certificate(batch)
+        filename = f"AgriOps_Certificate_{batch.batch_number}.pdf"
+        response = HttpResponse(buffer, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+
+
+class PublicTraceView(View):
+    """
+    Public-facing traceability page — no login required.
+    Accessed via QR code: /trace/<public_token>/
+    """
+    def get(self, request, token):
+        batch = get_object_or_404(Batch, public_token=token)
+        farms = batch.farms.select_related('supplier').all()
+        return HttpResponse(
+            self._render(batch, farms),
+            content_type='text/html'
+        )
+
+    def _render(self, batch, farms):
+        farm_rows = ""
+        for farm in farms:
+            status_color = "#22c55e" if farm.is_eudr_verified else "#f59e0b"
+            status_text = "Verified" if farm.is_eudr_verified else "Pending"
+            farm_rows += f"""
+            <tr>
+              <td style="padding:12px;border-bottom:1px solid #1e2d40;">{farm.name}</td>
+              <td style="padding:12px;border-bottom:1px solid #1e2d40;">{farm.supplier.name}</td>
+              <td style="padding:12px;border-bottom:1px solid #1e2d40;">{farm.country} / {farm.state_region or '—'}</td>
+              <td style="padding:12px;border-bottom:1px solid #1e2d40;">{farm.area_hectares or '—'} ha</td>
+              <td style="padding:12px;border-bottom:1px solid #1e2d40;color:{status_color};">{status_text}</td>
+            </tr>"""
+
+        return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trace: {batch.batch_number} — AgriOps</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {{ font-family: Georgia, serif; background: #080d14; color: #e2e8f0; margin: 0; padding: 24px; }}
+    .container {{ max-width: 900px; margin: 0 auto; }}
+    .header {{ background: #131f2e; border: 1px solid #1e2d40; border-radius: 16px; padding: 32px; margin-bottom: 24px; }}
+    .badge {{ font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #22c55e; letter-spacing: 0.2em; margin-bottom: 12px; }}
+    h1 {{ font-family: 'Syne', sans-serif; font-size: 28px; color: #f8fafc; margin: 0 0 8px 0; }}
+    .meta {{ font-size: 13px; color: #64748b; }}
+    .card {{ background: #131f2e; border: 1px solid #1e2d40; border-radius: 12px; padding: 24px; margin-bottom: 16px; }}
+    .card h2 {{ font-family: 'Syne', sans-serif; font-size: 14px; color: #22c55e; letter-spacing: 0.1em; margin: 0 0 16px 0; text-transform: uppercase; }}
+    table {{ width: 100%; border-collapse: collapse; font-size: 13px; }}
+    th {{ text-align: left; padding: 10px 12px; color: #64748b; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; border-bottom: 1px solid #1e2d40; }}
+    td {{ color: #cbd5e1; }}
+    .footer {{ text-align: center; font-size: 11px; color: #334155; margin-top: 32px; font-family: 'JetBrains Mono', monospace; }}
+    .verified-badge {{ display: inline-block; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: #22c55e; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-family: 'JetBrains Mono', monospace; }}
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="badge">AGRIOPS · SUPPLY CHAIN TRACEABILITY</div>
+    <h1>Batch: {batch.batch_number}</h1>
+    <p class="meta">Commodity: {batch.commodity} &nbsp;·&nbsp; Created: {batch.created_at.strftime('%d %B %Y')}</p>
+    {'<p class="meta">Sales Order: ' + batch.sales_order.order_number + '</p>' if batch.sales_order else ''}
+    <div style="margin-top:16px;">
+      <span class="verified-badge">✓ Verified Supply Chain Record</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Farm Traceability — {farms.count()} farms</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Farm</th>
+          <th>Supplier</th>
+          <th>Location</th>
+          <th>Area</th>
+          <th>EUDR Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {farm_rows if farm_rows else '<tr><td colspan="5" style="padding:12px;color:#475569;">No farms linked to this batch.</td></tr>'}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    AgriOps · app.agriops.io · Agricultural Supply Chain Intelligence<br>
+    This record was generated from verified supply chain data and is intended for EU buyer compliance under EUDR 2023/1115.
+  </div>
+</div>
+</body>
+</html>"""

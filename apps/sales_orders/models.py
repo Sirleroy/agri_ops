@@ -68,3 +68,7 @@ class SalesOrderItem(models.Model):
 
     def __str__(self):
         return f"{self.product.name} x {self.quantity}"
+
+
+# Import Batch here so it lives in the same app
+from apps.sales_orders.batch import Batch
