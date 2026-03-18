@@ -1,0 +1,24 @@
+{% extends "ops_dashboard/base.html" %}
+{% block title %}Health — AgriOps Ops{% endblock %}
+{% block nav_health %}active{% endblock %}
+{% block page_title %}Platform Health{% endblock %}
+
+{% block content %}
+<div class="grid-3">
+  {% for check in checks %}
+  <div class="card">
+    <div class="card-title">{{ check.name }}</div>
+    <div style="margin: 0.5rem 0;">
+      {% if check.status == 'ok' %}
+        <span class="badge-ok">● Healthy</span>
+      {% elif check.status == 'warning' %}
+        <span class="badge-warning">⚠ Warning</span>
+      {% else %}
+        <span class="badge-error">✕ Error</span>
+      {% endif %}
+    </div>
+    <div class="card-sub">{{ check.detail }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

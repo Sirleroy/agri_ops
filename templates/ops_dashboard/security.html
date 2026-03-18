@@ -1,0 +1,69 @@
+{% extends "ops_dashboard/base.html" %}
+{% block title %}Security — AgriOps Ops{% endblock %}
+{% block nav_security %}active{% endblock %}
+{% block page_title %}Security{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+  <div class="card">
+    <div class="section-title">Failed Ops Logins</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Time</th><th>IP</th></tr></thead>
+        <tbody>
+          {% for e in failed_logins %}
+          <tr>
+            <td>{{ e.timestamp|date:"Y-m-d H:i" }}</td>
+            <td>{{ e.ip_address|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="2" style="color:var(--dim)">No failed logins</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Role Changes</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Time</th><th>User</th><th>Object</th></tr></thead>
+        <tbody>
+          {% for log in role_changes %}
+          <tr>
+            <td>{{ log.timestamp|date:"Y-m-d H:i" }}</td>
+            <td>{{ log.user|default:"—" }}</td>
+            <td>{{ log.object_repr }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" style="color:var(--dim)">No role changes recorded</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="section-title">Full Audit Log (last 100)</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Model</th><th>Object</th></tr></thead>
+      <tbody>
+        {% for log in audit_logs %}
+        <tr>
+          <td>{{ log.timestamp|date:"Y-m-d H:i" }}</td>
+          <td>{{ log.user|default:"—" }}</td>
+          <td>{{ log.action }}</td>
+          <td>{{ log.model_name }}</td>
+          <td>{{ log.object_repr }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="color:var(--dim)">No audit entries yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

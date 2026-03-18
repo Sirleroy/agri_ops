@@ -1,0 +1,29 @@
+{% extends "ops_dashboard/base.html" %}
+{% block title %}Tenants — AgriOps Ops{% endblock %}
+{% block nav_tenants %}active{% endblock %}
+{% block page_title %}Tenants{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="section-title">All Tenants ({{ tenants|length }})</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Company</th><th>Users</th><th>Orders</th><th>Created</th></tr>
+      </thead>
+      <tbody>
+        {% for t in tenants %}
+        <tr>
+          <td>{{ t.name }}</td>
+          <td>{{ t.user_count }}</td>
+          <td>{{ t.order_count }}</td>
+          <td>{{ t.created_at|date:"Y-m-d" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" style="color:var(--dim)">No tenants yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

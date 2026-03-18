@@ -1,0 +1,76 @@
+{% extends "ops_dashboard/base.html" %}
+{% block title %}Overview — AgriOps Ops{% endblock %}
+{% block nav_overview %}active{% endblock %}
+{% block page_title %}Overview{% endblock %}
+
+{% block content %}
+<div class="grid-4">
+  <div class="card">
+    <div class="card-title">Total Tenants</div>
+    <div class="card-value">{{ total_tenants }}</div>
+    <div class="card-sub">{{ active_tenants }} active last 30d</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Total Users</div>
+    <div class="card-value">{{ total_users }}</div>
+    <div class="card-sub">Across all tenants</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Sales Orders</div>
+    <div class="card-value">{{ total_orders }}</div>
+    <div class="card-sub">{{ orders_this_month }} this month</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Inventory Items</div>
+    <div class="card-value">{{ total_inventory }}</div>
+    <div class="card-sub">Across all tenants</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="section-title">Recent Audit Events</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Time</th><th>User</th><th>Action</th><th>Model</th></tr>
+        </thead>
+        <tbody>
+          {% for log in recent_audit %}
+          <tr>
+            <td>{{ log.timestamp|date:"M d H:i" }}</td>
+            <td>{{ log.user|default:"—" }}</td>
+            <td>{{ log.action }}</td>
+            <td>{{ log.model_name }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" style="color:var(--dim)">No audit events yet</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Recent Ops Events</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Time</th><th>Event</th><th>IP</th></tr>
+        </thead>
+        <tbody>
+          {% for event in recent_events %}
+          <tr>
+            <td>{{ event.timestamp|date:"M d H:i" }}</td>
+            <td>{{ event.get_event_display }}</td>
+            <td>{{ event.ip_address|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" style="color:var(--dim)">No ops events yet</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
