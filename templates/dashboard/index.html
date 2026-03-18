@@ -5,7 +5,7 @@
 <div class="space-y-6">
 
   <!-- Core Stats Row -->
-  <div class="grid grid-cols-4 gap-4">
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
     <div class="bg-card border border-border rounded-xl p-5">
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Suppliers</p>
       <p class="text-3xl font-black text-slate-100">{{ total_suppliers }}</p>
@@ -29,7 +29,7 @@
   </div>
 
   <!-- Second Stats Row -->
-  <div class="grid grid-cols-4 gap-4">
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
     <div class="bg-card border border-border rounded-xl p-5">
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Farms</p>
       <p class="text-3xl font-black text-slate-100">{{ total_farms }}</p>
@@ -57,7 +57,7 @@
   </div>
 
   <!-- EUDR Compliance Panel + Recent Activity -->
-  <div class="grid grid-cols-3 gap-4">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
     <!-- EUDR Compliance Status -->
     <div class="bg-card border border-border rounded-xl p-5">
@@ -101,7 +101,7 @@
     </div>
 
     <!-- Recent Activity -->
-    <div class="col-span-2 bg-card border border-border rounded-xl p-5">
+    <div class="lg:col-span-2 bg-card border border-border rounded-xl p-5">
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Recent Activity</p>
       {% if recent_activity %}
       <div class="space-y-2">

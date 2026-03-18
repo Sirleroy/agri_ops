@@ -96,7 +96,12 @@
       </div>
       <div>
         <dt class="text-xs text-slate-500 font-mono mb-1">Expiry Date</dt>
-        <dd class="text-slate-100">{{ farm.verification_expiry|default:"—" }}</dd>
+        <dd class="text-slate-100 flex items-center gap-2 flex-wrap">
+          {% if farm.verification_expiry %}
+            <span>{{ farm.verification_expiry }}</span>
+            <span id="expiry-proximity" class="text-xs font-mono" data-expiry="{{ farm.verification_expiry|date:'Y-m-d' }}"></span>
+          {% else %}—{% endif %}
+        </dd>
       </div>
     </dl>
   </div>
@@ -172,6 +177,29 @@
     });
   </script>
   {% endif %}
+
+  <script>
+  (function () {
+    const el = document.getElementById('expiry-proximity');
+    if (!el) return;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const expiry = new Date(el.dataset.expiry);
+    const diff = Math.round((expiry - today) / 86400000);
+    if (diff < 0) {
+      el.textContent = '(Expired ' + Math.abs(diff) + ' days ago)';
+      el.className = 'text-xs font-mono text-red-400';
+    } else if (diff === 0) {
+      el.textContent = '(Expires today!)';
+      el.className = 'text-xs font-mono text-red-400';
+    } else if (diff <= 30) {
+      el.textContent = '(Expires in ' + diff + ' days)';
+      el.className = 'text-xs font-mono text-yellow-400';
+    } else if (diff <= 60) {
+      el.textContent = '(Expires in ' + diff + ' days)';
+      el.className = 'text-xs font-mono text-slate-400';
+    }
+  })();
+  </script>
 
   <!-- Documents card -->
   <div class="bg-card border border-border rounded-xl p-6">

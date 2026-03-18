@@ -23,7 +23,9 @@
       </div>
       <div>
         <h2 class="text-xl font-black text-slate-100">{{ profile.username }}</h2>
-        <p class="text-sm text-slate-500 mt-1">{{ profile.email|default:"No email set" }}</p>
+        <p class="text-sm text-slate-500 mt-1">
+          {% if profile.email %}<a href="mailto:{{ profile.email }}" class="hover:text-green transition-colors">{{ profile.email }}</a>{% else %}No email set{% endif %}
+        </p>
       </div>
       <div class="ml-auto flex gap-2">
         {% if profile.role %}
@@ -48,7 +50,9 @@
       </div>
       <div>
         <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Phone</p>
-        <p class="text-sm text-slate-200">{{ profile.phone|default:"—" }}</p>
+        <p class="text-sm text-slate-200">
+          {% if profile.phone %}<a href="tel:{{ profile.phone }}" class="hover:text-green transition-colors">{{ profile.phone }}</a>{% else %}—{% endif %}
+        </p>
       </div>
       <div>
         <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Company</p>

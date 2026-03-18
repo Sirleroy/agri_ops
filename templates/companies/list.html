@@ -5,9 +5,13 @@
 {% block content %}
 <div class="space-y-4">
 
-  <div class="flex items-center justify-between">
-    <p class="text-sm text-slate-400 font-mono">{{ page_obj.paginator.count }} registered tenant{{ page_obj.paginator.count|pluralize }}</p>
-    <a href="{% url 'companies:create' %}" class="flex items-center gap-2 bg-green hover:bg-green-dim text-bg text-sm font-bold px-4 py-2 rounded-lg transition-colors">
+  <div class="flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3 flex-1">
+      <p class="text-sm text-slate-400 font-mono flex-shrink-0">{{ page_obj.paginator.count }} registered tenant{{ page_obj.paginator.count|pluralize }}</p>
+      <input id="tableSearch" type="text" placeholder="Search companies…"
+        class="bg-bg border border-border rounded-lg px-3 py-1.5 text-sm text-slate-200 placeholder-slate-600 focus:border-green outline-none w-56 transition-colors">
+    </div>
+    <a href="{% url 'companies:create' %}" class="flex items-center gap-2 bg-green hover:bg-green-dim text-bg text-sm font-bold px-4 py-2 rounded-lg transition-colors flex-shrink-0">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
       Add Company
     </a>
@@ -28,7 +32,7 @@
       </thead>
       <tbody>
         {% for company in companies %}
-        <tr class="border-b border-border/50 hover:bg-white/[0.02] transition-colors">
+        <tr data-row class="border-b border-border/50 hover:bg-white/[0.02] transition-colors">
           <td class="px-5 py-3 font-semibold text-slate-100">
             <a href="{% url 'companies:detail' company.pk %}" class="hover:text-green transition-colors">{{ company.name }}</a>
           </td>
@@ -52,18 +56,25 @@
           <td class="px-5 py-3 text-slate-500 font-mono text-xs">{{ company.created_at|date:"d M Y" }}</td>
           <td class="px-5 py-3">
             <div class="flex items-center gap-2 justify-end">
-              <a href="{% url 'companies:update' company.pk %}" class="text-slate-500 hover:text-slate-100 transition-colors">
+              <a href="{% url 'companies:update' company.pk %}" class="text-slate-500 hover:text-slate-100 transition-colors" title="Edit">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
               </a>
-              <a href="{% url 'companies:delete' company.pk %}" class="text-slate-500 hover:text-red-400 transition-colors">
+              <a href="{% url 'companies:delete' company.pk %}" class="text-slate-500 hover:text-red-400 transition-colors" title="Delete">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
               </a>
             </div>
           </td>
         </tr>
         {% empty %}
-        <tr>
-          <td colspan="7" class="px-5 py-12 text-center text-slate-500 font-mono text-sm">No companies registered yet.</td>
+        <tr data-empty>
+          <td colspan="7" class="px-5 py-16 text-center">
+            <svg class="w-10 h-10 text-slate-700 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            <p class="text-slate-500 text-sm mb-4">No companies registered yet.</p>
+            <a href="{% url 'companies:create' %}" class="inline-flex items-center gap-2 bg-green hover:bg-green-dim text-bg text-xs font-bold px-4 py-2 rounded-lg transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Add First Company
+            </a>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -83,4 +94,5 @@
   {% endif %}
 
 </div>
+<script>document.addEventListener('DOMContentLoaded', function(){ initTableSearch('tableSearch', 'tbody'); });</script>
 {% endblock %}

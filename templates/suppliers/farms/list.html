@@ -3,83 +3,121 @@
 {% block page_title %}Farms{% endblock %}
 {% block content %}
 
-<div class="flex items-center justify-between mb-6">
-  <div>
-    <p class="text-sm text-slate-400">All farms registered for EUDR compliance</p>
+<div class="space-y-4">
+
+  <div class="flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3 flex-1">
+      <p class="text-sm text-slate-400 flex-shrink-0">All farms registered for EUDR compliance</p>
+      <input id="tableSearch" type="text" placeholder="Search farms…"
+        class="bg-bg border border-border rounded-lg px-3 py-1.5 text-sm text-slate-200 placeholder-slate-600 focus:border-green outline-none w-56 transition-colors">
+    </div>
+    <a href="{% url 'suppliers:farm_create' %}"
+       class="flex items-center gap-2 bg-green hover:bg-green-dim text-bg font-bold text-xs px-4 py-2 rounded-lg transition-colors flex-shrink-0">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Add Farm
+    </a>
   </div>
-  <a href="{% url 'suppliers:farm_create' %}"
-     class="flex items-center gap-2 bg-green hover:bg-green-dim text-bg font-bold text-xs px-4 py-2 rounded-lg transition-colors">
-    + Add Farm
-  </a>
+
+  <div class="bg-card border border-border rounded-xl overflow-hidden">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-border">
+          <th class="text-left px-4 py-3 text-xs font-mono text-slate-500 uppercase tracking-wider">Farm</th>
+          <th class="text-left px-4 py-3 text-xs font-mono text-slate-500 uppercase tracking-wider">Supplier</th>
+          <th class="text-left px-4 py-3 text-xs font-mono text-slate-500 uppercase tracking-wider">Commodity</th>
+          <th class="text-left px-4 py-3 text-xs font-mono text-slate-500 uppercase tracking-wider">Risk</th>
+          <th class="text-left px-4 py-3 text-xs font-mono text-slate-500 uppercase tracking-wider">EUDR Status</th>
+          <th class="text-left px-4 py-3 text-xs font-mono text-slate-500 uppercase tracking-wider">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-border">
+        {% for farm in farms %}
+        <tr data-row class="hover:bg-white/[0.02] transition-colors">
+          <td class="px-4 py-3">
+            <a href="{% url 'suppliers:farm_detail' farm.pk %}"
+               class="font-medium text-slate-100 hover:text-green transition-colors">
+              {{ farm.name }}
+            </a>
+            {% if farm.farmer_name %}
+              <p class="text-xs text-slate-500 mt-0.5">{{ farm.farmer_name }}</p>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-slate-300">{{ farm.supplier.name }}</td>
+          <td class="px-4 py-3 text-slate-300">{{ farm.commodity }}</td>
+          <td class="px-4 py-3">
+            {% if farm.deforestation_risk_status == 'low' %}
+              <span class="px-2 py-1 rounded text-xs font-mono bg-green/10 text-green border border-green/20">Low</span>
+            {% elif farm.deforestation_risk_status == 'standard' %}
+              <span class="px-2 py-1 rounded text-xs font-mono bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">Standard</span>
+            {% else %}
+              <span class="px-2 py-1 rounded text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20">High</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            <div class="flex flex-col gap-1">
+              {% if farm.compliance_status == 'compliant' %}
+                <span class="px-2 py-1 rounded text-xs font-mono bg-green/10 text-green border border-green/20 w-fit">✓ Verified</span>
+              {% elif farm.compliance_status == 'expired' %}
+                <span class="px-2 py-1 rounded text-xs font-mono bg-orange-500/10 text-orange-400 border border-orange-500/20 w-fit">Expired</span>
+              {% elif farm.compliance_status == 'high_risk' %}
+                <span class="px-2 py-1 rounded text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20 w-fit">High Risk</span>
+              {% else %}
+                <span class="px-2 py-1 rounded text-xs font-mono bg-slate-500/10 text-slate-400 border border-slate-500/20 w-fit">Pending</span>
+              {% endif %}
+              {% if farm.verification_expiry %}
+                <span class="expiry-badge text-xs font-mono text-slate-500" data-expiry="{{ farm.verification_expiry|date:'Y-m-d' }}"></span>
+              {% endif %}
+            </div>
+          </td>
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2">
+              <a href="{% url 'suppliers:farm_update' farm.pk %}"
+                 class="text-xs text-slate-400 hover:text-green transition-colors">Edit</a>
+              <a href="{% url 'suppliers:farm_delete' farm.pk %}"
+                 class="text-xs text-slate-400 hover:text-red-400 transition-colors">Delete</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr data-empty>
+          <td colspan="6" class="px-5 py-16 text-center">
+            <svg class="w-10 h-10 text-slate-700 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/></svg>
+            <p class="text-slate-500 text-sm mb-4">No farms registered yet.</p>
+            <a href="{% url 'suppliers:farm_create' %}"
+               class="inline-flex items-center gap-2 bg-green hover:bg-green-dim text-bg font-bold text-xs px-4 py-2 rounded-lg transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Add First Farm
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
 </div>
 
-{% if farms %}
-<div class="bg-card border border-border rounded-xl overflow-hidden">
-  <table class="w-full text-sm">
-    <thead>
-      <tr class="border-b border-border">
-        <th class="text-left px-4 py-3 text-xs font-mono text-slate-500 uppercase tracking-wider">Farm</th>
-        <th class="text-left px-4 py-3 text-xs font-mono text-slate-500 uppercase tracking-wider">Supplier</th>
-        <th class="text-left px-4 py-3 text-xs font-mono text-slate-500 uppercase tracking-wider">Commodity</th>
-        <th class="text-left px-4 py-3 text-xs font-mono text-slate-500 uppercase tracking-wider">Risk</th>
-        <th class="text-left px-4 py-3 text-xs font-mono text-slate-500 uppercase tracking-wider">EUDR Status</th>
-        <th class="text-left px-4 py-3 text-xs font-mono text-slate-500 uppercase tracking-wider">Actions</th>
-      </tr>
-    </thead>
-    <tbody class="divide-y divide-border">
-      {% for farm in farms %}
-      <tr class="hover:bg-white/2 transition-colors">
-        <td class="px-4 py-3">
-          <a href="{% url 'suppliers:farm_detail' farm.pk %}"
-             class="font-medium text-slate-100 hover:text-green transition-colors">
-            {{ farm.name }}
-          </a>
-          {% if farm.farmer_name %}
-            <p class="text-xs text-slate-500 mt-0.5">{{ farm.farmer_name }}</p>
-          {% endif %}
-        </td>
-        <td class="px-4 py-3 text-slate-300">{{ farm.supplier.name }}</td>
-        <td class="px-4 py-3 text-slate-300">{{ farm.commodity }}</td>
-        <td class="px-4 py-3">
-          {% if farm.deforestation_risk_status == 'low' %}
-            <span class="px-2 py-1 rounded text-xs font-mono bg-green/10 text-green border border-green/20">Low</span>
-          {% elif farm.deforestation_risk_status == 'standard' %}
-            <span class="px-2 py-1 rounded text-xs font-mono bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">Standard</span>
-          {% else %}
-            <span class="px-2 py-1 rounded text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20">High</span>
-          {% endif %}
-        </td>
-        <td class="px-4 py-3">
-          {% if farm.compliance_status == 'compliant' %}
-            <span class="px-2 py-1 rounded text-xs font-mono bg-green/10 text-green border border-green/20">✓ Verified</span>
-          {% elif farm.compliance_status == 'expired' %}
-            <span class="px-2 py-1 rounded text-xs font-mono bg-orange-500/10 text-orange-400 border border-orange-500/20">Expired</span>
-          {% elif farm.compliance_status == 'high_risk' %}
-            <span class="px-2 py-1 rounded text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20">High Risk</span>
-          {% else %}
-            <span class="px-2 py-1 rounded text-xs font-mono bg-slate-500/10 text-slate-400 border border-slate-500/20">Pending</span>
-          {% endif %}
-        </td>
-        <td class="px-4 py-3">
-          <div class="flex items-center gap-2">
-            <a href="{% url 'suppliers:farm_update' farm.pk %}"
-               class="text-xs text-slate-400 hover:text-green transition-colors">Edit</a>
-            <a href="{% url 'suppliers:farm_delete' farm.pk %}"
-               class="text-xs text-slate-400 hover:text-red-400 transition-colors">Delete</a>
-          </div>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% else %}
-<div class="bg-card border border-border rounded-xl p-12 text-center">
-  <p class="text-slate-500 text-sm mb-4">No farms registered yet.</p>
-  <a href="{% url 'suppliers:farm_create' %}"
-     class="inline-flex items-center gap-2 bg-green hover:bg-green-dim text-bg font-bold text-xs px-4 py-2 rounded-lg transition-colors">
-    + Add First Farm
-  </a>
-</div>
-{% endif %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  initTableSearch('tableSearch', 'tbody');
+
+  /* EUDR expiry proximity badges */
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  document.querySelectorAll('.expiry-badge[data-expiry]').forEach(function (el) {
+    const expiry = new Date(el.dataset.expiry);
+    const diff = Math.round((expiry - today) / 86400000);
+    if (diff < 0) {
+      el.textContent = 'Expired ' + Math.abs(diff) + 'd ago';
+      el.className = 'expiry-badge text-xs font-mono text-orange-400';
+    } else if (diff <= 30) {
+      el.textContent = 'Expires in ' + diff + 'd';
+      el.className = 'expiry-badge text-xs font-mono text-yellow-400';
+    } else if (diff <= 60) {
+      el.textContent = 'Expires in ' + diff + 'd';
+      el.className = 'expiry-badge text-xs font-mono text-slate-400';
+    }
+  });
+});
+</script>
 {% endblock %}

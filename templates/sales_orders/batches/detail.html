@@ -47,11 +47,16 @@
       </div>
       <div class="col-span-2">
         <dt class="text-xs text-slate-500 font-mono mb-1">Public Trace URL</dt>
-        <dd>
+        <dd class="flex items-center gap-2 flex-wrap">
           <a href="{{ batch.trace_url }}" target="_blank"
-             class="text-xs font-mono text-green hover:text-green-dim transition-colors">
+             class="text-xs font-mono text-green hover:text-green-dim transition-colors break-all">
             {{ batch.trace_url }}
           </a>
+          <button onclick="copyTraceUrl(this)" data-url="{{ batch.trace_url }}"
+            class="flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded bg-white/5 border border-border text-xs text-slate-400 hover:text-slate-100 hover:border-slate-400 transition-colors font-mono">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+            Copy
+          </button>
         </dd>
       </div>
       {% if batch.notes %}
@@ -87,4 +92,15 @@
   </div>
 
 </div>
+
+<script>
+function copyTraceUrl(btn) {
+  navigator.clipboard.writeText(btn.dataset.url).then(function () {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Copied!';
+    btn.classList.add('text-green', 'border-green/30');
+    setTimeout(function () { btn.innerHTML = orig; btn.classList.remove('text-green', 'border-green/30'); }, 2000);
+  });
+}
+</script>
 {% endblock %}

@@ -3,14 +3,20 @@
 {% block page_title %}Traceability Batches{% endblock %}
 {% block content %}
 <div class="space-y-4">
-  <div class="flex items-center justify-between">
-    <p class="text-sm text-slate-400">All traceability batches for your organisation.</p>
+
+  <div class="flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3 flex-1">
+      <p class="text-sm text-slate-400 flex-shrink-0">All traceability batches for your organisation.</p>
+      <input id="tableSearch" type="text" placeholder="Search batches…"
+        class="bg-bg border border-border rounded-lg px-3 py-1.5 text-sm text-slate-200 placeholder-slate-600 focus:border-green outline-none w-56 transition-colors">
+    </div>
     <a href="{% url 'sales_orders:batch_create' %}"
-       class="bg-green hover:bg-green-dim text-bg font-bold text-xs px-4 py-2 rounded-lg transition-colors">
-      + New Batch
+       class="flex items-center gap-2 bg-green hover:bg-green-dim text-bg font-bold text-xs px-4 py-2 rounded-lg transition-colors flex-shrink-0">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      New Batch
     </a>
   </div>
-  {% if batches %}
+
   <div class="bg-card border border-border rounded-xl overflow-hidden">
     <table class="w-full text-sm">
       <thead>
@@ -25,7 +31,7 @@
       </thead>
       <tbody>
         {% for batch in batches %}
-        <tr class="border-b border-border last:border-0 hover:bg-white/2 transition-colors">
+        <tr data-row class="border-b border-border last:border-0 hover:bg-white/[0.02] transition-colors">
           <td class="px-5 py-3 font-mono text-green text-xs">{{ batch.batch_number }}</td>
           <td class="px-5 py-3 text-slate-300">{{ batch.commodity }}</td>
           <td class="px-5 py-3 text-slate-400">{{ batch.sales_order.order_number|default:"—" }}</td>
@@ -38,14 +44,23 @@
                class="text-xs text-slate-400 hover:text-slate-100 font-mono transition-colors">PDF</a>
           </td>
         </tr>
+        {% empty %}
+        <tr data-empty>
+          <td colspan="6" class="px-5 py-16 text-center">
+            <svg class="w-10 h-10 text-slate-700 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <p class="text-slate-500 text-sm mb-4">No batches yet. Create your first traceability batch.</p>
+            <a href="{% url 'sales_orders:batch_create' %}"
+               class="inline-flex items-center gap-2 bg-green hover:bg-green-dim text-bg font-bold text-xs px-4 py-2 rounded-lg transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              New Batch
+            </a>
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
-  {% else %}
-  <div class="bg-card border border-border rounded-xl p-8 text-center">
-    <p class="text-slate-500 text-sm">No batches yet. Create your first traceability batch.</p>
-  </div>
-  {% endif %}
+
 </div>
+<script>document.addEventListener('DOMContentLoaded', function(){ initTableSearch('tableSearch', 'tbody'); });</script>
 {% endblock %}
