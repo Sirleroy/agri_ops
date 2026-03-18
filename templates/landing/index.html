@@ -541,7 +541,7 @@
     fetch('/request-access/', {
       method: 'POST',
       body: new FormData(this),
-      headers: { 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '' }
+      headers: { 'X-CSRFToken': document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/)?.[1] || '' }
     })
     .then(r => r.json())
     .then(data => {
