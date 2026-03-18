@@ -1,3 +1,4 @@
+from apps.audit.mixins import AuditUpdateMixin
 from django.views.generic import ListView, DetailView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from .models import CustomUser
@@ -42,7 +43,7 @@ class UserUpdateView(OrgAdminRequiredMixin, UpdateView):
         return obj
 
 
-class UserSystemRoleUpdateView(OrgAdminRequiredMixin, UpdateView):
+class UserSystemRoleUpdateView(AuditUpdateMixin, OrgAdminRequiredMixin, UpdateView):
     """
     Separate view for changing system_role.
     OrgAdmin only. Isolated so system_role is never
