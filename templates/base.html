@@ -43,6 +43,22 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #1e2d40; border-radius: 10px; }
 
+    /* Global form field styles */
+    .form-input, input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+      width: 100%;
+      background: #0a0f1a;
+      border: 1px solid #1e2d40;
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: #f1f5f9;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:not([type="checkbox"]):not([type="radio"]):focus,
+    select:focus, textarea:focus { border-color: #22c55e; }
+    select option { background: #111827; }
+
     /* Active nav indicator */
     .nav-active {
       background: rgba(34,197,94,0.12);
@@ -63,14 +79,38 @@
   {% block extra_head %}{% endblock %}
 </head>
 
-<body class="font-sans text-slate-100 min-h-screen" x-data="{ sidebarOpen: true }">
+<body class="font-sans text-slate-100 min-h-screen" x-data="{
+  sidebarOpen: JSON.parse(localStorage.getItem('sidebarOpen') ?? (window.innerWidth >= 1024 ? 'true' : 'false')),
+  mobileOpen: false,
+  toggleSidebar() {
+    if (window.innerWidth >= 1024) {
+      this.sidebarOpen = !this.sidebarOpen;
+      localStorage.setItem('sidebarOpen', this.sidebarOpen);
+    } else {
+      this.mobileOpen = !this.mobileOpen;
+    }
+  }
+}">
 
   <div class="flex h-screen overflow-hidden">
 
     <!-- ═══════════════════════════════ SIDEBAR ═══════════════════════════════ -->
+    <!-- Mobile overlay backdrop -->
+    <div
+      x-show="mobileOpen"
+      x-transition.opacity
+      @click="mobileOpen = false"
+      class="fixed inset-0 bg-black/60 z-30 lg:hidden"
+    ></div>
+
     <aside
+      :style="
+        window.innerWidth < 1024
+          ? (mobileOpen ? 'position:fixed;left:0;top:0;bottom:0;z-index:40;' : 'position:fixed;left:-224px;top:0;bottom:0;z-index:40;')
+          : 'position:relative;'
+      "
       :class="sidebarOpen ? 'w-56' : 'w-16'"
-      class="bg-sidebar border-r border-border flex flex-col transition-all duration-300 overflow-hidden flex-shrink-0"
+      class="w-56 bg-sidebar border-r border-border flex flex-col transition-all duration-300 overflow-hidden flex-shrink-0"
     >
 
       <!-- Logo -->
@@ -142,8 +182,8 @@
         </div>
 
         <!-- Reports -->
-        <div class="px-3 mb-1">
-          <p class="text-xs font-mono text-slate-600 uppercase tracking-widest mb-2">Reports</p>
+        <div class="px-2">
+          <p x-show="sidebarOpen" class="px-3 pt-3 pb-1 text-xs font-mono tracking-widest text-slate-600 uppercase">Reports</p>
           <a href="{% url 'reports:index' %}"
              class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all text-sm font-medium relative">
             <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -191,14 +231,16 @@
         </div>
       </div>
 
+    </aside>
+
     <!-- ═══════════════════════════════ MAIN ═══════════════════════════════ -->
-    <div class="flex flex-col flex-1 overflow-hidden">
+    <div class="flex flex-col flex-1 overflow-hidden min-w-0">
 
       <!-- Topbar -->
       <header class="h-13 bg-surface border-b border-border flex items-center justify-between px-6 flex-shrink-0" style="height:52px;">
         <div class="flex items-center gap-4">
           <!-- Sidebar toggle -->
-          <button @click="sidebarOpen = !sidebarOpen" class="text-slate-400 hover:text-slate-100 transition-colors">
+          <button @click="toggleSidebar()" class="text-slate-400 hover:text-slate-100 transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
           </button>
           <h1 class="text-sm font-bold text-slate-100 tracking-wide">{% block page_title %}{% endblock %}</h1>
@@ -213,12 +255,82 @@
       </header>
 
       <!-- Page content -->
-      <main class="flex-1 overflow-y-auto p-6 bg-bg">
+      <main class="flex-1 overflow-y-auto p-4 lg:p-6 bg-bg">
         {% block content %}{% endblock %}
       </main>
 
     </div>
   </div>
+
+  <!-- ═══════════════════════════════ TOASTS ═══════════════════════════════ -->
+  {% if messages %}
+  <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2 pointer-events-none">
+    {% for message in messages %}
+    <div x-data="{ show: true }"
+         x-show="show"
+         x-init="setTimeout(() => show = false, 4500)"
+         x-transition:leave="transition ease-in duration-300"
+         x-transition:leave-start="opacity-100 translate-x-0"
+         x-transition:leave-end="opacity-0 translate-x-8"
+         class="flex items-center justify-between gap-4 px-4 py-3 rounded-lg border text-sm font-medium shadow-xl pointer-events-auto max-w-sm
+           {% if 'error' in message.tags %}bg-red-950 border-red-500/30 text-red-300
+           {% elif 'warning' in message.tags %}bg-yellow-950 border-yellow-500/30 text-yellow-300
+           {% elif 'success' in message.tags %}bg-green/10 border-green/30 text-green
+           {% else %}bg-surface border-border text-slate-300{% endif %}">
+      <span>{{ message }}</span>
+      <button @click="show = false" class="opacity-50 hover:opacity-100 transition-opacity flex-shrink-0">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <script>
+    /* Form submit loading state */
+    document.addEventListener('submit', function (e) {
+      const btn = e.target.querySelector('button[type="submit"]:not([data-no-loading])');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML =
+          '<svg class="w-4 h-4 animate-spin inline mr-2" fill="none" viewBox="0 0 24 24">' +
+          '<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>' +
+          '<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 22 6.477 22 12h-4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.568 3 7.197l3-2.647z"></path>' +
+          '</svg>Saving…';
+      }
+    });
+
+    /* Client-side table search */
+    function initTableSearch(inputId, tbodySelector) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      input.addEventListener('input', function () {
+        const q = this.value.toLowerCase();
+        document.querySelectorAll(tbodySelector + ' tr[data-row]').forEach(function (row) {
+          row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+        const empty = document.querySelector(tbodySelector + ' tr[data-empty]');
+        if (empty) empty.style.display = 'none';
+      });
+    }
+
+    /* Overdue row highlighting */
+    function markOverdueRows() {
+      const today = new Date().toISOString().slice(0, 10);
+      document.querySelectorAll('tr[data-expected][data-status]').forEach(function (row) {
+        const expected = row.dataset.expected;
+        const status = row.dataset.status;
+        if (expected && expected < today && status !== 'received' && status !== 'cancelled' && status !== 'completed') {
+          const cell = row.querySelector('[data-delivery-cell]');
+          if (cell) {
+            cell.classList.add('text-red-400');
+            cell.innerHTML += '<span class="ml-1 px-1.5 py-0.5 text-xs rounded bg-red-500/10 border border-red-500/20 text-red-400 font-mono">Overdue</span>';
+          }
+        }
+      });
+    }
+    document.addEventListener('DOMContentLoaded', markOverdueRows);
+  </script>
 
 </body>
 </html>
