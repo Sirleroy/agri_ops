@@ -7,6 +7,7 @@ from apps.sales_orders.batch_views import PublicTraceView
 from apps.dashboard.access_views import RequestAccessView
 
 urlpatterns = [
+    path('', include('ops_dashboard.urls')),
     path('', LandingView.as_view(), name='landing'),
     path('health/', health_check, name='health'),
     path('admin/', admin.site.urls),
@@ -18,6 +19,12 @@ urlpatterns = [
     # Authentication
     path('login/', auth_views.LoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='/login/'), name='logout'),
+    path('set-password/<uidb64>/<token>/',
+         auth_views.PasswordResetConfirmView.as_view(
+             template_name='registration/set_password.html',
+             post_reset_login=True,
+         ),
+         name='password_set'),
 
     # Application
     path('', include('apps.dashboard.urls', namespace='dashboard')),

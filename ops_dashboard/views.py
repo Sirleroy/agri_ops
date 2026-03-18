@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.utils import timezone
 from django.db.models import Count
+from django.db.models.functions import TruncDate
 
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from django_otp import devices_for_user
@@ -152,8 +153,8 @@ def ops_dashboard(request):
         'total_orders': SalesOrder.objects.count(),
         'orders_this_month': SalesOrder.objects.filter(created_at__gte=thirty_days_ago).count(),
         'total_inventory': Inventory.objects.count(),
-        'recent_audit': AuditLog.objects.order_by('-timestamp')[:10],
-        'recent_events': OpsEventLog.objects.order_by('-timestamp')[:10],
+        'recent_audit': AuditLog.objects.select_related('user').order_by('-timestamp')[:10],
+        'recent_events': OpsEventLog.objects.select_related('user').order_by('-timestamp')[:10],
     }
     return render(request, 'ops_dashboard/dashboard.html', context)
 
@@ -194,7 +195,7 @@ def ops_metrics(request):
     monthly_orders = (
         SalesOrder.objects
         .filter(created_at__gte=thirty_days_ago)
-        .extra(select={'day': 'date(created_at)'})
+        .annotate(day=TruncDate('created_at'))
         .values('day')
         .annotate(count=Count('id'))
         .order_by('day')

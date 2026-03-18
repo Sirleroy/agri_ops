@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     'django_otp.plugins.otp_totp',
 
     # Local apps
+    'ops_dashboard',
     'apps.companies',
     'apps.users',
     'apps.suppliers',

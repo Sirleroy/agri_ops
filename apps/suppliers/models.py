@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 from apps.companies.models import Company
 
 
@@ -27,10 +28,11 @@ class Supplier(models.Model):
     address        = models.TextField(blank=True)
     is_active      = models.BooleanField(default=True)
     reliability_score = models.DecimalField(
-    max_digits=4, decimal_places=2,
-    null=True, blank=True,
-    help_text="Reliability score 0-10. Updated based on delivery history."
-)
+        max_digits=4, decimal_places=2,
+        null=True, blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(10)],
+        help_text="Reliability score 0-10. Updated based on delivery history."
+    )
     created_at     = models.DateTimeField(auto_now_add=True)
     updated_at     = models.DateTimeField(auto_now=True)
 

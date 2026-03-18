@@ -5,6 +5,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.utils import timezone
+from django.core.cache import cache
 from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin
 from .batch import Batch
@@ -93,6 +94,13 @@ class PublicTraceView(View):
     Accessed via QR code: /trace/<public_token>/
     """
     def get(self, request, token):
+        ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', '')).split(',')[0].strip()
+        cache_key = f'public_trace_{ip}'
+        hits = cache.get(cache_key, 0)
+        if hits >= 60:
+            return HttpResponse('Rate limit exceeded. Please try again later.', status=429, content_type='text/plain')
+        cache.set(cache_key, hits + 1, timeout=3600)
+
         batch = get_object_or_404(Batch, public_token=token)
         farms = batch.farms.select_related('supplier').all()
         return HttpResponse(

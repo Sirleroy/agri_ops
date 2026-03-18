@@ -3,7 +3,7 @@ Batch model — links a SalesOrder to a set of Farms for EUDR traceability.
 Generates a unique batch number and a public token for QR code URL.
 """
 import uuid
-from django.db import models
+from django.db import models, IntegrityError
 from apps.companies.models import Company
 from apps.suppliers.models import Farm
 
@@ -51,7 +51,14 @@ class Batch(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.batch_number:
-            self.batch_number = generate_batch_number(
-                self.company.name, self.commodity
-            )
+            for _ in range(10):
+                self.batch_number = generate_batch_number(
+                    self.company.name, self.commodity
+                )
+                try:
+                    super().save(*args, **kwargs)
+                    return
+                except IntegrityError:
+                    self.batch_number = ''
+            raise IntegrityError("Could not generate a unique batch number after 10 attempts.")
         super().save(*args, **kwargs)

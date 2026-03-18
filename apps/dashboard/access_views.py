@@ -2,21 +2,17 @@
 Request Access — auto-approval flow.
 1. Saves AccessRequest to database
 2. Creates Company + OrgAdmin user
-3. Sends welcome email to applicant
+3. Sends welcome email with a secure set-password link
 4. Sends founder notification email
 """
-import secrets
-import string
 from django.http import JsonResponse
 from django.core.cache import cache
 from django.views import View
 from django.utils import timezone
 from django.conf import settings
-
-
-def _generate_password(length=12):
-    alphabet = string.ascii_letters + string.digits + "!@#$%"
-    return ''.join(secrets.choice(alphabet) for _ in range(length))
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
 
 
 class RequestAccessView(View):
@@ -74,28 +70,31 @@ class RequestAccessView(View):
                 username = f"{username_base}{counter}"
                 counter += 1
 
-            # Generate temporary password
-            temp_password = _generate_password()
-
-            # Create user
+            # Create user with unusable password — set via secure link
             user = CustomUser.objects.create_user(
                 username=username,
                 email=email,
-                password=temp_password,
+                password=None,
                 first_name=name.split()[0] if name else '',
                 last_name=' '.join(name.split()[1:]) if len(name.split()) > 1 else '',
                 company=company_obj,
                 system_role='org_admin',
                 job_title='Administrator',
             )
+            user.set_unusable_password()
+            user.save()
 
             # Update access request
             access_request.status = 'approved'
             access_request.approved_at = timezone.now()
             access_request.save()
 
-            # ── Send welcome email ────────────────────────────
-            _send_welcome_email(user, temp_password, company_obj)
+            # ── Send welcome email with secure set-password link ──
+            site_url = getattr(settings, 'SITE_URL', 'https://app.agriops.io')
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            set_password_url = f"{site_url}/set-password/{uid}/{token}/"
+            _send_welcome_email(user, set_password_url, company_obj)
 
             # ── Notify founder ────────────────────────────────
             _notify_founder(name, email, company_name, username)
@@ -114,19 +113,17 @@ class RequestAccessView(View):
             })
 
 
-def _send_welcome_email(user, temp_password, company):
+def _send_welcome_email(user, set_password_url, company):
     from django.core.mail import EmailMultiAlternatives
-    site_url = getattr(settings, 'SITE_URL', 'https://app.agriops.io')
 
-    subject = "Welcome to AgriOps — Your account is ready"
+    subject = "Welcome to AgriOps — Set your password to get started"
     body_text = (
         f"Welcome to AgriOps, {user.first_name}!\n\n"
         f"Your account has been created.\n\n"
         f"Organisation: {company.name}\n"
-        f"Username: {user.username}\n"
-        f"Temporary Password: {temp_password}\n\n"
-        f"Please log in and change your password immediately.\n\n"
-        f"Login: {site_url}/login/\n\n"
+        f"Username: {user.username}\n\n"
+        f"Set your password using the link below (valid for 3 days):\n"
+        f"{set_password_url}\n\n"
         f"AgriOps · app.agriops.io"
     )
     body_html = f"""
@@ -143,16 +140,12 @@ def _send_welcome_email(user, temp_password, company):
                 <td style="color:#1e293b;">{company.name}</td></tr>
             <tr><td style="color:#64748b;font-weight:bold;padding:4px 0;">Username</td>
                 <td style="color:#1e293b;font-family:monospace;">{user.username}</td></tr>
-            <tr><td style="color:#64748b;font-weight:bold;padding:4px 0;">Temporary Password</td>
-                <td style="color:#1e293b;font-family:monospace;">{temp_password}</td></tr>
           </table>
         </div>
-        <div style="background:#fef9c3;border:1px solid #fde047;border-radius:6px;padding:10px 14px;margin-bottom:20px;">
-          <p style="margin:0;color:#854d0e;font-size:12px;">⚠ Please change your password immediately after first login.</p>
-        </div>
-        <a href="{site_url}/login/"
+        <p style="color:#1e293b;font-size:13px;">Click the button below to set your password and access your account. This link is valid for <strong>3 days</strong>.</p>
+        <a href="{set_password_url}"
            style="background:#22c55e;color:#0a0f1a;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:13px;">
-          Log In to AgriOps
+          Set My Password
         </a>
         <p style="margin-top:24px;font-size:11px;color:#94a3b8;">
           AgriOps · app.agriops.io · Agricultural Supply Chain Intelligence
