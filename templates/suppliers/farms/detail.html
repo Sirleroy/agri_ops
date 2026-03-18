@@ -119,6 +119,7 @@
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       const geojson = {{ farm.geolocation|safe }};
+      if (!geojson) { document.getElementById('farm-map').innerHTML = '<p style="padding:20px;color:#64748b;">No geolocation data available.</p>'; return; }
 
       const map = L.map('farm-map', {
         zoomControl: true,

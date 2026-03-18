@@ -158,7 +158,9 @@ def _send_welcome_email(user, temp_password, company):
 
 def _notify_founder(name, email, company, username):
     from django.core.mail import EmailMultiAlternatives
-    founder_email = getattr(settings, 'FOUNDER_EMAIL', 'ohahezinna@gmail.com')
+    founder_email = getattr(settings, 'FOUNDER_EMAIL', '')
+    if not founder_email:
+        return
     subject = f"[AgriOps] New user onboarded — {name}"
     body_text = (
         f"New user auto-approved on AgriOps.\n\n"

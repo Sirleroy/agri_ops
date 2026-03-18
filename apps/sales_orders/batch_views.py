@@ -1,3 +1,4 @@
+import html
 from django.views.generic import ListView, DetailView, CreateView, UpdateView
 from django.views import View
 from django.http import HttpResponse
@@ -99,17 +100,22 @@ class PublicTraceView(View):
             content_type='text/html'
         )
 
+    def _e(self, value):
+        return html.escape(str(value)) if value else '—'
+
     def _render(self, batch, farms):
         farm_rows = ""
         for farm in farms:
             status_color = "#22c55e" if farm.is_eudr_verified else "#f59e0b"
             status_text = "Verified" if farm.is_eudr_verified else "Pending"
+            supplier_name = self._e(farm.supplier.name) if farm.supplier else '—'
+            area = f"{self._e(farm.area_hectares)} ha" if farm.area_hectares else '—'
             farm_rows += f"""
             <tr>
-              <td style="padding:12px;border-bottom:1px solid #1e2d40;">{farm.name}</td>
-              <td style="padding:12px;border-bottom:1px solid #1e2d40;">{farm.supplier.name}</td>
-              <td style="padding:12px;border-bottom:1px solid #1e2d40;">{farm.country} / {farm.state_region or '—'}</td>
-              <td style="padding:12px;border-bottom:1px solid #1e2d40;">{farm.area_hectares or '—'} ha</td>
+              <td style="padding:12px;border-bottom:1px solid #1e2d40;">{self._e(farm.name)}</td>
+              <td style="padding:12px;border-bottom:1px solid #1e2d40;">{supplier_name}</td>
+              <td style="padding:12px;border-bottom:1px solid #1e2d40;">{self._e(farm.country)} / {self._e(farm.state_region)}</td>
+              <td style="padding:12px;border-bottom:1px solid #1e2d40;">{area}</td>
               <td style="padding:12px;border-bottom:1px solid #1e2d40;color:{status_color};">{status_text}</td>
             </tr>"""
 
@@ -140,9 +146,9 @@ class PublicTraceView(View):
 <div class="container">
   <div class="header">
     <div class="badge">AGRIOPS · SUPPLY CHAIN TRACEABILITY</div>
-    <h1>Batch: {batch.batch_number}</h1>
-    <p class="meta">Commodity: {batch.commodity} &nbsp;·&nbsp; Created: {batch.created_at.strftime('%d %B %Y')}</p>
-    {'<p class="meta">Sales Order: ' + batch.sales_order.order_number + '</p>' if batch.sales_order else ''}
+    <h1>Batch: {html.escape(str(batch.batch_number))}</h1>
+    <p class="meta">Commodity: {html.escape(str(batch.commodity))} &nbsp;·&nbsp; Created: {batch.created_at.strftime('%d %B %Y')}</p>
+    {'<p class="meta">Sales Order: ' + html.escape(str(batch.sales_order.order_number)) + '</p>' if batch.sales_order else ''}
     <div style="margin-top:16px;">
       <span class="verified-badge">✓ Verified Supply Chain Record</span>
     </div>
