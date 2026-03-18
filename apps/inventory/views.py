@@ -30,7 +30,9 @@ class InventoryDetailView(StaffRequiredMixin, DetailView):
 class InventoryCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = Inventory
     template_name = 'inventory/form.html'
-    fields = ['product', 'quantity', 'warehouse_location', 'low_stock_threshold']
+    fields = ['product', 'quantity', 'warehouse_location', 'low_stock_threshold',
+              'lot_number', 'moisture_content', 'quality_grade',
+              'harvest_date', 'origin_state']
     success_url = reverse_lazy('inventory:list')
 
     def form_valid(self, form):
@@ -41,7 +43,9 @@ class InventoryCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
 class InventoryUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = Inventory
     template_name = 'inventory/form.html'
-    fields = ['product', 'quantity', 'warehouse_location', 'low_stock_threshold']
+    fields = ['product', 'quantity', 'warehouse_location', 'low_stock_threshold',
+              'lot_number', 'moisture_content', 'quality_grade',
+              'harvest_date', 'origin_state']
     success_url = reverse_lazy('inventory:list')
 
     def get_object(self):

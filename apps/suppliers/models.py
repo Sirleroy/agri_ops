@@ -26,6 +26,11 @@ class Supplier(models.Model):
     city           = models.CharField(max_length=100, blank=True)
     address        = models.TextField(blank=True)
     is_active      = models.BooleanField(default=True)
+    reliability_score = models.DecimalField(
+    max_digits=4, decimal_places=2,
+    null=True, blank=True,
+    help_text="Reliability score 0-10. Updated based on delivery history."
+)
     created_at     = models.DateTimeField(auto_now_add=True)
     updated_at     = models.DateTimeField(auto_now=True)
 
