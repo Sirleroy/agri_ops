@@ -8,6 +8,7 @@ Request Access — auto-approval flow.
 import secrets
 import string
 from django.http import JsonResponse
+from django.core.cache import cache
 from django.views import View
 from django.utils import timezone
 from django.conf import settings
@@ -20,6 +21,14 @@ def _generate_password(length=12):
 
 class RequestAccessView(View):
     def post(self, request):
+        # ── Rate limiting — max 5 requests per IP per hour ───────
+        ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', '')).split(',')[0].strip()
+        cache_key = f'request_access_{ip}'
+        attempts = cache.get(cache_key, 0)
+        if attempts >= 5:
+            return JsonResponse({'error': 'Too many requests. Please try again later.'}, status=429)
+        cache.set(cache_key, attempts + 1, timeout=3600)
+
         name    = request.POST.get('name', '').strip()
         email   = request.POST.get('email', '').strip()
         company = request.POST.get('company', '').strip()

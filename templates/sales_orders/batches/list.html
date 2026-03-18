@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}Batches — AgriOps{% endblock %}
+{% block page_title %}Traceability Batches{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  <div class="flex items-center justify-between">
+    <p class="text-sm text-slate-400">All traceability batches for your organisation.</p>
+    <a href="{% url 'sales_orders:batch_create' %}"
+       class="bg-green hover:bg-green-dim text-bg font-bold text-xs px-4 py-2 rounded-lg transition-colors">
+      + New Batch
+    </a>
+  </div>
+  {% if batches %}
+  <div class="bg-card border border-border rounded-xl overflow-hidden">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-border">
+          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Batch Number</th>
+          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Commodity</th>
+          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Sales Order</th>
+          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Farms</th>
+          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Created</th>
+          <th class="px-5 py-3"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for batch in batches %}
+        <tr class="border-b border-border last:border-0 hover:bg-white/2 transition-colors">
+          <td class="px-5 py-3 font-mono text-green text-xs">{{ batch.batch_number }}</td>
+          <td class="px-5 py-3 text-slate-300">{{ batch.commodity }}</td>
+          <td class="px-5 py-3 text-slate-400">{{ batch.sales_order.order_number|default:"—" }}</td>
+          <td class="px-5 py-3 text-slate-400">{{ batch.farms.count }}</td>
+          <td class="px-5 py-3 text-slate-500 font-mono text-xs">{{ batch.created_at|date:"d M Y" }}</td>
+          <td class="px-5 py-3 text-right">
+            <a href="{% url 'sales_orders:batch_detail' batch.pk %}"
+               class="text-xs text-green hover:text-green-dim font-mono transition-colors mr-3">View</a>
+            <a href="{% url 'sales_orders:batch_certificate' batch.pk %}"
+               class="text-xs text-slate-400 hover:text-slate-100 font-mono transition-colors">PDF</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="bg-card border border-border rounded-xl p-8 text-center">
+    <p class="text-slate-500 text-sm">No batches yet. Create your first traceability batch.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

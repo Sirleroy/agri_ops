@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}{{ batch.batch_number }} — AgriOps{% endblock %}
+{% block page_title %}{{ batch.batch_number }}{% endblock %}
+{% block content %}
+<div class="max-w-3xl space-y-6">
+
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="px-3 py-1 rounded-full text-xs font-mono bg-green/10 text-green border border-green/20">{{ batch.commodity }}</span>
+      {% if batch.sales_order %}
+      <span class="px-3 py-1 rounded-full text-xs font-mono bg-slate-500/10 text-slate-400 border border-slate-500/20">{{ batch.sales_order.order_number }}</span>
+      {% endif %}
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="{% url 'sales_orders:batch_certificate' batch.pk %}"
+         class="bg-green hover:bg-green-dim text-bg font-bold text-xs px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Download Certificate
+      </a>
+      <a href="{% url 'sales_orders:batch_update' batch.pk %}"
+         class="border border-border text-slate-400 hover:text-slate-100 hover:border-slate-400 font-bold text-xs px-4 py-2 rounded-lg transition-colors">
+        Edit
+      </a>
+    </div>
+  </div>
+
+  <div class="bg-card border border-border rounded-xl p-6">
+    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Batch Details</p>
+    <dl class="grid grid-cols-2 gap-4 text-sm">
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Batch Number</dt>
+        <dd class="text-green font-mono">{{ batch.batch_number }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Commodity</dt>
+        <dd class="text-slate-100">{{ batch.commodity }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Sales Order</dt>
+        <dd class="text-slate-100">{{ batch.sales_order.order_number|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Created</dt>
+        <dd class="text-slate-100">{{ batch.created_at|date:"d M Y" }}</dd>
+      </div>
+      <div class="col-span-2">
+        <dt class="text-xs text-slate-500 font-mono mb-1">Public Trace URL</dt>
+        <dd>
+          <a href="{{ batch.trace_url }}" target="_blank"
+             class="text-xs font-mono text-green hover:text-green-dim transition-colors">
+            {{ batch.trace_url }}
+          </a>
+        </dd>
+      </div>
+      {% if batch.notes %}
+      <div class="col-span-2">
+        <dt class="text-xs text-slate-500 font-mono mb-1">Notes</dt>
+        <dd class="text-slate-300">{{ batch.notes }}</dd>
+      </div>
+      {% endif %}
+    </dl>
+  </div>
+
+  <div class="bg-card border border-border rounded-xl p-6">
+    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Farms — {{ batch.farms.count }}</p>
+    {% if batch.farms.all %}
+    <div class="space-y-2">
+      {% for farm in batch.farms.all %}
+      <div class="flex items-center justify-between py-2 border-b border-border last:border-0">
+        <div>
+          <p class="text-sm text-slate-100">{{ farm.name }}</p>
+          <p class="text-xs text-slate-500 font-mono">{{ farm.supplier.name }} · {{ farm.country }} / {{ farm.state_region|default:"—" }} · {{ farm.area_hectares|default:"—" }} ha</p>
+        </div>
+        {% if farm.is_eudr_verified %}
+          <span class="text-xs font-mono text-green">✓ Verified</span>
+        {% else %}
+          <span class="text-xs font-mono text-yellow-400">Pending</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-sm text-slate-500">No farms linked to this batch.</p>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
