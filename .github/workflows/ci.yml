@@ -2,7 +2,7 @@ name: AgriOps CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, staging]
   pull_request:
     branches: [main]
 
@@ -14,43 +14,36 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_DB: agri_ops_test
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: agriops_test
+          POSTGRES_USER: agriops
+          POSTGRES_PASSWORD: testpassword
+        ports:
+          - 5432:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        ports:
-          - 5432:5432
 
     env:
+      DJANGO_SETTINGS_MODULE: config.settings.development
       SECRET_KEY: ci-test-secret-key-not-for-production
-      DEBUG: True
-      DB_NAME: agri_ops_test
-      DB_USER: postgres
-      DB_PASSWORD: postgres
+      DB_NAME: agriops_test
+      DB_USER: agriops
+      DB_PASSWORD: testpassword
       DB_HOST: localhost
       DB_PORT: 5432
-      DJANGO_SETTINGS_MODULE: config.settings.development
+      DEBUG: "True"
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+          cache: 'pip'
 
       - name: Install dependencies
         run: pip install -r requirements.txt
@@ -62,16 +55,17 @@ jobs:
         run: python manage.py migrate
 
       - name: Run tests
-        run: python manage.py test apps --verbosity=2
+        run: python manage.py test --verbosity=2
 
   deploy:
     needs: test
     runs-on: ubuntu-latest
+    # Only deploy to production from main branch
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
       - name: Deploy to Render
-        env:
-          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
-          curl -X POST "$RENDER_DEPLOY_HOOK"
+          curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}" | \
+            grep -q "200\|201" && echo "Deploy triggered" || echo "Deploy hook failed"
