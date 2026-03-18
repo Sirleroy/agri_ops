@@ -18,6 +18,8 @@ INSTALLED_APPS = [
     'django_filters',
     'axes',
     'corsheaders',
+    'django_otp',
+    'django_otp.plugins.otp_totp',
 
     # Local apps
     'apps.companies',
@@ -40,6 +42,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django_otp.middleware.OTPMiddleware',  # must come after AuthenticationMiddleware
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'axes.middleware.AxesMiddleware',
@@ -186,3 +189,7 @@ SITE_URL = 'http://localhost:8001'
 
 # ── Founder notifications ─────────────────────────────────────
 FOUNDER_EMAIL = 'ohahezinna@gmail.com'
+
+# ── Ops dashboard ─────────────────────────────────────────────
+OPS_SESSION_COOKIE_AGE = 7200   # 2 hours
+OPS_LOGIN_URL = '/ops-access/9f3k/'
