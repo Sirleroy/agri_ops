@@ -137,9 +137,9 @@ Documentation and code ship together. A PR that adds a new model without updatin
 |---|---|---|
 | Phase 1 — Local Prototype | ✅ Complete | Fully documented |
 | Phase 2 — Auth, RBAC, API | ✅ Complete | Fully documented |
-| Phase 3 — Cloud Deployment | Planned | Runbook placeholder exists |
-| Phase 4 — Freemium Launch | Planned | — |
-| Phase 5 — Revenue & Growth | Planned | — |
+| Phase 3 — Cloud Deployment | ✅ Complete | Fully documented |
+| Phase 4 — Inventory, Traceability, Stripe | Planned | — |
+| Phase 5 — Buyer Portal, Market Intelligence | Planned | — |
 
 ---
 

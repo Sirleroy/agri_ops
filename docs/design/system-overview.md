@@ -2,7 +2,7 @@
 
 **Version:** 2.0
 **Date:** March 2026
-**Status:** Phase 2 Complete
+**Status:** Phase 3 Complete
 
 ---
 
@@ -180,6 +180,12 @@ Full contract: `/docs/design/api-contract.md`
 | Database | PostgreSQL 15 | 1 |
 | Frontend | Django Templates + Tailwind CSS + Alpine.js | 1 |
 | Auth | Session auth (UI) + JWT simplejwt (API) | 2 |
+| Brute force | django-axes | 3 |
+| CORS | django-cors-headers | 3 |
+| Hosting | Render (web + PostgreSQL) | 3 |
+| DNS + CDN | Cloudflare | 3 |
+| CI/CD | GitHub Actions — test + deploy | 3 |
+| Email | Django SMTP + console backend | 3 |
 | API | Django REST Framework 3.16 | 2 |
 | RBAC | Custom permission mixins + DRF permission classes | 2 |
 | Audit | Custom AuditLog model + view mixins | 2 |
@@ -206,10 +212,10 @@ Full contract: `/docs/design/api-contract.md`
 | Security headers (XSS, CSRF, X-Frame) | ✅ Phase 2 — base.py + production.py |
 | HSTS + secure cookies | ✅ Phase 2 — production.py (activates on deploy) |
 | JWT API authentication | ✅ Phase 2 — simplejwt, 60min access token |
-| Brute-force protection (django-axes) | 🔄 Phase 3 |
-| CORS policy | 🔄 Phase 3 |
-| HTTPS | 🔄 Phase 3 |
-| Structured JSON logging (SIEM-compatible) | 🔄 Phase 3 |
+| Brute-force protection (django-axes) | ✅ Phase 3 — django-axes, 5 attempts, 1hr lockout |
+| CORS policy | ✅ Phase 3 — django-cors-headers, allowed origins configured |
+| HTTPS | ✅ Phase 3 — Render + Cloudflare, SSL certificates issued |
+| Structured JSON logging (SIEM-compatible) | 🔄 Phase 4 |
 | PostgreSQL row-level security | 🔄 Phase 4 |
 | Internal penetration test | 🔄 Phase 5 |
 
@@ -222,5 +228,5 @@ Full contract: `/docs/design/api-contract.md`
 | 1 | Local prototype — models, CRUD UI, admin | ✅ Complete |
 | 2 | Auth, RBAC, tenant isolation, audit log, EUDR schema, API, security headers | ✅ Complete |
 | 3 | Cloud deployment, CI/CD, closed beta | Planned |
-| 4 | Freemium launch, Stripe, PostGIS upgrade | Planned |
-| 5 | Analytics, integrations, ML, pen test | Planned |
+| 4 | Inventory enhancements, bulk GeoJSON importer, traceability certificates, Stripe, farm maps | Planned |
+| 5 | Buyer portal, market intelligence dashboards, commodity price trends | Planned |

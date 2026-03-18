@@ -1,66 +1,124 @@
 # Runbook — Deployment
 
 **Last Updated:** March 2026
-**Status:** Placeholder — full content in Phase 3
+**Applies to:** Phase 3 — Production on Render
 
 ---
 
-## Overview
+## Architecture
 
-This runbook will document the full deployment process for AgriOps from Phase 3 onwards, when the application is deployed to a cloud hosting provider.
-
----
-
-## Planned Deployment Stack (Phase 3)
-
-| Component | Technology | Notes |
+| Layer | Service | URL |
 |---|---|---|
-| Hosting | Railway or Render | Decision to be finalised in Phase 3 |
-| Database | Managed PostgreSQL | Railway Postgres or Supabase |
-| Static files | WhiteNoise | Served from application |
-| SSL | Let's Encrypt | Auto-managed by hosting provider |
-| CI/CD | GitHub Actions | Auto-deploy on merge to main |
-| Containers | Docker | Dev/prod parity |
+| Web app | Render (free tier) | app.agriops.io |
+| Database | Render PostgreSQL (free tier) | Internal only |
+| DNS + CDN | Cloudflare | agriops.io |
+| CI/CD | GitHub Actions | On push to main |
+| Docs | GitHub Pages | docs.agriops.io |
 
 ---
 
-## Environment Separation
+## Deployment Flow
 
+Every push to `main` branch triggers:
+
+1. GitHub Actions runs `python manage.py check`
+2. GitHub Actions runs all 12 tests against a fresh PostgreSQL container
+3. If tests pass → Render deploy hook is called
+4. Render pulls latest code, runs build command, restarts gunicorn
+
+**Build command on Render:**
 ```
-development  — local machine, DEBUG=True, local PostgreSQL
-staging      — cloud instance, DEBUG=False, mirrors production config
-production   — live environment, real customer data
+pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
 ```
 
-Settings split into `config/settings/base.py`, `development.py`, `production.py` in Phase 2.
+**Start command on Render:**
+```
+gunicorn agri_ops_project.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+```
 
 ---
 
-## Sections to be completed in Phase 3
+## Environment Variables on Render
 
-- Docker build and run instructions
-- Environment variable configuration for production
-- Database migration procedure for production
-- Static file collection and serving
-- GitHub Actions CI/CD pipeline configuration
-- Health check verification post-deployment
-- Rollback procedure
-- SSL certificate setup
-- Monitoring and alerting setup (Sentry)
-
----
-
-## Pre-deployment Checklist (Draft)
-
-- [ ] All tests passing
-- [ ] No pending migrations
-- [ ] Environment variables set in hosting provider
-- [ ] DEBUG=False confirmed
-- [ ] ALLOWED_HOSTS configured
-- [ ] Database backup taken
-- [ ] Health check endpoint responding
-- [ ] Sentry error tracking active
+| Variable | Purpose |
+|---|---|
+| `DJANGO_SETTINGS_MODULE` | `config.settings.production` |
+| `SECRET_KEY` | Long random string |
+| `DEBUG` | `False` |
+| `ALLOWED_HOSTS` | `.onrender.com,.agriops.io` |
+| `DATABASE_URL` | Injected automatically by Render PostgreSQL |
+| `EMAIL_HOST` | `smtp.gmail.com` |
+| `EMAIL_PORT` | `587` |
+| `EMAIL_HOST_USER` | SMTP username |
+| `EMAIL_HOST_PASSWORD` | SMTP password |
+| `DEFAULT_FROM_EMAIL` | `AgriOps <noreply@agriops.io>` |
 
 ---
 
-*This document will be fully populated during Phase 3.*
+## DNS Configuration (Cloudflare)
+
+| Record | Type | Target | Proxy |
+|---|---|---|---|
+| `app` | CNAME | `agriops.onrender.com` | DNS only |
+| `api` | CNAME | `agriops.onrender.com` | DNS only |
+| `docs` | CNAME | `sirleroy.github.io` | DNS only |
+| `www` | CNAME | `www.app.agriops.io` | Proxied |
+
+Page Rules:
+- `agriops.io/*` → 301 redirect to `https://app.agriops.io`
+- `www.agriops.io/*` → 301 redirect to `https://app.agriops.io`
+
+---
+
+## Manual Deployment
+
+To trigger a manual deploy without pushing code:
+
+1. Go to Render dashboard → agriops service
+2. Click **Manual Deploy** → **Deploy latest commit**
+
+Or via the deploy hook:
+```bash
+curl -X POST "$RENDER_DEPLOY_HOOK"
+```
+
+---
+
+## Monitoring
+
+- Render dashboard → **Logs** tab — real-time application logs
+- Render dashboard → **Metrics** tab — CPU, memory, response times
+- GitHub Actions → **Actions** tab — CI run history
+- `/admin/axes/` — brute force attempt log
+
+---
+
+## Rollback
+
+To roll back to a previous deployment:
+
+1. Go to Render dashboard → agriops → **Deployments**
+2. Find the last known good deployment
+3. Click **Redeploy**
+
+Or via git:
+```bash
+git revert HEAD
+git push origin main
+```
+
+---
+
+## Common Issues
+
+### App returns 500 after deploy
+Check Render logs immediately. Most common causes:
+- Missing environment variable
+- Failed migration
+- Import error in new code
+
+### Migrations not running
+The build command includes `python manage.py migrate`. Check build logs in Render for migration output.
+
+### Static files not loading
+WhiteNoise serves static files. Run `python manage.py collectstatic --noinput` locally to verify no errors, then redeploy.
