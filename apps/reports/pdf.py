@@ -151,6 +151,8 @@ def generate_compliance_report(company, user, filters=None):
         filter_parts = []
         if filters.get('sales_order'):
             filter_parts.append(f"Sales Order: {filters['sales_order'].order_number}")
+        if filters.get('customer_name'):
+            filter_parts.append(f"Buyer: {filters['customer_name']}")
         if filters.get('date_from'):
             filter_parts.append(f"From: {filters['date_from']}")
         if filters.get('date_to'):
@@ -243,6 +245,18 @@ def generate_compliance_report(company, user, filters=None):
     if filters.get('sales_order'):
         so_qs = so_qs.filter(pk=filters['sales_order'].pk)
         po_qs = po_qs.none()
+
+    elif filters.get('customer_name'):
+        # Scope to a single buyer: filter SOs, then resolve farms via Batch links
+        so_qs = so_qs.filter(customer_name=filters['customer_name'])
+        from apps.sales_orders.models import Batch
+        farm_ids = (
+            Batch.objects
+            .filter(company=company, sales_order__in=so_qs)
+            .values_list('farms', flat=True)
+            .distinct()
+        )
+        farms = farms.filter(pk__in=farm_ids)
 
     if filters.get('date_from'):
         po_qs = po_qs.filter(order_date__gte=filters['date_from'])

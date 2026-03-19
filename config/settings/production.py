@@ -3,8 +3,9 @@ from decouple import config
 import dj_database_url
 import os
 import logging.handlers
+import sentry_sdk
 
-# Railway injects DATABASE_URL automatically
+# Render injects DATABASE_URL automatically
 if os.environ.get('DATABASE_URL'):
     DATABASES = {
         'default': dj_database_url.parse(
@@ -15,6 +16,13 @@ if os.environ.get('DATABASE_URL'):
     }
 DEBUG = False
 ALLOWED_HOSTS = config('ALLOWED_HOSTS').split(',')
+
+sentry_sdk.init(
+    dsn=os.environ.get('SENTRY_DSN'),
+    environment=os.environ.get('DJANGO_ENV', 'production'),
+    traces_sample_rate=0.2,
+    send_default_pii=False,
+)
 
 # ── HTTPS enforcement ─────────────────────────────────────────
 SECURE_SSL_REDIRECT             = True

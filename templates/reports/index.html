@@ -1,0 +1,319 @@
+{% extends 'base.html' %}
+{% block title %}Reports — AgriOps{% endblock %}
+{% block page_title %}Reports{% endblock %}
+{% block content %}
+<div x-data="{ tab: '{{ active_tab }}' }" class="space-y-6">
+
+  <!-- Tab switcher -->
+  <div class="flex items-center gap-1 bg-card border border-border rounded-xl p-1 w-fit">
+    <button @click="tab = 'eudr'"
+            :class="tab === 'eudr' ? 'bg-surface text-slate-100 shadow' : 'text-slate-500 hover:text-slate-300'"
+            class="px-5 py-2 rounded-lg text-sm font-bold transition-all duration-150">
+      EUDR &amp; Compliance
+    </button>
+    <button @click="tab = 'ops'"
+            :class="tab === 'ops' ? 'bg-surface text-slate-100 shadow' : 'text-slate-500 hover:text-slate-300'"
+            class="px-5 py-2 rounded-lg text-sm font-bold transition-all duration-150">
+      Operations
+    </button>
+  </div>
+
+  <!-- ── EUDR & Compliance tab ──────────────────────────────── -->
+  <div x-show="tab === 'eudr'" x-cloak class="space-y-4">
+
+    <div class="bg-card border border-border rounded-xl p-6">
+      <div class="mb-5">
+        <p class="text-sm font-bold text-slate-100 mb-1">EUDR Compliance Report</p>
+        <p class="text-xs text-slate-500 max-w-xl">
+          Full PDF traceability report — farms, suppliers, purchase orders, sales orders, and EU due diligence declaration.
+          Scope by buyer or specific sales order for per-contract submissions.
+        </p>
+      </div>
+
+      <!-- Full report -->
+      <div class="flex items-center justify-between py-4 border-t border-border">
+        <div>
+          <p class="text-xs font-mono text-slate-400 uppercase tracking-widest mb-0.5">Full Report</p>
+          <p class="text-xs text-slate-600">All farms, suppliers, and orders — no filters applied</p>
+        </div>
+        <a href="{% url 'reports:eudr' %}"
+           class="flex items-center gap-2 bg-green hover:bg-green-dim text-bg font-bold text-xs px-5 py-2.5 rounded-lg transition-colors flex-shrink-0 ml-6">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          Download PDF
+        </a>
+      </div>
+
+      <!-- Filter by date -->
+      <div class="py-4 border-t border-border">
+        <p class="text-xs font-mono text-slate-400 uppercase tracking-widest mb-3">Filter by Date Range</p>
+        <form method="get" action="{% url 'reports:eudr' %}" class="flex items-center gap-2 flex-wrap">
+          <input type="date" name="from"
+                 class="bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
+          <span class="text-xs text-slate-600">to</span>
+          <input type="date" name="to"
+                 class="bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
+          <button type="submit"
+                  class="flex items-center gap-1.5 bg-surface border border-border hover:border-green text-xs text-slate-300 px-4 py-1.5 rounded-lg transition-colors font-mono">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            Download →
+          </button>
+        </form>
+      </div>
+
+      <!-- Filter by buyer (customer) -->
+      <div class="py-4 border-t border-border">
+        <p class="text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">Filter by Buyer</p>
+        <p class="text-xs text-slate-600 mb-3">
+          Scopes the report to a single buyer — farms linked via batches to their orders only.
+          Required for per-contract EU due diligence submissions.
+        </p>
+        {% if customers %}
+        <form method="get" action="{% url 'reports:eudr' %}" class="flex items-center gap-2 flex-wrap">
+          <select name="customer"
+                  class="bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green min-w-48">
+            <option value="">Select buyer…</option>
+            {% for c in customers %}
+            <option value="{{ c }}">{{ c }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit"
+                  class="flex items-center gap-1.5 bg-surface border border-border hover:border-green text-xs text-slate-300 px-4 py-1.5 rounded-lg transition-colors font-mono">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            Download →
+          </button>
+        </form>
+        {% else %}
+        <p class="text-xs text-slate-600">No sales orders yet — buyers will appear here once orders are recorded.</p>
+        {% endif %}
+      </div>
+
+      <!-- Filter by sales order -->
+      <div class="py-4 border-t border-border">
+        <p class="text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">Filter by Sales Order</p>
+        <p class="text-xs text-slate-600 mb-3">Single-transaction report — for one specific order reference.</p>
+        <form method="get" action="{% url 'reports:eudr' %}" class="flex items-center gap-2 flex-wrap">
+          <input type="text" name="order" placeholder="e.g. SO-00023"
+                 class="bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green w-44">
+          <button type="submit"
+                  class="flex items-center gap-1.5 bg-surface border border-border hover:border-green text-xs text-slate-300 px-4 py-1.5 rounded-lg transition-colors font-mono">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            Download →
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+    <!-- EUDR coverage note -->
+    <div class="bg-card border border-border rounded-xl p-5">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-3">Traceability Chain</p>
+      <div class="flex items-center gap-2 flex-wrap text-xs font-mono text-slate-500">
+        <span class="text-slate-300">Farm</span>
+        <span>→</span>
+        <span class="text-slate-300">Supplier</span>
+        <span>→</span>
+        <span class="text-slate-300">Purchase Order</span>
+        <span>→</span>
+        <span class="text-slate-300">Inventory</span>
+        <span>→</span>
+        <span class="text-slate-300">Sales Order Item</span>
+        <span>→</span>
+        <span class="text-slate-300">Batch</span>
+        <span>→</span>
+        <span class="text-green font-bold">EUDR Report</span>
+      </div>
+      <p class="text-xs text-slate-600 mt-2">
+        Per-buyer reports resolve the chain backwards from the sales order through batches to the exact farm plots
+        that supplied goods for that transaction.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- ── Operations tab ─────────────────────────────────────── -->
+  <div x-show="tab === 'ops'" x-cloak class="space-y-4">
+
+    <p class="text-xs text-slate-500">
+      Internal operational reports — not tied to EU compliance. Download as CSV for use in spreadsheets or
+      accounting tools.
+    </p>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+      <!-- Supplier Performance -->
+      <div class="bg-card border border-border rounded-xl p-5">
+        <div class="flex items-start gap-3 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+            <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-bold text-slate-100">Supplier Performance</p>
+            <p class="text-xs text-slate-500 mt-0.5">PO volume, received count, and delivery rate per supplier</p>
+          </div>
+        </div>
+        <form method="get" action="{% url 'reports:ops' %}" class="space-y-3">
+          <input type="hidden" name="type" value="suppliers">
+          <div class="flex items-center gap-2">
+            <input type="date" name="from"
+                   class="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
+            <span class="text-xs text-slate-600">to</span>
+            <input type="date" name="to"
+                   class="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
+          </div>
+          <button type="submit"
+                  class="w-full flex items-center justify-center gap-2 bg-surface border border-border hover:border-blue-400 text-xs text-slate-300 hover:text-blue-300 px-4 py-2 rounded-lg transition-colors font-mono">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Download CSV
+          </button>
+        </form>
+      </div>
+
+      <!-- Sales Summary -->
+      <div class="bg-card border border-border rounded-xl p-5">
+        <div class="flex items-start gap-3 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-green/10 flex items-center justify-center flex-shrink-0">
+            <svg class="w-4 h-4 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-bold text-slate-100">Sales Summary</p>
+            <p class="text-xs text-slate-500 mt-0.5">All sales orders with customer, status, and total value</p>
+          </div>
+        </div>
+        <form method="get" action="{% url 'reports:ops' %}" class="space-y-3">
+          <input type="hidden" name="type" value="sales">
+          <div class="flex items-center gap-2">
+            <input type="date" name="from"
+                   class="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
+            <span class="text-xs text-slate-600">to</span>
+            <input type="date" name="to"
+                   class="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
+          </div>
+          <button type="submit"
+                  class="w-full flex items-center justify-center gap-2 bg-surface border border-border hover:border-green text-xs text-slate-300 hover:text-green px-4 py-2 rounded-lg transition-colors font-mono">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Download CSV
+          </button>
+        </form>
+      </div>
+
+      <!-- Inventory Stock -->
+      <div class="bg-card border border-border rounded-xl p-5">
+        <div class="flex items-start gap-3 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
+            <svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-bold text-slate-100">Inventory Stock</p>
+            <p class="text-xs text-slate-500 mt-0.5">Current stock levels, lot numbers, quality grades, and low-stock flags</p>
+          </div>
+        </div>
+        <form method="get" action="{% url 'reports:ops' %}" class="space-y-3">
+          <input type="hidden" name="type" value="inventory">
+          <p class="text-xs text-slate-600">Point-in-time snapshot — date filter not applicable</p>
+          <button type="submit"
+                  class="w-full flex items-center justify-center gap-2 bg-surface border border-border hover:border-yellow-400 text-xs text-slate-300 hover:text-yellow-300 px-4 py-2 rounded-lg transition-colors font-mono">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Download CSV
+          </button>
+        </form>
+      </div>
+
+      <!-- Purchase Order Status -->
+      <div class="bg-card border border-border rounded-xl p-5">
+        <div class="flex items-start gap-3 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+            <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-bold text-slate-100">Purchase Order Status</p>
+            <p class="text-xs text-slate-500 mt-0.5">All POs with supplier, status, expected delivery, and value</p>
+          </div>
+        </div>
+        <form method="get" action="{% url 'reports:ops' %}" class="space-y-3">
+          <input type="hidden" name="type" value="purchase-orders">
+          <div class="flex items-center gap-2">
+            <input type="date" name="from"
+                   class="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
+            <span class="text-xs text-slate-600">to</span>
+            <input type="date" name="to"
+                   class="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
+          </div>
+          <button type="submit"
+                  class="w-full flex items-center justify-center gap-2 bg-surface border border-border hover:border-orange-400 text-xs text-slate-300 hover:text-orange-300 px-4 py-2 rounded-lg transition-colors font-mono">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Download CSV
+          </button>
+        </form>
+      </div>
+
+      <!-- Farm Registry -->
+      <div class="bg-card border border-border rounded-xl p-5 lg:col-span-2">
+        <div class="flex items-start gap-3 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+            <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-bold text-slate-100">Farm Registry</p>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Complete farm list — supplier, commodity, EUDR status, compliance status, verification expiry, and GeoJSON presence.
+              Useful for internal audits and compliance reviews.
+            </p>
+          </div>
+        </div>
+        <form method="get" action="{% url 'reports:ops' %}">
+          <input type="hidden" name="type" value="farms">
+          <button type="submit"
+                  class="flex items-center gap-2 bg-surface border border-border hover:border-purple-400 text-xs text-slate-300 hover:text-purple-300 px-5 py-2 rounded-lg transition-colors font-mono">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Download CSV
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}
