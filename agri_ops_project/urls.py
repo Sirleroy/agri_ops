@@ -2,14 +2,21 @@ from apps.dashboard.landing import LandingView
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
+from django.http import HttpResponse
 from agri_ops_project.health import health_check
 from apps.sales_orders.batch_views import PublicTraceView
 from apps.dashboard.access_views import RequestAccessView
+
+
+# TEMPORARY — Sentry test, remove after confirming errors appear in Sentry
+def trigger_sentry_test(request):
+    division_by_zero = 1 / 0
 
 urlpatterns = [
     path('', include('ops_dashboard.urls')),
     path('', LandingView.as_view(), name='landing'),
     path('health/', health_check, name='health'),
+    path('sentry-test/', trigger_sentry_test),  # TEMPORARY
     path('admin/', admin.site.urls),
     path('api/v1/', include('apps.api.urls')),
     path('reports/', include('apps.reports.urls', namespace='reports')),
