@@ -22,7 +22,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         from apps.sales_orders.models import SalesOrder
         from apps.audit.models import AuditLog
         from apps.users.models import CustomUser
-        from django.db.models import F
+        from django.db.models import F, Count, Sum
 
         # ── Core stats ───────────────────────────────────────
         context['total_suppliers'] = Supplier.objects.filter(company=company).count()
@@ -81,5 +81,57 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         context['recent_activity'] = AuditLog.objects.filter(
             company=company
         ).select_related('user').order_by('-timestamp')[:8]
+
+        # ── Intelligence cards ────────────────────────────────
+        from apps.sales_orders.models import SalesOrderItem
+
+        context['top_customer'] = (
+            SalesOrder.objects
+            .filter(company=company)
+            .values('customer_name')
+            .annotate(order_count=Count('id'))
+            .order_by('-order_count')
+            .first()
+        )
+
+        context['top_supplier'] = (
+            PurchaseOrder.objects
+            .filter(company=company, supplier__isnull=False)
+            .values('supplier__name')
+            .annotate(po_count=Count('id'))
+            .order_by('-po_count')
+            .first()
+        )
+
+        total_farms_count = farms.count()
+        if total_farms_count > 0:
+            context['eudr_compliance_rate'] = round(
+                context['farms_verified'] / total_farms_count * 100
+            )
+        else:
+            context['eudr_compliance_rate'] = None
+
+        context['top_product'] = (
+            SalesOrderItem.objects
+            .filter(sales_order__company=company)
+            .values('product__name')
+            .annotate(total_qty=Sum('quantity'))
+            .order_by('-total_qty')
+            .first()
+        )
+
+        context['open_sales_orders'] = (
+            SalesOrder.objects
+            .filter(company=company)
+            .exclude(status__in=['completed', 'cancelled'])
+            .count()
+        )
+
+        context['active_purchase_orders'] = (
+            PurchaseOrder.objects
+            .filter(company=company)
+            .exclude(status__in=['received', 'cancelled'])
+            .count()
+        )
 
         return context

@@ -56,6 +56,64 @@
     </div>
   </div>
 
+  <!-- Intelligence Insights -->
+  <div x-data="{
+    idx: 0,
+    insights: [
+      {% if top_customer %}
+      { label: 'TOP BUYER', value: '{{ top_customer.customer_name|escapejs }}', sub: '{{ top_customer.order_count }} order{{ top_customer.order_count|pluralize }} placed', color: 'text-green', dot: 'bg-green' },
+      {% endif %}
+      {% if top_supplier %}
+      { label: 'TOP SUPPLIER', value: '{{ top_supplier.supplier__name|escapejs }}', sub: '{{ top_supplier.po_count }} purchase order{{ top_supplier.po_count|pluralize }}', color: 'text-blue-400', dot: 'bg-blue-400' },
+      {% endif %}
+      {% if eudr_compliance_rate is not None %}
+      { label: 'EUDR COMPLIANCE', value: '{{ eudr_compliance_rate }}%', sub: '{{ farms_verified }} of {{ total_farms }} farm{{ total_farms|pluralize }} verified', color: '{% if eudr_compliance_rate >= 80 %}text-green{% elif eudr_compliance_rate >= 50 %}text-yellow-400{% else %}text-red-400{% endif %}', dot: '{% if eudr_compliance_rate >= 80 %}bg-green{% elif eudr_compliance_rate >= 50 %}bg-yellow-400{% else %}bg-red-400{% endif %}' },
+      {% endif %}
+      {% if top_product %}
+      { label: 'TOP PRODUCT', value: '{{ top_product.product__name|escapejs }}', sub: '{{ top_product.total_qty }} units sold', color: 'text-purple-400', dot: 'bg-purple-400' },
+      {% endif %}
+      { label: 'OPEN SALES', value: '{{ open_sales_orders }}', sub: 'order{{ open_sales_orders|pluralize }} in progress', color: 'text-orange-400', dot: 'bg-orange-400' },
+      { label: 'ACTIVE PROCUREMENT', value: '{{ active_purchase_orders }}', sub: 'PO{{ active_purchase_orders|pluralize }} pending completion', color: 'text-cyan-400', dot: 'bg-cyan-400' },
+    ],
+    init() {
+      if (this.insights.length > 1) {
+        setInterval(() => { this.idx = (this.idx + 1) % this.insights.length }, 5000)
+      }
+    }
+  }" class="bg-card border border-border rounded-xl p-5">
+    <div class="flex items-center justify-between mb-1">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Business Intelligence</p>
+      <div class="flex items-center gap-1.5">
+        <template x-for="(ins, i) in insights" :key="i">
+          <button @click="idx = i"
+                  :class="i === idx ? ins.dot + ' w-2 h-2' : 'bg-slate-700 w-1.5 h-1.5'"
+                  class="rounded-full transition-all duration-300 focus:outline-none">
+          </button>
+        </template>
+      </div>
+    </div>
+    <template x-if="insights.length > 0">
+      <div class="flex items-end justify-between">
+        <div>
+          <p class="text-xs font-mono text-slate-600 uppercase tracking-widest mt-3 mb-1"
+             x-text="insights[idx].label"></p>
+          <p class="text-2xl font-black transition-all duration-300"
+             :class="insights[idx].color"
+             x-text="insights[idx].value"></p>
+          <p class="text-xs text-slate-500 mt-1" x-text="insights[idx].sub"></p>
+        </div>
+        <div class="text-right">
+          <p class="text-xs font-mono text-slate-700">
+            <span x-text="idx + 1"></span> / <span x-text="insights.length"></span>
+          </p>
+        </div>
+      </div>
+    </template>
+    <template x-if="insights.length === 0">
+      <p class="text-sm text-slate-600 mt-3">Add suppliers, products, and orders to see business insights.</p>
+    </template>
+  </div>
+
   <!-- EUDR Compliance Panel + Recent Activity -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
 

@@ -9,3 +9,4 @@ media/
 agri_ops_project/settings.py
 *.log
 staticfiles/
+CLAUDE.md
