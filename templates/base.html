@@ -43,6 +43,15 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #1e2d40; border-radius: 10px; }
 
+    /* Readability: bump text-xs (12px → 13px) across all templates */
+    body .text-xs { font-size: 0.8125rem; line-height: 1.25rem; }
+
+    /* Readability: contrast lift for muted text on dark background */
+    /* text-slate-500 (#64748b ≈ 3.7:1) → slate-400 (#94a3b8 ≈ 5.7:1) — passes WCAG AA */
+    body .text-slate-500 { color: #94a3b8; }
+    /* text-slate-600 (#475569 ≈ 2.8:1) → slate-500 (#64748b ≈ 3.7:1) */
+    body .text-slate-600 { color: #64748b; }
+
     /* Global form field styles */
     .form-input, input:not([type="checkbox"]):not([type="radio"]), select, textarea {
       width: 100%;
@@ -51,7 +60,7 @@
       border-radius: 8px;
       padding: 8px 12px;
       color: #f1f5f9;
-      font-size: 13px;
+      font-size: 14px;
       outline: none;
       transition: border-color 0.15s;
     }
