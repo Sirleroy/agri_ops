@@ -5,7 +5,7 @@
 {% block content %}
 <div class="max-w-2xl space-y-4">
 
-  <a href="{% url 'sales_orders:list' %}" class="text-sm text-slate-500 hover:text-slate-100 transition-colors flex items-center gap-1 w-fit">
+  <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}{% url 'sales_orders:list' %}{% endif %}" class="text-sm text-slate-500 hover:text-slate-100 transition-colors flex items-center gap-1 w-fit">
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
     Back to Sales Orders
   </a>
@@ -30,7 +30,7 @@
         <button type="submit" class="px-5 py-2 bg-green hover:bg-green-dim text-bg font-bold text-sm rounded-lg transition-colors">
           {% if object %}Save Changes{% else %}Create Order{% endif %}
         </button>
-        <a href="{% url 'sales_orders:list' %}" class="px-5 py-2 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">Cancel</a>
+        <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}{% url 'sales_orders:list' %}{% endif %}" class="px-5 py-2 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">Cancel</a>
       </div>
     </form>
   </div>

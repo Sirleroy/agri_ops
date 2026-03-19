@@ -11,8 +11,8 @@
       Back to Users
     </a>
     <div class="flex gap-2">
-      <a href="{% url 'users:update' profile.pk %}" class="px-4 py-2 bg-card border border-border rounded-lg text-sm text-slate-300 hover:text-slate-100 transition-colors">Edit</a>
-      <a href="{% url 'users:delete' profile.pk %}" class="px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400 hover:text-red-300 transition-colors">Delete</a>
+      <a href="{% url 'users:update' profile.pk %}?next={{ request.path }}" class="px-4 py-2 bg-card border border-border rounded-lg text-sm text-slate-300 hover:text-slate-100 transition-colors">Edit</a>
+      <button @click="openDeleteModal('{% url 'users:delete' profile.pk %}', '{{ profile.username|escapejs }}')" class="px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400 hover:text-red-300 transition-colors">Delete</button>
     </div>
   </div>
 

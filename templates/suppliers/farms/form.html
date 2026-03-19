@@ -79,7 +79,7 @@
           class="flex-1 bg-green hover:bg-green-dim text-bg font-bold text-sm py-3 rounded-lg transition-colors">
           {% if form.instance.pk %}Save Changes{% else %}Create Farm{% endif %}
         </button>
-        <a href="{% url 'suppliers:farm_list' %}"
+        <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}{% url 'suppliers:farm_list' %}{% endif %}"
           class="flex-1 text-center border border-border text-slate-400 hover:text-slate-100 text-sm py-3 rounded-lg transition-colors">
           Cancel
         </a>

@@ -131,6 +131,88 @@
 
   </div>
 
+  <!-- Upcoming Deliveries / Expiring Farms / Low Stock -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+    <!-- Upcoming PO Deliveries -->
+    <div class="bg-card border border-border rounded-xl p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Upcoming Deliveries</p>
+        <span class="text-xs font-mono text-slate-600">next 7 days</span>
+      </div>
+      {% if upcoming_pos %}
+      <div class="space-y-2">
+        {% for po in upcoming_pos %}
+        <div class="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+          <div>
+            <a href="{% url 'purchase_orders:detail' po.pk %}" class="text-sm font-mono text-slate-200 hover:text-green transition-colors">PO-{{ po.order_number }}</a>
+            <p class="text-xs text-slate-500 mt-0.5">{{ po.supplier.name|default:"—" }}</p>
+          </div>
+          <span class="text-xs font-mono text-slate-400 flex-shrink-0 ml-2">{{ po.expected_delivery|date:"d M" }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-sm text-slate-600">No deliveries due this week.</p>
+      {% endif %}
+      <div class="mt-4 pt-4 border-t border-border">
+        <a href="{% url 'purchase_orders:list' %}" class="text-xs font-mono text-green hover:text-green-dim transition-colors">View all orders →</a>
+      </div>
+    </div>
+
+    <!-- EUDR Farms Expiring -->
+    <div class="bg-card border border-border rounded-xl p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">EUDR Expiring Soon</p>
+        <span class="text-xs font-mono text-slate-600">next 30 days</span>
+      </div>
+      {% if expiring_farms_list %}
+      <div class="space-y-2">
+        {% for farm in expiring_farms_list %}
+        <div class="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+          <div>
+            <a href="{% url 'suppliers:farm_detail' farm.pk %}" class="text-sm text-slate-200 hover:text-green transition-colors">{{ farm.name }}</a>
+            <p class="text-xs text-slate-500 mt-0.5">{{ farm.supplier.name }}</p>
+          </div>
+          <span class="expiry-badge text-xs font-mono text-orange-400 flex-shrink-0 ml-2" data-expiry="{{ farm.verification_expiry|date:'Y-m-d' }}"></span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-sm text-slate-600">No farms expiring soon.</p>
+      {% endif %}
+      <div class="mt-4 pt-4 border-t border-border">
+        <a href="{% url 'suppliers:farm_list' %}" class="text-xs font-mono text-green hover:text-green-dim transition-colors">View all farms →</a>
+      </div>
+    </div>
+
+    <!-- Low Stock Items -->
+    <div class="bg-card border border-border rounded-xl p-5">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Low Stock</p>
+        {% if low_stock_count > 0 %}
+        <span class="px-2 py-0.5 rounded text-xs font-mono bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">{{ low_stock_count }} item{{ low_stock_count|pluralize }}</span>
+        {% endif %}
+      </div>
+      {% if low_stock_items %}
+      <div class="space-y-2">
+        {% for item in low_stock_items %}
+        <div class="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+          <a href="{% url 'inventory:detail' item.pk %}" class="text-sm text-slate-200 hover:text-green transition-colors">{{ item.product.name }}</a>
+          <span class="text-xs font-mono text-yellow-400 flex-shrink-0 ml-2">{{ item.quantity }} / {{ item.low_stock_threshold }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-sm text-slate-600">All stock levels are healthy.</p>
+      {% endif %}
+      <div class="mt-4 pt-4 border-t border-border">
+        <a href="{% url 'inventory:list' %}" class="text-xs font-mono text-green hover:text-green-dim transition-colors">View inventory →</a>
+      </div>
+    </div>
+
+  </div>
+
       <!-- Compliance Report Download -->
 <div class="bg-card border border-border rounded-xl p-5">
   <div class="flex items-center justify-between mb-4">
@@ -161,4 +243,16 @@
     </form>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  document.querySelectorAll('.expiry-badge[data-expiry]').forEach(function (el) {
+    const expiry = new Date(el.dataset.expiry);
+    const diff = Math.round((expiry - today) / 86400000);
+    el.textContent = diff < 0 ? 'Expired ' + Math.abs(diff) + 'd ago' : diff + 'd left';
+  });
+});
+</script>
 {% endblock %}

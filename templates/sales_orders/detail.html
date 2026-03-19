@@ -11,8 +11,8 @@
       Back to Sales Orders
     </a>
     <div class="flex gap-2">
-      <a href="{% url 'sales_orders:update' order.pk %}" class="px-4 py-2 bg-card border border-border rounded-lg text-sm text-slate-300 hover:text-slate-100 transition-colors">Edit</a>
-      <a href="{% url 'sales_orders:delete' order.pk %}" class="px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400 hover:text-red-300 transition-colors">Delete</a>
+      <a href="{% url 'sales_orders:update' order.pk %}?next={{ request.path }}" class="px-4 py-2 bg-card border border-border rounded-lg text-sm text-slate-300 hover:text-slate-100 transition-colors">Edit</a>
+      <button @click="openDeleteModal('{% url 'sales_orders:delete' order.pk %}', 'SO-{{ order.order_number|escapejs }}')" class="px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400 hover:text-red-300 transition-colors">Delete</button>
     </div>
   </div>
 
@@ -58,7 +58,7 @@
     </div>
   </div>
 
-  <div class="bg-card border border-border rounded-xl overflow-hidden">
+  <div class="bg-card border border-border rounded-xl overflow-x-auto">
     <div class="px-5 py-3 border-b border-border bg-white/[0.02]">
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Line Items</p>
     </div>
@@ -81,7 +81,14 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="4" class="px-5 py-8 text-center text-slate-500 font-mono text-sm">No line items added yet.</td>
+          <td colspan="4" class="px-5 py-8 text-center">
+            <p class="text-slate-500 font-mono text-sm mb-3">No line items added yet.</p>
+            <a href="{% url 'sales_orders:update' order.pk %}?next={{ request.path }}"
+               class="inline-flex items-center gap-1.5 bg-green hover:bg-green-dim text-bg text-xs font-bold px-4 py-2 rounded-lg transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Add Line Items
+            </a>
+          </td>
         </tr>
         {% endfor %}
       </tbody>

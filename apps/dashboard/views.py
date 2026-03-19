@@ -55,6 +55,28 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             quantity__lte=F('low_stock_threshold')
         ).count()
 
+        context['low_stock_items'] = Inventory.objects.filter(
+            company=company,
+            quantity__lte=F('low_stock_threshold')
+        ).select_related('product').order_by('quantity')[:5]
+
+        # ── Upcoming PO deliveries (next 7 days) ──────────────
+        in_7 = today + timedelta(days=7)
+        context['upcoming_pos'] = PurchaseOrder.objects.filter(
+            company=company,
+            expected_delivery__gte=today,
+            expected_delivery__lte=in_7,
+        ).exclude(
+            status__in=['received', 'cancelled']
+        ).select_related('supplier').order_by('expected_delivery')[:5]
+
+        # ── EUDR farms expiring soon (detailed list) ──────────
+        context['expiring_farms_list'] = farms.filter(
+            is_eudr_verified=True,
+            verification_expiry__lte=in_30,
+            verification_expiry__gte=today,
+        ).select_related('supplier').order_by('verification_expiry')[:5]
+
         # ── Recent audit activity ─────────────────────────────
         context['recent_activity'] = AuditLog.objects.filter(
             company=company

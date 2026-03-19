@@ -18,7 +18,7 @@
     </a>
   </div>
 
-  <div class="bg-card border border-border rounded-xl overflow-hidden">
+  <div class="bg-card border border-border rounded-xl overflow-x-auto">
     <table class="w-full text-sm">
       <thead>
         <tr class="border-b border-border">
@@ -73,8 +73,8 @@
             <div class="flex items-center gap-2">
               <a href="{% url 'suppliers:farm_update' farm.pk %}"
                  class="text-xs text-slate-400 hover:text-green transition-colors">Edit</a>
-              <a href="{% url 'suppliers:farm_delete' farm.pk %}"
-                 class="text-xs text-slate-400 hover:text-red-400 transition-colors">Delete</a>
+              <button @click="openDeleteModal('{% url 'suppliers:farm_delete' farm.pk %}', '{{ farm.name|escapejs }}')"
+                      class="text-xs text-slate-400 hover:text-red-400 transition-colors">Delete</button>
             </div>
           </td>
         </tr>

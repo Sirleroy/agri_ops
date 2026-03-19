@@ -89,8 +89,16 @@
     } else {
       this.mobileOpen = !this.mobileOpen;
     }
+  },
+  deleteModal: false,
+  deleteUrl: '',
+  deleteName: '',
+  openDeleteModal(url, name) {
+    this.deleteUrl = url;
+    this.deleteName = name;
+    this.deleteModal = true;
   }
-}">
+}" @keydown.escape.window="deleteModal = false">
 
   <div class="flex h-screen overflow-hidden">
 
@@ -175,7 +183,7 @@
             <span x-show="sidebarOpen || mobileOpen" x-transition.opacity>Sales Orders</span>
           </a>
           <a href="{% url 'sales_orders:batch_list' %}"
-             class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all text-sm font-medium relative">
+             class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all text-sm font-medium relative {% if request.resolver_match.url_name in 'batch_list,batch_detail,batch_create,batch_update' %}nav-active{% endif %}">
             <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             <span x-show="sidebarOpen || mobileOpen" x-transition.opacity>Batches</span>
           </a>
@@ -246,10 +254,90 @@
           <h1 class="text-sm font-bold text-slate-100 tracking-wide">{% block page_title %}{% endblock %}</h1>
         </div>
         <div class="flex items-center gap-3">
-          <!-- Notifications placeholder -->
-          <button class="w-8 h-8 rounded-lg bg-card border border-border flex items-center justify-center text-slate-400 hover:text-slate-100 transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-          </button>
+          <!-- Notification bell -->
+          <div class="relative" x-data="{ bellOpen: false }" @click.outside="bellOpen = false">
+            <button @click="bellOpen = !bellOpen"
+                    class="w-8 h-8 rounded-lg bg-card border border-border flex items-center justify-center text-slate-400 hover:text-slate-100 transition-colors relative">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+              {% if notif_total > 0 %}
+              <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-mono leading-none">{{ notif_total }}</span>
+              {% endif %}
+            </button>
+
+            <!-- Dropdown -->
+            <div x-show="bellOpen"
+                 x-transition:enter="transition ease-out duration-150"
+                 x-transition:enter-start="opacity-0 -translate-y-1"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-100"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="absolute right-0 top-10 w-80 bg-surface border border-border rounded-xl shadow-2xl z-50 overflow-hidden">
+
+              <div class="px-4 py-3 border-b border-border flex items-center justify-between">
+                <p class="text-xs font-mono text-slate-400 uppercase tracking-widest">Alerts</p>
+                {% if notif_total > 0 %}
+                <span class="px-2 py-0.5 rounded text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20">{{ notif_total }} active</span>
+                {% else %}
+                <span class="text-xs font-mono text-slate-600">All clear</span>
+                {% endif %}
+              </div>
+
+              <div class="max-h-80 overflow-y-auto">
+
+                {% if notif_low_stock_count > 0 %}
+                <div class="px-4 py-2 border-b border-border/50">
+                  <p class="text-xs font-mono text-yellow-400 uppercase tracking-widest mb-1">Low Stock · {{ notif_low_stock_count }}</p>
+                  {% for item in notif_low_stock_items %}
+                  <a href="{% url 'inventory:detail' item.pk %}" @click="bellOpen = false"
+                     class="flex items-center justify-between py-1 text-sm text-slate-300 hover:text-green transition-colors">
+                    <span>{{ item.product.name }}</span>
+                    <span class="text-xs font-mono text-slate-500">{{ item.quantity }}/{{ item.low_stock_threshold }}</span>
+                  </a>
+                  {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if notif_overdue_count > 0 %}
+                <div class="px-4 py-2 border-b border-border/50">
+                  <p class="text-xs font-mono text-red-400 uppercase tracking-widest mb-1">Overdue POs · {{ notif_overdue_count }}</p>
+                  {% for po in notif_upcoming_pos %}
+                  <a href="{% url 'purchase_orders:detail' po.pk %}" @click="bellOpen = false"
+                     class="flex items-center justify-between py-1 text-sm text-slate-300 hover:text-green transition-colors">
+                    <span>PO-{{ po.order_number }}</span>
+                    <span class="text-xs font-mono text-slate-500">{{ po.expected_delivery|date:"d M" }}</span>
+                  </a>
+                  {% endfor %}
+                  <a href="{% url 'purchase_orders:list' %}" @click="bellOpen = false"
+                     class="text-xs font-mono text-slate-500 hover:text-green transition-colors block mt-1">View all →</a>
+                </div>
+                {% endif %}
+
+                {% if notif_expiring_count > 0 %}
+                <div class="px-4 py-2">
+                  <p class="text-xs font-mono text-orange-400 uppercase tracking-widest mb-1">EUDR Expiring · {{ notif_expiring_count }}</p>
+                  {% for farm in notif_expiring_farms %}
+                  <a href="{% url 'suppliers:farm_detail' farm.pk %}" @click="bellOpen = false"
+                     class="flex items-center justify-between py-1 text-sm text-slate-300 hover:text-green transition-colors">
+                    <span>{{ farm.name }}</span>
+                    <span class="text-xs font-mono text-slate-500">{{ farm.verification_expiry|date:"d M Y" }}</span>
+                  </a>
+                  {% endfor %}
+                  <a href="{% url 'suppliers:farm_list' %}" @click="bellOpen = false"
+                     class="text-xs font-mono text-slate-500 hover:text-green transition-colors block mt-1">View all →</a>
+                </div>
+                {% endif %}
+
+                {% if notif_total == 0 %}
+                <div class="px-4 py-6 text-center">
+                  <p class="text-sm text-slate-600">No alerts right now.</p>
+                </div>
+                {% endif %}
+
+              </div>
+            </div>
+          </div>
+
           <a href="/admin/" class="text-xs font-mono text-slate-500 hover:text-green transition-colors">Admin Panel</a>
         </div>
       </header>
@@ -285,6 +373,34 @@
     {% endfor %}
   </div>
   {% endif %}
+
+  <!-- ═══════════════════════════════ DELETE MODAL ═══════════════════════════════ -->
+  <div x-show="deleteModal"
+       x-transition:enter="transition ease-out duration-150"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       x-transition:leave="transition ease-in duration-100"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0"
+       class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+    <div @click.stop class="bg-card border border-red-500/20 rounded-xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </div>
+        <div>
+          <h2 class="text-base font-bold text-slate-100">Confirm Delete</h2>
+          <p class="text-sm text-slate-400">This action cannot be undone.</p>
+        </div>
+      </div>
+      <p class="text-sm text-slate-300">Delete <span class="font-bold text-slate-100" x-text="deleteName"></span>?</p>
+      <form method="post" :action="deleteUrl" class="flex gap-3 pt-2">
+        {% csrf_token %}
+        <button type="submit" class="px-5 py-2 bg-red-500 hover:bg-red-600 text-white font-bold text-sm rounded-lg transition-colors">Delete</button>
+        <button type="button" @click="deleteModal = false" class="px-5 py-2 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">Cancel</button>
+      </form>
+    </div>
+  </div>
 
   <script>
     /* Form submit loading state */
