@@ -25,6 +25,17 @@
       color: #e2e8f0;
       font-family: 'Lora', Georgia, serif;
       overflow-x: hidden;
+      position: relative;
+    }
+
+    .eudr-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+    @media (max-width: 768px) {
+      .eudr-grid { grid-template-columns: 1fr; gap: 40px; }
     }
 
     /* Grid background */
@@ -381,7 +392,7 @@
 <!-- EUDR SECTION -->
 <section style="padding:100px 24px;">
   <div style="max-width:1200px;margin:0 auto;">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;">
+    <div class="eudr-grid">
       <div class="reveal">
         <span class="tag">EUDR Ready</span>
         <div class="section-divider"></div>
