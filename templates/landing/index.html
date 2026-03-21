@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AgriOps — Agricultural Supply Chain Intelligence</title>
-  <meta name="description" content="From farm to market — traceable, compliant, intelligent. AgriOps is the supply chain platform built for African agricultural SMEs and cooperatives.">
+  <title>AgriOps — Supply Chain Intelligence for Agricultural Exporters</title>
+  <meta name="description" content="AgriOps turns your daily supply chain activity into a verified intelligence record — GPS-mapped farms, real-time procurement and sales visibility, and compliance reports ready for any buyer who asks.">
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -26,16 +26,6 @@
       font-family: 'Lora', Georgia, serif;
       overflow-x: hidden;
       position: relative;
-    }
-
-    .eudr-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 60px;
-      align-items: center;
-    }
-    @media (max-width: 768px) {
-      .eudr-grid { grid-template-columns: 1fr; gap: 40px; }
     }
 
     /* Grid background */
@@ -68,23 +58,20 @@
       transform: translateY(0);
     }
 
-    /* Stagger delays */
     .delay-1 { transition-delay: 0.1s; }
     .delay-2 { transition-delay: 0.2s; }
     .delay-3 { transition-delay: 0.3s; }
     .delay-4 { transition-delay: 0.4s; }
 
-    /* Hero text animation */
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(32px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-    .hero-animate { animation: fadeUp 0.9s ease forwards; }
+    .hero-animate   { animation: fadeUp 0.9s ease forwards; }
     .hero-animate-2 { animation: fadeUp 0.9s ease 0.2s forwards; opacity: 0; }
     .hero-animate-3 { animation: fadeUp 0.9s ease 0.4s forwards; opacity: 0; }
     .hero-animate-4 { animation: fadeUp 0.9s ease 0.6s forwards; opacity: 0; }
 
-    /* Nav */
     nav {
       position: fixed;
       top: 0; left: 0; right: 0;
@@ -94,7 +81,6 @@
       border-bottom: 1px solid var(--border);
     }
 
-    /* Feature card hover */
     .feature-card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -107,7 +93,6 @@
       transform: translateY(-4px);
     }
 
-    /* Stat card */
     .stat-card {
       background: linear-gradient(135deg, var(--card), var(--surface));
       border: 1px solid var(--border);
@@ -125,7 +110,6 @@
       background: linear-gradient(90deg, transparent, var(--green), transparent);
     }
 
-    /* CTA button */
     .btn-primary {
       background: var(--green);
       color: #080d14;
@@ -140,10 +124,7 @@
       text-decoration: none;
       display: inline-block;
     }
-    .btn-primary:hover {
-      background: var(--green-dim);
-      transform: translateY(-1px);
-    }
+    .btn-primary:hover { background: var(--green-dim); transform: translateY(-1px); }
 
     .btn-secondary {
       background: transparent;
@@ -159,12 +140,8 @@
       text-decoration: none;
       display: inline-block;
     }
-    .btn-secondary:hover {
-      border-color: var(--green);
-      color: var(--green);
-    }
+    .btn-secondary:hover { border-color: var(--green); color: var(--green); }
 
-    /* Form */
     input[type="text"], input[type="email"] {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -177,12 +154,9 @@
       outline: none;
       transition: border-color 0.2s;
     }
-    input:focus {
-      border-color: var(--green);
-    }
+    input:focus { border-color: var(--green); }
     input::placeholder { color: #475569; }
 
-    /* Tag */
     .tag {
       font-family: 'JetBrains Mono', monospace;
       font-size: 10px;
@@ -195,7 +169,6 @@
       display: inline-block;
     }
 
-    /* Ticker */
     .live-dot {
       width: 7px; height: 7px;
       background: var(--green);
@@ -205,28 +178,49 @@
     }
     @keyframes pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(0.8); }
+      50%       { opacity: 0.5; transform: scale(0.8); }
     }
 
-    /* Divider */
     .section-divider {
       width: 40px; height: 2px;
       background: var(--green);
       margin: 16px 0 24px;
     }
 
-    /* Scrollbar */
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* EUDR grid — responsive */
+    .eudr-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+    @media (max-width: 768px) {
+      .eudr-grid { grid-template-columns: 1fr; gap: 40px; }
+    }
+
+    /* Two-journey grid */
+    .journey-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 768px) {
+      .journey-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
 
-<!-- NAV -->
+<!-- ═══════════════════════════════════════════════════════
+     NAV
+════════════════════════════════════════════════════════ -->
 <nav>
-  <div style="max-width:1200px; margin:0 auto; padding:0 24px; height:64px; display:flex; align-items:center; justify-content:space-between;">
-    <div style="display:flex; align-items:center; gap:10px;">
+  <div style="max-width:1200px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:10px;">
       <div style="width:32px;height:32px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;">
         <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:#080d14;">A</span>
       </div>
@@ -235,12 +229,22 @@
     <div style="display:flex;align-items:center;gap:12px;">
       <span class="live-dot"></span>
       <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);letter-spacing:0.1em;">LIVE AT APP.AGRIOPS.IO</span>
-      {% if user.is_authenticated %}<a href="/dashboard/" class="btn-primary" style="padding:8px 18px;font-size:13px;">Dashboard</a>{% else %}<a href="/login/" class="btn-secondary" style="padding:8px 18px;font-size:13px;">Sign In</a>{% endif %}
+      {% if user.is_authenticated %}
+        <a href="/dashboard/" class="btn-primary" style="padding:8px 18px;font-size:13px;">Dashboard</a>
+      {% else %}
+        <a href="/login/" class="btn-secondary" style="padding:8px 18px;font-size:13px;">Sign In</a>
+      {% endif %}
     </div>
   </div>
 </nav>
 
-<!-- HERO -->
+
+<!-- ═══════════════════════════════════════════════════════
+     HERO
+     CHANGE: Outcome-first headline. Urgency without alarmism.
+     Sub speaks to the buyer's actual problem, not the tech.
+     Stats bar replaced with value signals, not tech specs.
+════════════════════════════════════════════════════════ -->
 <section style="position:relative;min-height:100vh;display:flex;align-items:center;padding:100px 24px 60px;overflow:hidden;">
   <div class="grid-bg"></div>
   <div class="orb" style="width:600px;height:600px;background:rgba(34,197,94,0.06);top:-200px;right:-200px;"></div>
@@ -248,58 +252,76 @@
 
   <div style="max-width:1200px;margin:0 auto;width:100%;position:relative;z-index:1;">
     <div style="max-width:760px;">
+
       <div class="hero-animate" style="margin-bottom:20px;">
         <span class="tag">Agricultural Supply Chain Intelligence</span>
       </div>
+
       <h1 class="hero-animate-2" style="font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(30px,8vw,72px);line-height:1.08;color:#f8fafc;margin-bottom:24px;">
-        From farm<br>
-        <span style="color:var(--green);">to market.</span><br>
-        Traceable.
+        Your buyers want<br>
+        <span style="color:var(--green);">proof of origin.</span><br>
+        Now you have it.
       </h1>
+
       <p class="hero-animate-3" style="font-size:18px;color:#94a3b8;line-height:1.7;max-width:560px;margin-bottom:40px;">
-        AgriOps gives agricultural cooperatives and exporters real-time visibility across their supply chains — with built-in EUDR compliance, farm-level GPS traceability, and a full audit trail from field to dispatch.
+        AgriOps turns your daily supply chain activity into a verified intelligence record —
+        GPS-mapped farms, real-time visibility across procurement and sales, and compliance
+        reports ready for any buyer who asks.
       </p>
+
       <div class="hero-animate-4" style="display:flex;gap:12px;flex-wrap:wrap;">
-        <a href="#request-access" class="btn-primary">Request Access</a>
-        {% if user.is_authenticated %}<a href="/dashboard/" class="btn-secondary">Go to Dashboard →</a>{% else %}<a href="/login/" class="btn-secondary">Sign In →</a>{% endif %}
+        <a href="#request-access" class="btn-primary">Get Early Access</a>
+        {% if user.is_authenticated %}
+          <a href="/dashboard/" class="btn-secondary">Go to Dashboard →</a>
+        {% else %}
+          <a href="/login/" class="btn-secondary">Sign In →</a>
+        {% endif %}
       </div>
     </div>
 
-    <!-- Live stats ticker -->
+    <!-- Value signals bar — replaces technical spec bar -->
     <div class="hero-animate-4" style="margin-top:64px;display:flex;gap:32px;flex-wrap:wrap;">
       <div>
-        <p style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--green);">Multi-tenant</p>
-        <p style="font-size:12px;color:#64748b;margin-top:2px;">Secure, isolated environments</p>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:var(--green);">Farm-level GPS</p>
+        <p style="font-size:12px;color:#64748b;margin-top:2px;">Verified coordinates per batch</p>
       </div>
       <div style="width:1px;background:var(--border);"></div>
       <div>
-        <p style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--green);">Real-time</p>
-        <p style="font-size:12px;color:#64748b;margin-top:2px;">Supply chain visibility</p>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:var(--green);">Full audit trail</p>
+        <p style="font-size:12px;color:#64748b;margin-top:2px;">Every action logged, every actor recorded</p>
       </div>
       <div style="width:1px;background:var(--border);"></div>
       <div>
-        <p style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--green);">Live</p>
-        <p style="font-size:12px;color:#64748b;margin-top:2px;">app.agriops.io</p>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:var(--green);">EUDR ready</p>
+        <p style="font-size:12px;color:#64748b;margin-top:2px;">Regulation 2023/1115 compliant</p>
       </div>
       <div style="width:1px;background:var(--border);"></div>
       <div>
-        <p style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--green);">EUDR</p>
-        <p style="font-size:12px;color:#64748b;margin-top:2px;">Compliance ready</p>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:var(--green);">Buyer-ready reports</p>
+        <p style="font-size:12px;color:#64748b;margin-top:2px;">PDF on demand, scoped per buyer</p>
       </div>
     </div>
+  </div>
 </section>
 
-<!-- PROBLEM -->
+
+<!-- ═══════════════════════════════════════════════════════
+     PROBLEM
+     CHANGE: Reframed from "flying blind" to competitive risk.
+     Not "you're incompetent" — "the window is closing."
+════════════════════════════════════════════════════════ -->
 <section style="padding:100px 24px;position:relative;">
   <div style="max-width:1200px;margin:0 auto;">
     <div class="reveal">
-      <span class="tag">The Problem</span>
+      <span class="tag">The Reality</span>
       <div class="section-divider"></div>
       <h2 style="font-family:'Syne',sans-serif;font-weight:700;font-size:clamp(28px,4vw,44px);color:#f8fafc;margin-bottom:16px;">
-        African agri-SMEs are flying blind
+        Buyers are raising the bar. Fast.
       </h2>
       <p style="font-size:16px;color:#94a3b8;max-width:600px;line-height:1.7;">
-        Operations managed over WhatsApp and Excel. No traceability. No compliance documentation. EU buyers demanding farm-level GPS data they can't provide.
+        EU importers now require deforestation-free declarations backed by farm GPS coordinates.
+        Global retailers and certification bodies are following. Agri-exporters managing operations
+        on WhatsApp and Excel are getting cut out of contracts they used to win on price alone.
       </p>
     </div>
 
@@ -307,32 +329,128 @@
       <div class="feature-card reveal delay-1">
         <p style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:600;color:var(--green);margin-bottom:8px;">550M+</p>
         <p style="font-size:14px;font-weight:600;color:#f1f5f9;margin-bottom:8px;">Smallholder farmers</p>
-        <p style="font-size:13px;color:#64748b;line-height:1.6;">in Sub-Saharan Africa with zero digital supply chain traceability</p>
+        <p style="font-size:13px;color:#64748b;line-height:1.6;">in Sub-Saharan Africa supplying global commodity markets with no digital traceability record</p>
       </div>
       <div class="feature-card reveal delay-2">
         <p style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:600;color:var(--green);margin-bottom:8px;">€2.3T</p>
         <p style="font-size:14px;font-weight:600;color:#f1f5f9;margin-bottom:8px;">Global agri-food trade</p>
-        <p style="font-size:13px;color:#64748b;line-height:1.6;">at risk of EUDR non-compliance — the regulation is already in force</p>
+        <p style="font-size:13px;color:#64748b;line-height:1.6;">facing tightening traceability requirements — EUDR is in force and other jurisdictions are watching</p>
       </div>
       <div class="feature-card reveal delay-3">
-        <p style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:600;color:var(--green);margin-bottom:8px;">$0</p>
-        <p style="font-size:14px;font-weight:600;color:#f1f5f9;margin-bottom:8px;">Affordable solutions</p>
-        <p style="font-size:13px;color:#64748b;line-height:1.6;">purpose-built for agricultural SMEs in emerging markets at an accessible price</p>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:600;color:var(--green);margin-bottom:8px;">One platform</p>
+        <p style="font-size:14px;font-weight:600;color:#f1f5f9;margin-bottom:8px;">purpose-built for this</p>
+        <p style="font-size:13px;color:#64748b;line-height:1.6;">AgriOps is the only supply chain platform designed specifically for agricultural SMEs and cooperatives in emerging markets</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- FEATURES -->
+
+<!-- ═══════════════════════════════════════════════════════
+     TWO JOURNEYS
+     NEW SECTION: Speaks to two distinct buyer types.
+     EUDR exporters AND operations-only companies.
+     Prevents non-EU companies from feeling excluded.
+════════════════════════════════════════════════════════ -->
 <section style="padding:100px 24px;background:var(--surface);position:relative;">
   <div class="grid-bg" style="opacity:0.5;"></div>
   <div style="max-width:1200px;margin:0 auto;position:relative;z-index:1;">
+
+    <div class="reveal" style="text-align:center;margin-bottom:60px;">
+      <span class="tag">Who It's For</span>
+      <div class="section-divider" style="margin:16px auto 24px;"></div>
+      <h2 style="font-family:'Syne',sans-serif;font-weight:700;font-size:clamp(28px,4vw,44px);color:#f8fafc;">
+        Built for two types of agri-business
+      </h2>
+    </div>
+
+    <div class="journey-grid">
+
+      <!-- Journey 1: EUDR exporters -->
+      <div class="reveal delay-1" style="background:var(--card);border:1px solid rgba(34,197,94,0.3);border-radius:20px;padding:36px;">
+        <div style="width:44px;height:44px;background:rgba(34,197,94,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+          <svg width="22" height="22" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/></svg>
+        </div>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);letter-spacing:0.2em;margin-bottom:12px;">EXPORTING TO THE EU</p>
+        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:20px;color:#f1f5f9;margin-bottom:12px;">Meet EUDR. Keep the contract.</h3>
+        <p style="font-size:14px;color:#94a3b8;line-height:1.7;margin-bottom:24px;">
+          EU Regulation 2023/1115 requires you to prove your cocoa, coffee, soy, or palm oil
+          did not cause deforestation — traced to farm boundaries, not just country of origin.
+          AgriOps builds and stores that evidence for you.
+        </p>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:10px;">
+          <li style="display:flex;align-items:center;gap:10px;font-size:13px;color:#94a3b8;">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;"></span>
+            Farm GPS coordinates per batch
+          </li>
+          <li style="display:flex;align-items:center;gap:10px;font-size:13px;color:#94a3b8;">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;"></span>
+            Deforestation risk classification
+          </li>
+          <li style="display:flex;align-items:center;gap:10px;font-size:13px;color:#94a3b8;">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;"></span>
+            Due diligence declaration PDF, per buyer
+          </li>
+          <li style="display:flex;align-items:center;gap:10px;font-size:13px;color:#94a3b8;">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;"></span>
+            Verification expiry alerts
+          </li>
+        </ul>
+      </div>
+
+      <!-- Journey 2: Operations-only -->
+      <div class="reveal delay-2" style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:36px;">
+        <div style="width:44px;height:44px;background:rgba(34,197,94,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+          <svg width="22" height="22" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        </div>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);letter-spacing:0.2em;margin-bottom:12px;">SUPPLY CHAIN INTELLIGENCE</p>
+        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:20px;color:#f1f5f9;margin-bottom:12px;">Know your supply chain before your buyers question it.</h3>
+        <p style="font-size:14px;color:#94a3b8;line-height:1.7;margin-bottom:24px;">
+          Who is your most reliable supplier? Which product moves fastest? Where is stock
+          thinning before it becomes a missed order? AgriOps surfaces the answers in real
+          time — so your management team makes decisions on data, not instinct.
+        </p>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:10px;">
+          <li style="display:flex;align-items:center;gap:10px;font-size:13px;color:#94a3b8;">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;"></span>
+            Supplier and farm registry
+          </li>
+          <li style="display:flex;align-items:center;gap:10px;font-size:13px;color:#94a3b8;">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;"></span>
+            Purchase orders, inventory, sales — in one place
+          </li>
+          <li style="display:flex;align-items:center;gap:10px;font-size:13px;color:#94a3b8;">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;"></span>
+            Operations reports: stock, PO status, supplier performance
+          </li>
+          <li style="display:flex;align-items:center;gap:10px;font-size:13px;color:#94a3b8;">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;"></span>
+            Low stock and overdue delivery alerts
+          </li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     PLATFORM FEATURES
+     CHANGE: Outcome-focused copy, removed API/JWT/multi-tenant
+     from hero-level positioning. Features support the journeys.
+════════════════════════════════════════════════════════ -->
+<section style="padding:100px 24px;position:relative;">
+  <div style="max-width:1200px;margin:0 auto;">
     <div class="reveal" style="text-align:center;margin-bottom:60px;">
       <span class="tag">The Platform</span>
       <div class="section-divider" style="margin:16px auto 24px;"></div>
       <h2 style="font-family:'Syne',sans-serif;font-weight:700;font-size:clamp(28px,4vw,44px);color:#f8fafc;">
-        Everything your supply chain needs
+        Everything in one verified record
       </h2>
+      <p style="font-size:16px;color:#64748b;margin-top:16px;max-width:520px;margin-left:auto;margin-right:auto;line-height:1.7;">
+        From GPS farm registration to buyer-scoped compliance report — the full chain, in one place.
+      </p>
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">
@@ -341,8 +459,8 @@
         <div style="width:40px;height:40px;background:rgba(34,197,94,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
           <svg width="20" height="20" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         </div>
-        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#f1f5f9;margin-bottom:8px;">Farm GPS Mapping</h3>
-        <p style="font-size:13px;color:#64748b;line-height:1.7;">SW Maps integration — walk the farm boundary, export GeoJSON, upload to AgriOps. Farm-level coordinates stored per commodity batch.</p>
+        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#f1f5f9;margin-bottom:8px;">GPS Farm Mapping</h3>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;">Walk the farm boundary with SW Maps, export GeoJSON, upload to AgriOps. Farm-level coordinates stored and linked to every batch that leaves the farm.</p>
       </div>
 
       <div class="feature-card reveal delay-2">
@@ -350,31 +468,31 @@
           <svg width="20" height="20" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
         </div>
         <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#f1f5f9;margin-bottom:8px;">EUDR Compliance</h3>
-        <p style="font-size:13px;color:#64748b;line-height:1.7;">Deforestation risk classification, verification tracking, document vault, and expiry alerts. Compliance report PDF generated on demand.</p>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;">Risk classification, verification tracking, document vault, expiry alerts. Compliance PDF generated on demand — scoped per buyer, per sales order, or across your full supply base.</p>
       </div>
 
       <div class="feature-card reveal delay-3">
         <div style="width:40px;height:40px;background:rgba(34,197,94,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
           <svg width="20" height="20" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
         </div>
-        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#f1f5f9;margin-bottom:8px;">Full Traceability Chain</h3>
-        <p style="font-size:13px;color:#64748b;line-height:1.7;">Farm → Supplier → Inventory → Purchase Order → Sales Order. Every step recorded, every actor logged, complete audit trail.</p>
+        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#f1f5f9;margin-bottom:8px;">End-to-End Traceability</h3>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;">Farm → Supplier → Inventory → Purchase Order → Sales Order. Every step recorded, every actor logged. When a buyer asks where the product came from, the answer is already there.</p>
       </div>
 
       <div class="feature-card reveal delay-1">
         <div style="width:40px;height:40px;background:rgba(34,197,94,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
-          <svg width="20" height="20" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          <svg width="20" height="20" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
         </div>
-        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#f1f5f9;margin-bottom:8px;">Multi-Tenant Security</h3>
-        <p style="font-size:13px;color:#64748b;line-height:1.7;">Each organisation gets a completely isolated environment. Role-based access control — org admin, manager, staff, viewer. Audit log on every write.</p>
+        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#f1f5f9;margin-bottom:8px;">Supply Chain Intelligence</h3>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;">Best supplier, top buyer, fastest-moving product, open exposure — surfaced automatically from your own data. Operational insight your management team can act on, not just report on.</p>
       </div>
 
       <div class="feature-card reveal delay-2">
         <div style="width:40px;height:40px;background:rgba(34,197,94,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
-          <svg width="20" height="20" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <svg width="20" height="20" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
         </div>
-        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#f1f5f9;margin-bottom:8px;">REST API</h3>
-        <p style="font-size:13px;color:#64748b;line-height:1.7;">JWT-authenticated, tenant-scoped API. EUDR pending farms, low-stock alerts, and full supply chain data available programmatically.</p>
+        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#f1f5f9;margin-bottom:8px;">Role-Based Access</h3>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;">Org admins, managers, staff, and viewers — each sees exactly what they need. Every write action audit-logged with user, timestamp, and IP. Your data is yours alone.</p>
       </div>
 
       <div class="feature-card reveal delay-3">
@@ -382,35 +500,125 @@
           <svg width="20" height="20" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
         </div>
         <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#f1f5f9;margin-bottom:8px;">Smart Alerts</h3>
-        <p style="font-size:13px;color:#64748b;line-height:1.7;">Low stock notifications, EUDR verification expiry warnings, and team alerts delivered by email to the right people automatically.</p>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;">EUDR verification expiries, low stock thresholds, overdue purchase orders. The right person gets notified before a small problem becomes a shipment delay or a lost contract.</p>
       </div>
 
     </div>
   </div>
 </section>
 
-<!-- EUDR SECTION -->
-<section style="padding:100px 24px;">
+
+<!-- ═══════════════════════════════════════════════════════
+     INTELLIGENCE SECTION
+     NEW: Dedicated section elevating intelligence as gold.
+     Mirrors what the dashboard intelligence cards already do.
+════════════════════════════════════════════════════════ -->
+<section style="padding:100px 24px;background:var(--surface);position:relative;">
+  <div class="grid-bg" style="opacity:0.4;"></div>
+  <div style="max-width:1200px;margin:0 auto;position:relative;z-index:1;">
+
+    <div class="reveal" style="margin-bottom:60px;">
+      <span class="tag">Intelligence</span>
+      <div class="section-divider"></div>
+      <h2 style="font-family:'Syne',sans-serif;font-weight:700;font-size:clamp(28px,4vw,48px);color:#f8fafc;margin-bottom:20px;">
+        Your supply chain generates data every day.<br>
+        <span style="color:var(--green);">Here's what it's telling you.</span>
+      </h2>
+      <p style="font-size:16px;color:#94a3b8;line-height:1.8;max-width:600px;">
+        AgriOps doesn't just store records — it reads them. As your team logs
+        purchases, shipments, and farm activity, the platform surfaces what matters:
+        where performance is strong, where risk is building, and where to act next.
+      </p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;">
+
+      <div class="reveal delay-1" style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--green),transparent);"></div>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);letter-spacing:0.2em;margin-bottom:16px;">TOP BUYER</p>
+        <p style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:#f1f5f9;margin-bottom:6px;">Meridian Commodities</p>
+        <p style="font-size:13px;color:#64748b;">12 orders placed · highest volume buyer this quarter</p>
+      </div>
+
+      <div class="reveal delay-2" style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#60a5fa,transparent);"></div>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#60a5fa;letter-spacing:0.2em;margin-bottom:16px;">TOP SUPPLIER</p>
+        <p style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:#f1f5f9;margin-bottom:6px;">Asante Farms Co.</p>
+        <p style="font-size:13px;color:#64748b;">8 purchase orders · 100% on-time delivery rate</p>
+      </div>
+
+      <div class="reveal delay-3" style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--green),transparent);"></div>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);letter-spacing:0.2em;margin-bottom:16px;">EUDR COMPLIANCE</p>
+        <p style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:var(--green);margin-bottom:6px;">89%</p>
+        <p style="font-size:13px;color:#64748b;">24 of 27 farms verified · 3 renewals due this month</p>
+      </div>
+
+      <div class="reveal delay-1" style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#a78bfa,transparent);"></div>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#a78bfa;letter-spacing:0.2em;margin-bottom:16px;">TOP PRODUCT</p>
+        <p style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:#f1f5f9;margin-bottom:6px;">Sesame Grade 1</p>
+        <p style="font-size:13px;color:#64748b;">1,840 units sold · highest revenue SKU this period</p>
+      </div>
+
+      <div class="reveal delay-2" style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#fb923c,transparent);"></div>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#fb923c;letter-spacing:0.2em;margin-bottom:16px;">OPEN EXPOSURE</p>
+        <p style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:#fb923c;margin-bottom:6px;">4 orders</p>
+        <p style="font-size:13px;color:#64748b;">in progress · 1 delivery overdue · action needed</p>
+      </div>
+
+      <div class="reveal delay-3" style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#22d3ee,transparent);"></div>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#22d3ee;letter-spacing:0.2em;margin-bottom:16px;">ACTIVE PROCUREMENT</p>
+        <p style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:#f1f5f9;margin-bottom:6px;">6 POs</p>
+        <p style="font-size:13px;color:#64748b;">pending completion · next delivery due in 3 days</p>
+      </div>
+
+    </div>
+
+    <div class="reveal" style="margin-top:40px;padding:28px;background:rgba(34,197,94,0.04);border:1px solid rgba(34,197,94,0.15);border-radius:16px;">
+      <p style="font-size:15px;color:#94a3b8;line-height:1.8;text-align:center;max-width:640px;margin:0 auto;">
+        These aren't dashboards you build yourself. AgriOps surfaces them automatically
+        as your team works — every purchase order logged, every shipment dispatched,
+        every farm verified contributes to a live picture of your supply chain.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     EUDR SECTION
+     CHANGE: Copy tightened. Urgency is factual, not alarmist.
+     Card kept — it's strong visual proof.
+════════════════════════════════════════════════════════ -->
+<section style="padding:100px 24px;background:var(--surface);">
   <div style="max-width:1200px;margin:0 auto;">
     <div class="eudr-grid">
       <div class="reveal">
         <span class="tag">EUDR Ready</span>
         <div class="section-divider"></div>
         <h2 style="font-family:'Syne',sans-serif;font-weight:700;font-size:clamp(28px,3.5vw,40px);color:#f8fafc;margin-bottom:20px;">
-          The EU Deforestation Regulation is in force.<br>
-          <span style="color:var(--green);">Are your suppliers ready?</span>
+          The regulation is in force.<br>
+          <span style="color:var(--green);">The deadline has passed.</span>
         </h2>
         <p style="font-size:15px;color:#94a3b8;line-height:1.8;margin-bottom:24px;">
-          EUDR Regulation 2023/1115 requires operators placing soy, cocoa, coffee, palm oil, cattle, wood, and rubber on the EU market to prove their commodities did not contribute to deforestation. That proof starts at the farm boundary.
+          EU Regulation 2023/1115 requires operators placing cocoa, coffee, soy, palm oil,
+          cattle, wood, and rubber on the EU market to prove their commodities did not
+          contribute to deforestation — traceable to farm boundaries, not just country of origin.
         </p>
         <p style="font-size:15px;color:#94a3b8;line-height:1.8;">
-          AgriOps collects, stores, and presents that proof — farm GPS coordinates, risk classifications, verification status, and compliance documents — in a format EU buyers and auditors can act on.
+          AgriOps stores the proof — farm GPS coordinates, deforestation risk classifications,
+          verification status, and compliance documents — and generates a due diligence
+          declaration PDF scoped to each buyer's shipment.
         </p>
       </div>
       <div class="reveal delay-2">
         <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:32px;">
           <p style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);letter-spacing:0.2em;margin-bottom:20px;">EUDR COMPLIANCE STATUS</p>
-          <div style="space-y:12px;">
+          <div>
             <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);">
               <div style="display:flex;align-items:center;gap:10px;">
                 <div style="width:8px;height:8px;border-radius:50%;background:var(--green);"></div>
@@ -443,7 +651,7 @@
           <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
               <svg width="14" height="14" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-              <span style="font-size:12px;color:var(--green);font-family:'JetBrains Mono',monospace;">Compliance PDF — download on demand</span>
+              <span style="font-size:12px;color:var(--green);font-family:'JetBrains Mono',monospace;">Compliance PDF — scoped per buyer, on demand</span>
             </div>
           </div>
         </div>
@@ -452,7 +660,54 @@
   </div>
 </section>
 
-<!-- PRICING -->
+
+<!-- ═══════════════════════════════════════════════════════
+     THE MOAT — WHY START NOW
+     NEW SECTION: The data flywheel argument.
+     Collect now, benefit compounding over time.
+════════════════════════════════════════════════════════ -->
+<section style="padding:100px 24px;">
+  <div style="max-width:900px;margin:0 auto;text-align:center;">
+    <div class="reveal">
+      <span class="tag">Why Start Now</span>
+      <div class="section-divider" style="margin:16px auto 24px;"></div>
+      <h2 style="font-family:'Syne',sans-serif;font-weight:700;font-size:clamp(28px,4vw,44px);color:#f8fafc;margin-bottom:24px;">
+        The farm data you collect today is the proof<br>
+        <span style="color:var(--green);">your buyers will require tomorrow.</span>
+      </h2>
+      <p style="font-size:16px;color:#94a3b8;line-height:1.8;max-width:640px;margin:0 auto 48px;">
+        GPS coordinates, verification records, and audit trails take time to build.
+        A competitor who starts mapping farms today will have two years of verified
+        supply chain history by the time your buyers make it a contract requirement.
+        The record is the competitive advantage — the reports are just how you present it.
+      </p>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;text-align:left;">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;">
+          <p style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green);letter-spacing:0.15em;margin-bottom:10px;">TODAY</p>
+          <p style="font-size:14px;color:#f1f5f9;font-weight:600;margin-bottom:6px;">Map your farms</p>
+          <p style="font-size:13px;color:#64748b;line-height:1.6;">GPS boundaries, supplier details, verification status — the foundation of the record.</p>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;">
+          <p style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green);letter-spacing:0.15em;margin-bottom:10px;">ONGOING</p>
+          <p style="font-size:14px;color:#f1f5f9;font-weight:600;margin-bottom:6px;">Intelligence compounds</p>
+          <p style="font-size:13px;color:#64748b;line-height:1.6;">Two years of supply chain history tells you things a single month never could — supplier reliability, seasonal patterns, where your margins actually come from.</p>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;">
+          <p style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green);letter-spacing:0.15em;margin-bottom:10px;">ON DEMAND</p>
+          <p style="font-size:14px;color:#f1f5f9;font-weight:600;margin-bottom:6px;">Prove it to anyone</p>
+          <p style="font-size:13px;color:#64748b;line-height:1.6;">EU regulators, global retailers, certification bodies — one platform, any report.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     PRICING
+     CHANGE: Minimal copy change — honest, direct.
+════════════════════════════════════════════════════════ -->
 <section style="padding:100px 24px;background:var(--surface);">
   <div style="max-width:700px;margin:0 auto;text-align:center;">
     <div class="reveal">
@@ -462,26 +717,32 @@
         Transparent pricing coming soon
       </h2>
       <p style="font-size:16px;color:#64748b;line-height:1.8;margin-bottom:32px;">
-        We are currently in closed beta working directly with agricultural cooperatives and exporters to understand what pricing model works best for the market. Pricing will be published here when we launch publicly.
+        We are in closed beta, working directly with agri-exporters and cooperatives
+        to understand what pricing model works for this market. Pricing will be published
+        when we open publicly.
       </p>
       <p style="font-size:14px;color:#94a3b8;line-height:1.7;">
-        If you want to discuss pricing for your organisation, request access below and we will reach out directly.
+        Want to discuss pricing for your organisation? Request access below.
       </p>
     </div>
   </div>
 </section>
 
-<!-- REQUEST ACCESS -->
+
+<!-- ═══════════════════════════════════════════════════════
+     REQUEST ACCESS
+     CHANGE: Headline more direct. Sub shorter.
+════════════════════════════════════════════════════════ -->
 <section id="request-access" style="padding:100px 24px;">
   <div style="max-width:600px;margin:0 auto;text-align:center;">
     <div class="reveal">
       <span class="tag">Early Access</span>
       <div class="section-divider" style="margin:16px auto 24px;"></div>
       <h2 style="font-family:'Syne',sans-serif;font-weight:700;font-size:clamp(28px,4vw,40px);color:#f8fafc;margin-bottom:16px;">
-        Request access
+        Start building your supply chain record
       </h2>
       <p style="font-size:15px;color:#64748b;line-height:1.7;margin-bottom:40px;">
-        AgriOps is currently in closed beta. Leave your details and we'll be in touch within 48 hours.
+        AgriOps is in closed beta. Leave your details and we will be in touch within 48 hours.
       </p>
     </div>
     <div class="reveal delay-1" style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:36px;text-align:left;">
@@ -500,7 +761,7 @@
           <input type="text" name="company" placeholder="Your cooperative or company">
         </div>
         <button type="submit" class="btn-primary" style="width:100%;text-align:center;padding:14px;">
-          Request Access →
+          Request Early Access →
         </button>
         <p id="form-msg" style="font-size:13px;color:var(--green);text-align:center;display:none;"></p>
       </form>
@@ -508,7 +769,10 @@
   </div>
 </section>
 
-<!-- FOOTER -->
+
+<!-- ═══════════════════════════════════════════════════════
+     FOOTER — unchanged
+════════════════════════════════════════════════════════ -->
 <footer style="border-top:1px solid var(--border);padding:40px 24px;">
   <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
     <div style="display:flex;align-items:center;gap:10px;">
@@ -518,7 +782,11 @@
       <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#94a3b8;">AgriOps</span>
     </div>
     <div style="display:flex;gap:24px;flex-wrap:wrap;">
-      {% if user.is_authenticated %}<a href="/dashboard/" style="font-size:13px;color:#64748b;text-decoration:none;">Dashboard</a>{% else %}<a href="/login/" style="font-size:13px;color:#64748b;text-decoration:none;">Sign In</a>{% endif %}
+      {% if user.is_authenticated %}
+        <a href="/dashboard/" style="font-size:13px;color:#64748b;text-decoration:none;">Dashboard</a>
+      {% else %}
+        <a href="/login/" style="font-size:13px;color:#64748b;text-decoration:none;">Sign In</a>
+      {% endif %}
       <a href="https://docs.agriops.io" style="font-size:13px;color:#64748b;text-decoration:none;">Docs</a>
       <a href="https://api.agriops.io/api/v1/" style="font-size:13px;color:#64748b;text-decoration:none;">API</a>
     </div>
@@ -528,27 +796,21 @@
   </div>
 </footer>
 
+
 <script>
-  // Scroll reveal
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(e => {
-      if (e.isIntersecting) {
-        e.target.classList.add('visible');
-        observer.unobserve(e.target);
-      }
+      if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
     });
   }, { threshold: 0.1 });
-
   document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-  // Request access form
   document.getElementById('access-form').addEventListener('submit', function(e) {
     e.preventDefault();
     const msg = document.getElementById('form-msg');
     const btn = this.querySelector('button[type="submit"]');
     btn.textContent = 'Submitting...';
     btn.disabled = true;
-
     fetch('/request-access/', {
       method: 'POST',
       body: new FormData(this),
@@ -560,13 +822,13 @@
       msg.style.display = 'block';
       msg.style.color = data.error ? '#ef4444' : '#22c55e';
       if (!data.error) this.reset();
-      btn.textContent = 'Request Access →';
+      btn.textContent = 'Request Early Access →';
       btn.disabled = false;
     })
     .catch(() => {
       msg.textContent = 'Something went wrong. Please try again.';
       msg.style.display = 'block';
-      btn.textContent = 'Request Access →';
+      btn.textContent = 'Request Early Access →';
       btn.disabled = false;
     });
   });
