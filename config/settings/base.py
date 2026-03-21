@@ -62,6 +62,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'apps.dashboard.context_processors.notifications',
+                'agri_ops_project.context_processors.analytics',
             ],
         },
     },
@@ -195,3 +196,6 @@ FOUNDER_EMAIL = 'ohahezinna@gmail.com'
 # ── Ops dashboard ─────────────────────────────────────────────
 OPS_SESSION_COOKIE_AGE = 7200   # 2 hours
 OPS_LOGIN_URL = '/ops-access/9f3k/'
+
+POSTHOG_API_KEY = os.environ.get('POSTHOG_API_KEY', '')
+POSTHOG_HOST = 'https://us.i.posthog.com'
