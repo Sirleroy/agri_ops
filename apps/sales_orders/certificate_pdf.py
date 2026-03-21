@@ -51,9 +51,9 @@ def generate_certificate(batch):
     header_data = [[
         [
             Paragraph("AGRIOPS", ParagraphStyle("ag", fontName="Helvetica-Bold", fontSize=9, textColor=GREEN)),
-            Paragraph("Traceability Certificate", ParagraphStyle("tc", fontName="Helvetica-Bold", fontSize=22, textColor=DARK, spaceAfter=4)),
-            Paragraph(f"Batch: {batch.batch_number}", ParagraphStyle("bn", fontName="Helvetica", fontSize=13, textColor=SLATE)),
-            Paragraph(f"Commodity: {batch.commodity}  ·  {date.today().strftime('%d %B %Y')}", ParagraphStyle("cm", fontName="Helvetica", fontSize=10, textColor=SLATE)),
+            Paragraph("Traceability Certificate", ParagraphStyle("tc", fontName="Helvetica-Bold", fontSize=22, textColor=DARK, spaceAfter=5*mm)),
+            Paragraph(f"Batch: {batch.batch_number}", ParagraphStyle("bn", fontName="Helvetica-Bold", fontSize=10, textColor=SLATE, spaceAfter=1*mm)),
+            Paragraph(f"Commodity: {batch.commodity}  ·  {date.today().strftime('%d %B %Y')}", ParagraphStyle("cm", fontName="Helvetica", fontSize=9, textColor=SLATE)),
         ],
         _qr_image(batch.trace_url)
     ]]
