@@ -24,6 +24,7 @@ urlpatterns = [
          auth_views.PasswordResetConfirmView.as_view(
              template_name='registration/set_password.html',
              post_reset_login=True,
+             success_url='/dashboard/',
          ),
          name='password_set'),
 
