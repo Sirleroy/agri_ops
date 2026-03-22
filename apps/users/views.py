@@ -2,10 +2,10 @@ from apps.audit.mixins import AuditUpdateMixin
 from django.views.generic import ListView, DetailView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from .models import CustomUser
-from .permissions import OrgAdminRequiredMixin, StaffRequiredMixin
+from .permissions import OrgAdminRequiredMixin, StaffRequiredMixin, ManagerRequiredMixin
 
 
-class UserListView(StaffRequiredMixin, ListView):
+class UserListView(ManagerRequiredMixin, ListView):
     model = CustomUser
     template_name = 'users/list.html'
     context_object_name = 'users'
@@ -15,7 +15,7 @@ class UserListView(StaffRequiredMixin, ListView):
         return super().get_queryset().filter(company=self.request.user.company)
 
 
-class UserDetailView(StaffRequiredMixin, DetailView):
+class UserDetailView(ManagerRequiredMixin, DetailView):
     model = CustomUser
     template_name = 'users/detail.html'
     context_object_name = 'profile'
