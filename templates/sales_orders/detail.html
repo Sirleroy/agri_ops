@@ -12,7 +12,9 @@
     </a>
     <div class="flex gap-2">
       <a href="{% url 'sales_orders:update' order.pk %}?next={{ request.path }}" class="px-4 py-2 bg-card border border-border rounded-lg text-sm text-slate-300 hover:text-slate-100 transition-colors">Edit</a>
+      {% if request.user.is_manager_or_above %}
       <button @click="openDeleteModal('{% url 'sales_orders:delete' order.pk %}', 'SO-{{ order.order_number|escapejs }}')" class="px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400 hover:text-red-300 transition-colors">Delete</button>
+      {% endif %}
     </div>
   </div>
 

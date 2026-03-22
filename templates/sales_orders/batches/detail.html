@@ -117,8 +117,10 @@
               <span class="text-xs font-mono text-red-400">Expired</span>
             {% endif %}
             <a href="{% url 'sales_orders:phytosanitary_update' cert.pk %}" class="text-xs text-slate-500 hover:text-slate-100 font-mono transition-colors">Edit</a>
+            {% if request.user.is_manager_or_above %}
             <button @click="openDeleteModal('{% url 'sales_orders:phytosanitary_delete' cert.pk %}', '{{ cert.certificate_number|escapejs }}')"
                     class="text-xs text-slate-600 hover:text-red-400 font-mono transition-colors">Delete</button>
+            {% endif %}
           </div>
         </div>
         {% endfor %}
@@ -152,8 +154,10 @@
               <span class="text-xs font-mono text-yellow-400">Pending</span>
             {% endif %}
             <a href="{% url 'sales_orders:quality_update' test.pk %}" class="text-xs text-slate-500 hover:text-slate-100 font-mono transition-colors">Edit</a>
+            {% if request.user.is_manager_or_above %}
             <button @click="openDeleteModal('{% url 'sales_orders:quality_delete' test.pk %}', '{{ test.get_test_type_display|escapejs }}')"
                     class="text-xs text-slate-600 hover:text-red-400 font-mono transition-colors">Delete</button>
+            {% endif %}
           </div>
         </div>
         {% endfor %}

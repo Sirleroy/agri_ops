@@ -233,8 +233,10 @@
             {% else %}
               <span class="text-xs font-mono text-red-400">Expired</span>
             {% endif %}
+            {% if request.user.is_manager_or_above %}
             <button @click="openDeleteModal('{% url 'suppliers:farm_cert_delete' cert.pk %}', '{{ cert.get_cert_type_display|escapejs }}')"
                     class="text-xs text-slate-600 hover:text-red-400 font-mono transition-colors">Delete</button>
+            {% endif %}
           </div>
         </div>
         {% endfor %}
