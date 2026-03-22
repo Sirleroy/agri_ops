@@ -107,7 +107,7 @@ class Command(BaseCommand):
                     'deforestation_risk_status': f['risk'],
                     'geolocation': geolocation,
                     'mapping_date': date(2024, 6, 1),
-                    'mapped_by': admin.get_full_name() if admin else 'System',
+                    'mapped_by': admin,
                     'verification_expiry': date(2026, 12, 31),
                     'deforestation_reference_date': date(2020, 12, 31),
                     'harvest_year': 2024,
