@@ -94,10 +94,29 @@
     .message { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 0.5rem; }
     .message-success { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); color: #4ade80; }
     .message-error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: #f87171; }
+    /* Mobile sidebar */
+    .sidebar-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65); z-index: 50;
+    }
+    .hamburger { display: none; background: none; border: none; color: var(--muted); cursor: pointer; padding: 0; }
+    @media (max-width: 767px) {
+      .sidebar { transform: translateX(-100%); transition: transform 0.25s ease; z-index: 60; }
+      .sidebar.mob-open { transform: translateX(0); }
+      .sidebar-backdrop.mob-open { display: block; }
+      .main { margin-left: 0 !important; }
+      .hamburger { display: flex; align-items: center; }
+      .topbar { padding: 0.9rem 1rem; gap: 0.75rem; }
+      .content { padding: 1rem; }
+      .grid-4 { grid-template-columns: repeat(2,1fr); }
+    }
   </style>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body>
-  <aside class="sidebar">
+<body x-data="{ mob: false }" @keydown.escape.window="mob = false">
+  <!-- Mobile backdrop -->
+  <div :class="mob ? 'mob-open' : ''" class="sidebar-backdrop" @click="mob = false"></div>
+  <aside :class="mob ? 'mob-open' : ''" class="sidebar">
     <div class="sidebar-logo">
       Admin <span>Panel</span>
     </div>
@@ -114,7 +133,12 @@
   </aside>
   <div class="main">
     <div class="topbar">
-      <h1>{% block page_title %}Admin Panel{% endblock %}</h1>
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <button class="hamburger" @click="mob = !mob" aria-label="Toggle menu">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <h1>{% block page_title %}Admin Panel{% endblock %}</h1>
+      </div>
       <span class="company-badge">{{ company.name }}</span>
     </div>
     <div class="content">

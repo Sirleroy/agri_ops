@@ -240,6 +240,13 @@
             <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
             <span x-show="sidebarOpen || mobileOpen" x-transition.opacity>Users</span>
           </a>
+          {% if request.user.system_role == "org_admin" %}
+          <a href="/admin-panel/"
+             class="nav-item sm:hidden flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all text-sm font-medium relative">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <span x-show="sidebarOpen || mobileOpen" x-transition.opacity>Admin Panel</span>
+          </a>
+          {% endif %}
         </div>
 
       </nav>
@@ -283,12 +290,13 @@
         </div>
         <div class="flex items-center gap-3">
           <!-- Notification bell -->
-          <div class="relative" x-data="{ bellOpen: false }" @click.outside="bellOpen = false">
-            <button @click="bellOpen = !bellOpen"
+          <div class="relative" x-data="{ bellOpen: false, _n: {{ notif_total }}, _seen: parseInt(localStorage.getItem('notifSeen') ?? '-1') }" @click.outside="bellOpen = false">
+            <button @click="bellOpen = !bellOpen; if (bellOpen) { _seen = _n; localStorage.setItem('notifSeen', String(_n)); }"
                     class="w-8 h-8 rounded-lg bg-card border border-border flex items-center justify-center text-slate-400 hover:text-slate-100 transition-colors relative">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
               {% if notif_total > 0 %}
-              <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-mono leading-none">{{ notif_total }}</span>
+              <span x-cloak x-show="_n > 0 && _n !== _seen"
+                    class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-mono leading-none">{{ notif_total }}</span>
               {% endif %}
             </button>
 
@@ -300,7 +308,7 @@
                  x-transition:leave="transition ease-in duration-100"
                  x-transition:leave-start="opacity-100"
                  x-transition:leave-end="opacity-0"
-                 class="absolute right-0 top-10 w-80 bg-surface border border-border rounded-xl shadow-2xl z-50 overflow-hidden">
+                 class="absolute right-0 top-10 w-80 max-w-[calc(100vw-1.5rem)] bg-surface border border-border rounded-xl shadow-2xl z-50 overflow-hidden">
 
               <div class="px-4 py-3 border-b border-border flex items-center justify-between">
                 <p class="text-xs font-mono text-slate-400 uppercase tracking-widest">Alerts</p>
@@ -366,7 +374,7 @@
             </div>
           </div>
           {% if request.user.system_role == "org_admin" %}
-          <a href="/admin-panel/" class="text-xs font-mono text-slate-500 hover:text-green transition-colors ml-4">Admin Panel</a>
+          <a href="/admin-panel/" class="hidden sm:inline text-xs font-mono text-slate-500 hover:text-green transition-colors ml-4">Admin Panel</a>
           {% endif %}
         </div>
       </header>
