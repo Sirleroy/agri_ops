@@ -194,7 +194,6 @@ class Command(BaseCommand):
                     'customer_name': so['customer'],
                     'status': so['status'],
                     'order_date': so['date'],
-                    'expected_delivery': so['delivery'],
                     'created_by': admin,
                 }
             )
