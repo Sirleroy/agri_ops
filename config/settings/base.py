@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'apps.reports',
     'apps.dashboard',
     'apps.audit',
+    'apps.admin_panel'
 ]
 
 MIDDLEWARE = [

@@ -1,0 +1,53 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Overview{% endblock %}
+{% block nav_overview %}active{% endblock %}
+{% block page_title %}Overview{% endblock %}
+
+{% block content %}
+<div class="grid-4">
+  <div class="card">
+    <div class="card-title">Total Users</div>
+    <div class="card-value">{{ total_users }}</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Active Users</div>
+    <div class="card-value">{{ active_users }}</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Plan</div>
+    <div class="card-value" style="font-size:1.2rem;margin-top:0.5rem;">{{ company.get_plan_tier_display }}</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Account Status</div>
+    <div style="margin-top:0.5rem;">
+      {% if company.is_active %}
+        <span class="badge badge-green">Active</span>
+      {% else %}
+        <span class="badge badge-red">Suspended</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="section-title">Recent Activity</div>
+  <table>
+    <thead>
+      <tr><th>Time</th><th>User</th><th>Action</th><th>Model</th><th>Object</th></tr>
+    </thead>
+    <tbody>
+      {% for log in recent_audit %}
+      <tr>
+        <td>{{ log.timestamp|date:"M d H:i" }}</td>
+        <td>{{ log.user|default:"—" }}</td>
+        <td>{{ log.action }}</td>
+        <td>{{ log.model_name }}</td>
+        <td>{{ log.object_repr }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" style="color:var(--dim)">No activity yet</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

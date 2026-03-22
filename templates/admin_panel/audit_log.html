@@ -1,0 +1,34 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Audit Log{% endblock %}
+{% block nav_audit %}active{% endblock %}
+{% block page_title %}Audit Log{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="section-title">Activity Log — Last 200 Events</div>
+  <table>
+    <thead>
+      <tr><th>Time</th><th>User</th><th>Action</th><th>Model</th><th>Object</th><th>IP</th></tr>
+    </thead>
+    <tbody>
+      {% for log in audit_logs %}
+      <tr>
+        <td style="white-space:nowrap;">{{ log.timestamp|date:"Y-m-d H:i" }}</td>
+        <td>{{ log.user|default:"—" }}</td>
+        <td>
+          {% if log.action == 'create' %}<span class="badge badge-green">Create</span>
+          {% elif log.action == 'update' %}<span class="badge badge-yellow">Update</span>
+          {% elif log.action == 'delete' %}<span class="badge badge-red">Delete</span>
+          {% else %}<span class="badge badge-slate">{{ log.action }}</span>{% endif %}
+        </td>
+        <td style="color:var(--muted);">{{ log.model_name }}</td>
+        <td>{{ log.object_repr }}</td>
+        <td style="color:var(--dim);font-family:monospace;font-size:0.78rem;">{{ log.ip_address|default:"—" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="color:var(--dim)">No activity recorded yet</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

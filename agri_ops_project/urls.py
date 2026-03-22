@@ -29,6 +29,7 @@ urlpatterns = [
          name='password_set'),
 
     # Application
+    path('admin-panel/', include('apps.admin_panel.urls', namespace='admin_panel')),
     path('', include('apps.dashboard.urls', namespace='dashboard')),
     path('inventory/', include('apps.inventory.urls', namespace='inventory')),
     path('products/', include('apps.products.urls', namespace='products')),

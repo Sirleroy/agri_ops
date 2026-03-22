@@ -1,0 +1,87 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Users{% endblock %}
+{% block nav_users %}active{% endblock %}
+{% block page_title %}Users{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom:1.5rem;">
+  <div class="section-title">Invite New User</div>
+  <form method="post" action="{% url 'admin_panel:invite_user' %}">
+    {% csrf_token %}
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:0.75rem;align-items:end;">
+      <div class="form-group" style="margin:0;">
+        <label>First Name *</label>
+        <input type="text" name="first_name" required>
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label>Last Name</label>
+        <input type="text" name="last_name">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label>Email *</label>
+        <input type="email" name="email" required>
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label>Role</label>
+        <select name="system_role">
+          <option value="staff">Staff</option>
+          <option value="manager">Manager</option>
+          <option value="viewer">Viewer</option>
+          <option value="org_admin">Org Admin</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-green">Send Invite</button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="section-title">All Users ({{ users|length }})</div>
+  <table>
+    <thead>
+      <tr><th>Name</th><th>Username</th><th>Role</th><th>Job Title</th><th>Status</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+      <tr>
+        <td>{{ user.get_full_name|default:user.username }}</td>
+        <td style="font-family:monospace;font-size:0.8rem;color:var(--muted);">{{ user.username }}</td>
+        <td>
+          <form method="post" action="{% url 'admin_panel:change_role' user.id %}" style="display:inline;">
+            {% csrf_token %}
+            <select name="system_role" onchange="this.form.submit()" style="width:auto;padding:0.3rem 0.5rem;font-size:0.78rem;">
+              {% for value, label in user.SYSTEM_ROLE_CHOICES %}
+              <option value="{{ value }}" {% if user.system_role == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </form>
+        </td>
+        <td style="color:var(--muted);">{{ user.job_title|default:"—" }}</td>
+        <td>
+          {% if user.is_active %}
+            <span class="badge badge-green">Active</span>
+          {% else %}
+            <span class="badge badge-red">Inactive</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if user != request.user %}
+          <form method="post" action="{% url 'admin_panel:deactivate_user' user.id %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-red" style="padding:0.3rem 0.7rem;font-size:0.75rem;"
+              onclick="return confirm('{% if user.is_active %}Deactivate{% else %}Activate{% endif %} {{ user.username }}?')">
+              {% if user.is_active %}Deactivate{% else %}Activate{% endif %}
+            </button>
+          </form>
+          {% else %}
+          <span style="color:var(--dim);font-size:0.75rem;">You</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="color:var(--dim)">No users yet</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

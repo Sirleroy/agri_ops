@@ -1,0 +1,39 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Roles{% endblock %}
+{% block nav_roles %}active{% endblock %}
+{% block page_title %}Roles & Permissions{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+  <div class="card">
+    <div class="section-title">Role Distribution</div>
+    <table>
+      <thead><tr><th>Role</th><th>Users</th></tr></thead>
+      <tbody>
+        {% for value, label in role_choices %}
+        <tr>
+          <td>{{ label }}</td>
+          <td>{{ users_by_role|default_if_none:0 }}
+            {% with count=users_by_role|dictsort:value %}{{ users_by_role.value|default:"0" }}{% endwith %}
+            {{ users_by_role|get_item:value|default:"0" }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Role Permissions</div>
+    <table>
+      <thead><tr><th>Role</th><th>Access Level</th></tr></thead>
+      <tbody>
+        <tr><td>Org Admin</td><td><span class="badge badge-green">Full access + admin panel</span></td></tr>
+        <tr><td>Manager</td><td><span class="badge badge-blue">Read + write all modules</span></td></tr>
+        <tr><td>Staff</td><td><span class="badge badge-yellow">Read + write assigned modules</span></td></tr>
+        <tr><td>Viewer</td><td><span class="badge badge-slate">Read only</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

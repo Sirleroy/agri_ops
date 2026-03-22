@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Admin Panel{% endblock %} — {{ company.name }}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0f1a; --surface: #111827; --card: #131f2e; --border: #1e2d40;
+      --text: #f1f5f9; --muted: #94a3b8; --dim: #64748b;
+      --green: #22c55e; --green-dark: #16a34a;
+      --red: #ef4444; --yellow: #eab308;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 220px; min-height: 100vh; background: var(--surface);
+      border-right: 1px solid var(--border); display: flex;
+      flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0;
+    }
+    .sidebar-logo {
+      padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);
+      font-weight: 700; font-size: 0.9rem; color: var(--text);
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .sidebar-logo span {
+      background: var(--green); color: #0a0f1a; font-size: 0.65rem;
+      padding: 0.15rem 0.5rem; border-radius: 999px;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .sidebar nav { padding: 1rem 0; flex: 1; }
+    .sidebar nav a {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.6rem 1.5rem; color: var(--muted); text-decoration: none;
+      font-size: 0.85rem; transition: all 0.15s;
+    }
+    .sidebar nav a:hover, .sidebar nav a.active {
+      color: var(--text); background: rgba(255,255,255,0.05);
+    }
+    .sidebar nav a.active { border-left: 3px solid var(--green); padding-left: calc(1.5rem - 3px); }
+    .sidebar-footer {
+      padding: 1rem 1.5rem; border-top: 1px solid var(--border);
+      font-size: 0.75rem; color: var(--dim);
+    }
+    .sidebar-footer a { color: var(--dim); text-decoration: none; margin-right: 0.75rem; }
+    .sidebar-footer a:hover { color: var(--text); }
+    .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; }
+    .topbar {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 0.9rem 2rem; display: flex; align-items: center; justify-content: space-between;
+    }
+    .topbar h1 { font-size: 1rem; font-weight: 600; }
+    .topbar .company-badge {
+      background: rgba(34,197,94,0.1); color: var(--green); font-size: 0.75rem;
+      padding: 0.2rem 0.6rem; border-radius: 999px; border: 1px solid rgba(34,197,94,0.2);
+    }
+    .content { padding: 2rem; flex: 1; }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 1.5rem; margin-bottom: 1.5rem;
+    }
+    .card-title { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+    .card-value { font-size: 2rem; font-weight: 700; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .section-title { font-size: 0.8rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th { color: var(--muted); font-weight: 500; text-align: left; padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    td { padding: 0.65rem 1rem; border-bottom: 1px solid rgba(30,45,64,0.5); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .badge { padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.72rem; font-weight: 500; }
+    .badge-green { background: rgba(34,197,94,0.15); color: #4ade80; }
+    .badge-red { background: rgba(239,68,68,0.15); color: #f87171; }
+    .badge-yellow { background: rgba(234,179,8,0.15); color: #facc15; }
+    .badge-blue { background: rgba(59,130,246,0.15); color: #93c5fd; }
+    .badge-slate { background: rgba(100,116,139,0.15); color: var(--muted); }
+    .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.82rem; font-weight: 500; cursor: pointer; border: none; text-decoration: none; transition: all 0.15s; }
+    .btn-green { background: var(--green); color: #0a0f1a; }
+    .btn-green:hover { background: var(--green-dark); }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+    .btn-outline:hover { border-color: var(--muted); color: var(--text); }
+    .btn-red { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: #f87171; }
+    .btn-red:hover { background: rgba(239,68,68,0.2); }
+    input, select, textarea {
+      width: 100%; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); padding: 0.6rem 0.9rem;
+      font-size: 0.85rem; outline: none; transition: border-color 0.2s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--green); }
+    label { display: block; color: var(--muted); font-size: 0.78rem; margin-bottom: 0.35rem; }
+    .form-group { margin-bottom: 1.1rem; }
+    .messages { margin-bottom: 1.25rem; }
+    .message { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .message-success { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); color: #4ade80; }
+    .message-error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: #f87171; }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      Admin <span>Panel</span>
+    </div>
+    <nav>
+      <a href="{% url 'admin_panel:overview' %}" class="{% block nav_overview %}{% endblock %}">📊 Overview</a>
+      <a href="{% url 'admin_panel:users' %}" class="{% block nav_users %}{% endblock %}">👥 Users</a>
+      <a href="{% url 'admin_panel:company_settings' %}" class="{% block nav_company %}{% endblock %}">🏢 Company</a>
+      <a href="{% url 'admin_panel:audit_log' %}" class="{% block nav_audit %}{% endblock %}">📋 Audit Log</a>
+      <a href="{% url 'admin_panel:roles' %}" class="{% block nav_roles %}{% endblock %}">🔑 Roles</a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="{% url 'dashboard:index' %}">← Back to Dashboard</a>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <h1>{% block page_title %}Admin Panel{% endblock %}</h1>
+      <span class="company-badge">{{ company.name }}</span>
+    </div>
+    <div class="content">
+      {% if messages %}
+      <div class="messages">
+        {% for message in messages %}
+        <div class="message message-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</body>
+</html>
