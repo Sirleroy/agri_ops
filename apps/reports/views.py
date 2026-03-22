@@ -1,4 +1,5 @@
 import csv
+from datetime import timedelta
 from django.http import HttpResponse, Http404
 from django.views import View
 from django.views.generic import TemplateView
@@ -16,6 +17,8 @@ class ReportsLandingView(StaffRequiredMixin, TemplateView):
         if not company:
             return context
 
+        context['active_tab'] = self.request.GET.get('tab', 'eudr')
+
         from apps.sales_orders.models import SalesOrder
         context['customers'] = (
             SalesOrder.objects
@@ -24,8 +27,90 @@ class ReportsLandingView(StaffRequiredMixin, TemplateView):
             .distinct()
             .order_by('customer_name')
         )
-        context['active_tab'] = self.request.GET.get('tab', 'eudr')
+
+        self._add_financial_summary(context, company)
         return context
+
+    def _add_financial_summary(self, context, company):
+        from apps.purchase_orders.models import PurchaseOrderItem
+        from apps.sales_orders.models import SalesOrderItem
+        from django.db.models import Sum, F, ExpressionWrapper, DecimalField
+
+        today = timezone.now().date()
+        period = self.request.GET.get('period', 'this_month')
+
+        if period == 'last_month':
+            last_day = today.replace(day=1) - timedelta(days=1)
+            first_day = last_day.replace(day=1)
+            period_label = last_day.strftime('%b %Y')
+        elif period == 'this_quarter':
+            q_start_month = ((today.month - 1) // 3) * 3 + 1
+            first_day = today.replace(month=q_start_month, day=1)
+            last_day = today
+            period_label = f"Q{(today.month - 1) // 3 + 1} {today.year}"
+        else:  # this_month
+            period = 'this_month'
+            first_day = today.replace(day=1)
+            last_day = today
+            period_label = today.strftime('%b %Y')
+
+        line_total = ExpressionWrapper(
+            F('quantity') * F('unit_price'),
+            output_field=DecimalField(max_digits=14, decimal_places=2),
+        )
+
+        procurement = (
+            PurchaseOrderItem.objects
+            .filter(
+                purchase_order__company=company,
+                purchase_order__status='received',
+                purchase_order__order_date__gte=first_day,
+                purchase_order__order_date__lte=last_day,
+            )
+            .aggregate(total=Sum(line_total))['total'] or 0
+        )
+
+        revenue = (
+            SalesOrderItem.objects
+            .filter(
+                sales_order__company=company,
+                sales_order__status='completed',
+                sales_order__order_date__gte=first_day,
+                sales_order__order_date__lte=last_day,
+            )
+            .aggregate(total=Sum(line_total))['total'] or 0
+        )
+
+        margin = revenue - procurement
+        margin_pct = round(float(margin) / float(revenue) * 100) if revenue else 0
+
+        open_po = (
+            PurchaseOrderItem.objects
+            .filter(purchase_order__company=company)
+            .exclude(purchase_order__status__in=['received', 'cancelled'])
+            .aggregate(total=Sum(line_total))['total'] or 0
+        )
+
+        def fmt(n):
+            n = float(n)
+            sign = '-' if n < 0 else ''
+            n = abs(n)
+            if n >= 1_000_000:
+                return f'{sign}₦{n / 1_000_000:.1f}M'
+            if n >= 1_000:
+                return f'{sign}₦{n / 1_000:.0f}K'
+            return f'{sign}₦{n:.0f}'
+
+        context.update({
+            'summary_period': period,
+            'summary_period_label': period_label,
+            'summary_procurement': fmt(procurement),
+            'summary_revenue': fmt(revenue),
+            'summary_margin': fmt(margin),
+            'summary_margin_pct': margin_pct,
+            'summary_margin_positive': margin >= 0,
+            'summary_open_po': fmt(open_po),
+        })
 
 
 class EUDRReportView(StaffRequiredMixin, View):
