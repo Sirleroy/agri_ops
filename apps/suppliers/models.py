@@ -1,6 +1,13 @@
+import datetime
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from apps.companies.models import Company
+
+
+# Commodities covered by EU Deforestation Regulation (EU) 2023/1115
+EUDR_COMMODITIES = {
+    'cattle', 'cocoa', 'coffee', 'oil palm', 'palm oil', 'rubber', 'soya', 'soy', 'wood',
+}
 
 
 class Supplier(models.Model):
@@ -67,6 +74,20 @@ class Farm(models.Model):
     deforestation_risk_status = models.CharField(
         max_length=20, choices=RISK_CHOICES, default='standard'
     )
+    # Cut-off date evidence: must confirm land status as of 31 Dec 2020 (Article 2(28))
+    deforestation_reference_date = models.DateField(
+        null=True, blank=True,
+        default=datetime.date(2020, 12, 31),
+        help_text="Date of the evidence baseline for deforestation status. Must be on or before 31 Dec 2020 for EUDR compliance."
+    )
+    land_cleared_after_cutoff = models.BooleanField(
+        null=True, blank=True,
+        help_text="Was this land cleared or subject to deforestation after 31 December 2020? Yes = disqualified from EUDR."
+    )
+    harvest_year   = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        help_text="Most recent harvest year on this plot (e.g. 2024). Required for EUDR due diligence statement."
+    )
     mapping_date   = models.DateField(null=True, blank=True)
     mapped_by      = models.ForeignKey(
                        'users.CustomUser', null=True, blank=True,
@@ -92,6 +113,16 @@ class Farm(models.Model):
         return f"{self.name} — {self.supplier.name}"
 
     @property
+    def is_eudr_commodity(self):
+        """True if this farm's commodity falls under EUDR 2023/1115 scope."""
+        return self.commodity.lower().strip() in EUDR_COMMODITIES
+
+    @property
+    def is_disqualified(self):
+        """True if land was cleared after the 31 Dec 2020 cut-off — automatically ineligible for EUDR."""
+        return self.land_cleared_after_cutoff is True
+
+    @property
     def is_verification_current(self):
         if not self.is_eudr_verified:
             return False
@@ -102,6 +133,8 @@ class Farm(models.Model):
 
     @property
     def compliance_status(self):
+        if self.is_disqualified:
+            return 'disqualified'
         if not self.is_eudr_verified:
             return 'pending'
         if not self.is_verification_current:

@@ -31,6 +31,14 @@ class Batch(models.Model):
     farms        = models.ManyToManyField(Farm, blank=True, related_name='batches')
     batch_number = models.CharField(max_length=50, unique=True)
     commodity    = models.CharField(max_length=100)
+    quantity_kg  = models.DecimalField(
+        max_digits=12, decimal_places=3, null=True, blank=True,
+        help_text="Net mass in kilograms — required for EUDR due diligence statement (Article 9)."
+    )
+    is_locked    = models.BooleanField(
+        default=False,
+        help_text="Locked batches cannot be deleted. Set automatically on dispatch; manual lock also supported."
+    )
     public_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     notes        = models.TextField(blank=True)
     created_at   = models.DateTimeField(auto_now_add=True)
@@ -48,6 +56,12 @@ class Batch(models.Model):
         from django.conf import settings
         site_url = getattr(settings, 'SITE_URL', 'https://app.agriops.io')
         return f"{site_url}/trace/{self.public_token}/"
+
+    def delete(self, *args, **kwargs):
+        if self.is_locked:
+            from django.core.exceptions import PermissionDenied
+            raise PermissionDenied("This batch is locked and cannot be deleted. Locked batches must be retained for 5 years under EUDR Article 9.")
+        super().delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):
         if not self.batch_number:

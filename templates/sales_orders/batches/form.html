@@ -18,6 +18,11 @@
         {{ form.commodity }}
       </div>
       <div>
+        <label class="block text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Quantity (kg)</label>
+        <p class="text-xs text-slate-600 mb-2">Net mass in kilograms — required for EUDR due diligence statement.</p>
+        {{ form.quantity_kg }}
+      </div>
+      <div>
         <label class="block text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Farms</label>
         <p class="text-xs text-slate-600 mb-2">Hold Ctrl/Cmd to select multiple farms.</p>
         {{ form.farms }}

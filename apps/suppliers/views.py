@@ -113,7 +113,8 @@ class FarmCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = Farm
     template_name = 'suppliers/farms/form.html'
     fields = ['supplier', 'name', 'farmer_name', 'country', 'state_region',
-              'commodity', 'area_hectares', 'deforestation_risk_status',
+              'commodity', 'area_hectares', 'harvest_year',
+              'deforestation_risk_status', 'deforestation_reference_date', 'land_cleared_after_cutoff',
               'mapping_date', 'mapped_by', 'geolocation']
     success_url = reverse_lazy('suppliers:farm_list')
 
@@ -139,7 +140,8 @@ class FarmUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = Farm
     template_name = 'suppliers/farms/form.html'
     fields = ['supplier', 'name', 'farmer_name', 'country', 'state_region',
-              'commodity', 'area_hectares', 'deforestation_risk_status',
+              'commodity', 'area_hectares', 'harvest_year',
+              'deforestation_risk_status', 'deforestation_reference_date', 'land_cleared_after_cutoff',
               'mapping_date', 'mapped_by', 'geolocation',
               'is_eudr_verified', 'verified_by', 'verified_date', 'verification_expiry']
     success_url = reverse_lazy('suppliers:farm_list')

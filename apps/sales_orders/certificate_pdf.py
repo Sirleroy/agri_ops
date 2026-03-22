@@ -64,10 +64,12 @@ def generate_certificate(batch):
 
     # ── Operator ──────────────────────────────────────────────
     story.append(Paragraph("Operator", ParagraphStyle("s", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceBefore=4*mm, spaceAfter=3*mm)))
+    qty_str = f"{batch.quantity_kg:,.3f} kg" if batch.quantity_kg else "Not specified"
     op_data = [
         ["Company", batch.company.name],
         ["Country", batch.company.country],
         ["Sales Order", batch.sales_order.order_number if batch.sales_order else "—"],
+        ["Quantity (net mass)", qty_str],
         ["Certificate Date", str(date.today())],
         ["Public Trace URL", batch.trace_url],
     ]
@@ -84,24 +86,56 @@ def generate_certificate(batch):
     ]))
     story.append(op_t)
 
+    # ── Supplier chain ────────────────────────────────────────
+    suppliers = {farm.supplier for farm in farms if farm.supplier}
+    if suppliers:
+        story.append(Paragraph("Supplier Chain", ParagraphStyle("s1b", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceBefore=6*mm, spaceAfter=3*mm)))
+        sup_data = [["Supplier", "Country / City", "Address", "Email"]]
+        for sup in sorted(suppliers, key=lambda s: s.name):
+            location = f"{sup.country or '—'} / {sup.city or '—'}"
+            sup_data.append([sup.name, location, sup.address or "—", sup.email or "—"])
+        sup_t = Table(sup_data, colWidths=[45*mm, 35*mm, 55*mm, 40*mm])
+        sup_t.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,0), DARK),
+            ("TEXTCOLOR", (0,0), (-1,0), WHITE),
+            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+            ("FONTSIZE", (0,0), (-1,-1), 8),
+            ("GRID", (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+            ("ROWBACKGROUNDS", (0,1), (-1,-1), [WHITE, colors.HexColor("#f8fafc")]),
+            ("TOPPADDING", (0,0), (-1,-1), 4),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+            ("LEFTPADDING", (0,0), (-1,-1), 4),
+        ]))
+        story.append(sup_t)
+
     # ── Farm traceability ─────────────────────────────────────
     farms = batch.farms.select_related('supplier').all()
     story.append(Paragraph(f"Farm Traceability — {farms.count()} farms", ParagraphStyle("s2", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceBefore=6*mm, spaceAfter=3*mm)))
 
-    farm_data = [["Farm", "Supplier", "Location", "Area", "EUDR"]]
+    farm_data = [["Farm", "Supplier", "Location", "Area", "Harvest", "Ref. Date", "EUDR"]]
     for farm in farms:
+        ref_date = str(farm.deforestation_reference_date) if farm.deforestation_reference_date else "—"
+        harvest = str(farm.harvest_year) if farm.harvest_year else "—"
+        if farm.is_disqualified:
+            eudr_status = "✗ Disqualified"
+        elif farm.is_eudr_verified:
+            eudr_status = "✓ Verified"
+        else:
+            eudr_status = "Pending"
         farm_data.append([
             farm.name,
             farm.supplier.name if farm.supplier else "—",
             f"{farm.country} / {farm.state_region or '—'}",
             f"{farm.area_hectares} ha" if farm.area_hectares else "—",
-            "✓ Verified" if farm.is_eudr_verified else "Pending",
+            harvest,
+            ref_date,
+            eudr_status,
         ])
 
     if len(farm_data) == 1:
-        farm_data.append(["No farms linked", "", "", "", ""])
+        farm_data.append(["No farms linked", "", "", "", "", "", ""])
 
-    farm_t = Table(farm_data, colWidths=[45*mm, 45*mm, 40*mm, 20*mm, 25*mm])
+    farm_t = Table(farm_data, colWidths=[35*mm, 35*mm, 35*mm, 17*mm, 15*mm, 22*mm, 16*mm])
     farm_t.setStyle(TableStyle([
         ("BACKGROUND", (0,0), (-1,0), DARK),
         ("TEXTCOLOR", (0,0), (-1,0), WHITE),

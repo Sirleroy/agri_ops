@@ -54,6 +54,10 @@ class Product(models.Model):
         decimal_places=2,
         default=0.00
     )
+    hs_code = models.CharField(
+        max_length=20, blank=True,
+        help_text="Harmonised System code required for EUDR due diligence statement (e.g. 1201 for soya beans)."
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

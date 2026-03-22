@@ -36,7 +36,7 @@ class BatchDetailView(StaffRequiredMixin, DetailView):
 class BatchCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = Batch
     template_name = 'sales_orders/batches/form.html'
-    fields = ['sales_order', 'commodity', 'farms', 'notes']
+    fields = ['sales_order', 'commodity', 'quantity_kg', 'farms', 'notes']
     success_url = reverse_lazy('sales_orders:batch_list')
 
     def get_form(self, form_class=None):
@@ -56,7 +56,7 @@ class BatchCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
 class BatchUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = Batch
     template_name = 'sales_orders/batches/form.html'
-    fields = ['sales_order', 'commodity', 'farms', 'notes']
+    fields = ['sales_order', 'commodity', 'quantity_kg', 'farms', 'notes']
     success_url = reverse_lazy('sales_orders:batch_list')
 
     def get_object(self):

@@ -21,7 +21,7 @@
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Farm Identity</p>
       <div class="grid grid-cols-2 gap-4 mb-6">
         {% for field in form %}
-          {% if field.name in 'supplier,name,farmer_name,country,state_region,commodity,area_hectares' %}
+          {% if field.name in 'supplier,name,farmer_name,country,state_region,commodity,area_hectares,harvest_year' %}
           <div class="{% if field.name == 'name' or field.name == 'supplier' %}col-span-2{% endif %}">
             <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">
               {{ field.label }}{% if field.field.required %} *{% endif %}
@@ -42,7 +42,7 @@
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4 pt-4 border-t border-border">EUDR Compliance</p>
       <div class="grid grid-cols-2 gap-4 mb-6">
         {% for field in form %}
-          {% if field.name in 'deforestation_risk_status,mapping_date,mapped_by,is_eudr_verified,verified_by,verified_date,verification_expiry' %}
+          {% if field.name in 'deforestation_risk_status,deforestation_reference_date,land_cleared_after_cutoff,mapping_date,mapped_by,is_eudr_verified,verified_by,verified_date,verification_expiry' %}
           <div>
             <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">
               {{ field.label }}
