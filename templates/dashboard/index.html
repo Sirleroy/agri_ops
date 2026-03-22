@@ -273,12 +273,12 @@
 
       <!-- Compliance Report Download -->
 <div class="bg-card border border-border rounded-xl p-5">
-  <div class="flex items-center justify-between mb-4">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
     <div>
       <p class="text-sm font-bold text-slate-100 mb-1">EUDR Compliance Report</p>
       <p class="text-xs text-slate-500">Download a full PDF traceability report — farms, suppliers, orders, and due diligence declaration.</p>
     </div>
-    <div class="flex items-center gap-2 flex-shrink-0 ml-6">
+    <div class="flex items-center gap-2 flex-shrink-0">
       <a href="{% url 'reports:eudr' %}"
          class="flex items-center gap-2 bg-green hover:bg-green-dim text-bg font-bold text-xs px-5 py-2.5 rounded-lg transition-colors">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -292,16 +292,16 @@
       </a>
     </div>
   </div>
-  <div class="border-t border-border pt-4 flex items-center gap-3 flex-wrap">
-    <p class="text-xs font-mono text-slate-600 mr-2">Filter by date:</p>
-    <form method="get" action="{% url 'reports:eudr' %}" class="flex items-center gap-2 flex-wrap">
-      <input type="date" name="from"
-             class="bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
-      <span class="text-xs text-slate-600">to</span>
-      <input type="date" name="to"
-             class="bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
+  <div class="border-t border-border pt-4">
+    <p class="text-xs font-mono text-slate-600 mb-2">Filter by date:</p>
+    <form method="get" action="{% url 'reports:eudr' %}" class="flex flex-col sm:flex-row sm:items-center gap-2">
+      <input type="date" name="from" style="width:auto"
+             class="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
+      <span class="text-xs text-slate-600 hidden sm:inline">to</span>
+      <input type="date" name="to" style="width:auto"
+             class="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
       <button type="submit"
-              class="bg-surface border border-border hover:border-green text-xs text-slate-300 px-4 py-1.5 rounded-lg transition-colors font-mono">
+              class="flex items-center justify-center gap-1.5 bg-surface border border-border hover:border-green text-xs text-slate-300 px-4 py-1.5 rounded-lg transition-colors font-mono">
         Download Filtered →
       </button>
     </form>
