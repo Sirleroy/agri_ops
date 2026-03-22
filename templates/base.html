@@ -365,7 +365,9 @@
             </div>
           </div>
 
-          <a href="/admin/" class="text-xs font-mono text-slate-500 hover:text-green transition-colors">Admin Panel</a>
+          {% if request.user.is_superuser %}
+          <a href="/admin/" class="text-xs font-mono text-slate-500 hover:text-green transition-colors">Django Admin</a>
+          {% endif %}
         </div>
       </header>
 
