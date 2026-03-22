@@ -36,6 +36,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
   <style>
+    [x-cloak] { display: none !important; }
     body { background-color: #0a0f1a; overflow-x: hidden; position: relative; }
 
     /* Scrollbar */
@@ -364,6 +365,9 @@
               </div>
             </div>
           </div>
+          {% if request.user.system_role == "org_admin" %}
+          <a href="/admin-panel/" class="text-xs font-mono text-slate-500 hover:text-green transition-colors ml-4">Admin Panel</a>
+          {% endif %}
         </div>
       </header>
 
@@ -400,7 +404,7 @@
   {% endif %}
 
   <!-- ═══════════════════════════════ DELETE MODAL ═══════════════════════════════ -->
-  <div x-show="deleteModal"
+  <div x-cloak x-show="deleteModal"
        x-transition:enter="transition ease-out duration-150"
        x-transition:enter-start="opacity-0"
        x-transition:enter-end="opacity-100"
