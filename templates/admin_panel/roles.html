@@ -13,9 +13,10 @@
         {% for value, label in role_choices %}
         <tr>
           <td>{{ label }}</td>
-          <td>{{ users_by_role|default_if_none:0 }}
-            {% with count=users_by_role|dictsort:value %}{{ users_by_role.value|default:"0" }}{% endwith %}
-            {{ users_by_role|get_item:value|default:"0" }}
+          <td>
+            {% for role, count in users_by_role.items %}
+              {% if role == value %}{{ count }}{% endif %}
+            {% endfor %}
           </td>
         </tr>
         {% endfor %}
