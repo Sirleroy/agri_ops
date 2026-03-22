@@ -119,17 +119,17 @@ class Command(BaseCommand):
         # ── Inventory ─────────────────────────────────────────
         self.stdout.write('Creating inventory...')
         inventory_data = [
-            {'product': 'Soybean Grade A',   'qty': 45000, 'lot': 'LOT-SOY-2024-001', 'moisture': 12.5, 'grade': 'A',    'harvest': date(2024, 11, 15), 'origin': 'Kano'},
-            {'product': 'Soybean Grade A',   'qty': 32000, 'lot': 'LOT-SOY-2024-002', 'moisture': 13.0, 'grade': 'A',    'harvest': date(2024, 11, 20), 'origin': 'Kaduna'},
-            {'product': 'Sesame Grade 1',    'qty': 18000, 'lot': 'LOT-SES-2024-001', 'moisture': 6.0,  'grade': '1',    'harvest': date(2024, 10, 10), 'origin': 'Niger'},
-            {'product': 'Sesame Grade 1',    'qty': 12000, 'lot': 'LOT-SES-2024-002', 'moisture': 5.8,  'grade': '1',    'harvest': date(2024, 10, 25), 'origin': 'Kebbi'},
-            {'product': 'Cashew Grade W320', 'qty': 8500,  'lot': 'LOT-CSW-2024-001', 'moisture': 8.0,  'grade': 'W320', 'harvest': date(2024, 4, 20),  'origin': 'Benue'},
-            {'product': 'White Maize',       'qty': 60000, 'lot': 'LOT-MZE-2024-001', 'moisture': 14.0, 'grade': 'A',    'harvest': date(2024, 9, 5),   'origin': 'Zamfara'},
-            {'product': 'White Maize',       'qty': 25000, 'lot': 'LOT-MZE-2024-002', 'moisture': 13.5, 'grade': 'B',    'harvest': date(2024, 9, 15),  'origin': 'Benue'},
+            {'product': 'Soybean Grade A',   'qty': 45000, 'lot': 'LOT-SOY-2024-001', 'moisture': 12.5, 'grade': 'A',    'harvest': date(2024, 11, 15), 'origin': 'Kano',    'warehouse': 'Kano Warehouse A'},
+            {'product': 'Soybean Grade A',   'qty': 32000, 'lot': 'LOT-SOY-2024-002', 'moisture': 13.0, 'grade': 'A',    'harvest': date(2024, 11, 20), 'origin': 'Kaduna',  'warehouse': 'Kaduna Store B'},
+            {'product': 'Sesame Grade 1',    'qty': 18000, 'lot': 'LOT-SES-2024-001', 'moisture': 6.0,  'grade': '1',    'harvest': date(2024, 10, 10), 'origin': 'Niger',   'warehouse': 'Minna Depot'},
+            {'product': 'Sesame Grade 1',    'qty': 12000, 'lot': 'LOT-SES-2024-002', 'moisture': 5.8,  'grade': '1',    'harvest': date(2024, 10, 25), 'origin': 'Kebbi',   'warehouse': 'Kebbi Store'},
+            {'product': 'Cashew Grade W320', 'qty': 8500,  'lot': 'LOT-CSW-2024-001', 'moisture': 8.0,  'grade': 'W320', 'harvest': date(2024, 4, 20),  'origin': 'Benue',   'warehouse': 'Makurdi Cold Store'},
+            {'product': 'White Maize',       'qty': 60000, 'lot': 'LOT-MZE-2024-001', 'moisture': 14.0, 'grade': 'A',    'harvest': date(2024, 9, 5),   'origin': 'Zamfara', 'warehouse': 'Gusau Silo'},
+            {'product': 'White Maize',       'qty': 25000, 'lot': 'LOT-MZE-2024-002', 'moisture': 13.5, 'grade': 'B',    'harvest': date(2024, 9, 15),  'origin': 'Benue',   'warehouse': 'Benue Store B'},
         ]
         for i in inventory_data:
             obj, created = Inventory.objects.get_or_create(
-                lot_number=i['lot'], company=company,
+                lot_number=i['lot'], warehouse_location=i['warehouse'], company=company,
                 defaults={
                     'product': products[i['product']],
                     'quantity': i['qty'],
