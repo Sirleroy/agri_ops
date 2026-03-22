@@ -30,7 +30,9 @@ class ProductDetailView(StaffRequiredMixin, DetailView):
 class ProductCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = Product
     template_name = 'products/form.html'
-    fields = ['name', 'description', 'category', 'unit', 'unit_price', 'hs_code', 'supplier', 'is_active']
+    fields = ['name', 'description', 'category', 'unit', 'unit_price', 'hs_code',
+              'nafdac_registration_number', 'eu_novel_food_status', 'eu_novel_food_ref',
+              'supplier', 'is_active']
     success_url = reverse_lazy('products:list')
 
     def form_valid(self, form):
@@ -41,7 +43,9 @@ class ProductCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
 class ProductUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = Product
     template_name = 'products/form.html'
-    fields = ['name', 'description', 'category', 'unit', 'unit_price', 'hs_code', 'supplier', 'is_active']
+    fields = ['name', 'description', 'category', 'unit', 'unit_price', 'hs_code',
+              'nafdac_registration_number', 'eu_novel_food_status', 'eu_novel_food_ref',
+              'supplier', 'is_active']
     success_url = reverse_lazy('products:list')
 
     def get_object(self):

@@ -31,7 +31,7 @@ class SalesOrderCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = SalesOrder
     template_name = 'sales_orders/form.html'
     fields = ['order_number', 'customer_name', 'customer_email',
-              'customer_phone', 'status', 'notes']
+              'customer_phone', 'status', 'nxp_reference', 'certificate_of_origin_ref', 'notes']
     success_url = reverse_lazy('sales_orders:list')
 
     def form_valid(self, form):
@@ -43,7 +43,7 @@ class SalesOrderUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = SalesOrder
     template_name = 'sales_orders/form.html'
     fields = ['order_number', 'customer_name', 'customer_email',
-              'customer_phone', 'status', 'notes']
+              'customer_phone', 'status', 'nxp_reference', 'certificate_of_origin_ref', 'notes']
     success_url = reverse_lazy('sales_orders:list')
 
     def get_object(self):

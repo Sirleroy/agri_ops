@@ -36,6 +36,15 @@ class SalesOrder(models.Model):
         default='pending'
     )
     order_date = models.DateField(auto_now_add=True)
+    # Export compliance references
+    nxp_reference = models.CharField(
+        max_length=50, blank=True,
+        help_text="CBN Form NXP reference number — registers export proceeds obligation with authorised dealer bank."
+    )
+    certificate_of_origin_ref = models.CharField(
+        max_length=50, blank=True,
+        help_text="Certificate of Origin reference number issued by Nigerian Chamber of Commerce / Customs."
+    )
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -70,5 +79,6 @@ class SalesOrderItem(models.Model):
         return f"{self.product.name} x {self.quantity}"
 
 
-# Import Batch here so it lives in the same app
+# Import Batch and quality models so Django discovers them all
 from apps.sales_orders.batch import Batch
+from apps.sales_orders.quality import PhytosanitaryCertificate, BatchQualityTest

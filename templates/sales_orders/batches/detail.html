@@ -42,6 +42,10 @@
         <dd class="text-slate-100">{{ batch.sales_order.order_number|default:"—" }}</dd>
       </div>
       <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Quantity (net mass)</dt>
+        <dd class="text-slate-100">{% if batch.quantity_kg %}{{ batch.quantity_kg }} kg{% else %}<span class="text-yellow-400 text-xs">Not set — required for EUDR</span>{% endif %}</dd>
+      </div>
+      <div>
         <dt class="text-xs text-slate-500 font-mono mb-1">Created</dt>
         <dd class="text-slate-100">{{ batch.created_at|date:"d M Y" }}</dd>
       </div>
@@ -88,6 +92,74 @@
     </div>
     {% else %}
     <p class="text-sm text-slate-500">No farms linked to this batch.</p>
+    {% endif %}
+  </div>
+
+  <!-- Phytosanitary Certificates -->
+  <div class="bg-card border border-border rounded-xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Phytosanitary Certificates (NAQS)</p>
+      <a href="{% url 'sales_orders:phytosanitary_create' batch.pk %}"
+         class="text-xs font-mono text-green hover:text-green-dim transition-colors">+ Add Certificate</a>
+    </div>
+    {% if phytosanitary_certs %}
+      <div class="space-y-2">
+        {% for cert in phytosanitary_certs %}
+        <div class="flex items-start justify-between py-2 border-b border-border last:border-0">
+          <div>
+            <p class="text-sm text-slate-100 font-mono">{{ cert.certificate_number }}</p>
+            <p class="text-xs text-slate-500">{{ cert.issuing_office|default:"—" }}{% if cert.issued_date %} · Issued {{ cert.issued_date }}{% endif %}{% if cert.expiry_date %} · Expires {{ cert.expiry_date }}{% endif %}</p>
+          </div>
+          <div class="flex items-center gap-3 flex-shrink-0">
+            {% if cert.is_current %}
+              <span class="text-xs font-mono text-green">✓ Current</span>
+            {% else %}
+              <span class="text-xs font-mono text-red-400">Expired</span>
+            {% endif %}
+            <a href="{% url 'sales_orders:phytosanitary_update' cert.pk %}" class="text-xs text-slate-500 hover:text-slate-100 font-mono transition-colors">Edit</a>
+            <button @click="openDeleteModal('{% url 'sales_orders:phytosanitary_delete' cert.pk %}', '{{ cert.certificate_number|escapejs }}')"
+                    class="text-xs text-slate-600 hover:text-red-400 font-mono transition-colors">Delete</button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-sm text-slate-500">No phytosanitary certificate recorded. <span class="text-yellow-400">Required for export.</span></p>
+    {% endif %}
+  </div>
+
+  <!-- Quality Tests -->
+  <div class="bg-card border border-border rounded-xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Quality Tests (MRL / Aflatoxin)</p>
+      <a href="{% url 'sales_orders:quality_create' batch.pk %}"
+         class="text-xs font-mono text-green hover:text-green-dim transition-colors">+ Add Test</a>
+    </div>
+    {% if quality_tests %}
+      <div class="space-y-2">
+        {% for test in quality_tests %}
+        <div class="flex items-start justify-between py-2 border-b border-border last:border-0">
+          <div>
+            <p class="text-sm text-slate-100">{{ test.get_test_type_display }}</p>
+            <p class="text-xs text-slate-500 font-mono">{{ test.lab_name }}{% if test.lab_certificate_ref %} · Ref: {{ test.lab_certificate_ref }}{% endif %}{% if test.test_date %} · {{ test.test_date }}{% endif %}</p>
+          </div>
+          <div class="flex items-center gap-3 flex-shrink-0">
+            {% if test.result == 'pass' %}
+              <span class="text-xs font-mono text-green">✓ Pass</span>
+            {% elif test.result == 'fail' %}
+              <span class="text-xs font-mono text-red-400">✗ Fail</span>
+            {% else %}
+              <span class="text-xs font-mono text-yellow-400">Pending</span>
+            {% endif %}
+            <a href="{% url 'sales_orders:quality_update' test.pk %}" class="text-xs text-slate-500 hover:text-slate-100 font-mono transition-colors">Edit</a>
+            <button @click="openDeleteModal('{% url 'sales_orders:quality_delete' test.pk %}', '{{ test.get_test_type_display|escapejs }}')"
+                    class="text-xs text-slate-600 hover:text-red-400 font-mono transition-colors">Delete</button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-sm text-slate-500">No quality tests recorded. <span class="text-yellow-400">MRL and aflatoxin certificates required by EU buyers.</span></p>
     {% endif %}
   </div>
 

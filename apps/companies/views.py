@@ -29,14 +29,16 @@ class CompanyDetailView(StaffRequiredMixin, DetailView):
 class CompanyCreateView(OrgAdminRequiredMixin, CreateView):
     model = Company
     template_name = 'companies/form.html'
-    fields = ['name', 'country', 'city', 'address', 'phone', 'email']
+    fields = ['name', 'country', 'city', 'address', 'phone', 'email',
+              'nepc_registration_number', 'nepc_registration_expiry']
     success_url = reverse_lazy('companies:list')
 
 
 class CompanyUpdateView(OrgAdminRequiredMixin, UpdateView):
     model = Company
     template_name = 'companies/form.html'
-    fields = ['name', 'country', 'city', 'address', 'phone', 'email']
+    fields = ['name', 'country', 'city', 'address', 'phone', 'email',
+              'nepc_registration_number', 'nepc_registration_expiry']
     success_url = reverse_lazy('companies:list')
 
     def get_object(self):

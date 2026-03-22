@@ -1,5 +1,5 @@
 import html
-from django.views.generic import ListView, DetailView, CreateView, UpdateView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.views import View
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -9,6 +9,7 @@ from django.core.cache import cache
 from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin
 from .batch import Batch
+from .quality import PhytosanitaryCertificate, BatchQualityTest
 
 
 class BatchListView(StaffRequiredMixin, ListView):
@@ -31,6 +32,12 @@ class BatchDetailView(StaffRequiredMixin, DetailView):
             from django.http import Http404
             raise Http404
         return obj
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['phytosanitary_certs'] = self.object.phytosanitary_certs.all()
+        context['quality_tests'] = self.object.quality_tests.all()
+        return context
 
 
 class BatchCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
@@ -74,6 +81,132 @@ class BatchUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
         form.fields['farms'].queryset = Farm.objects.filter(company=company)
         form.fields['sales_order'].queryset = SalesOrder.objects.filter(company=company)
         return form
+
+
+# ─────────────────────────────────────
+# PHYTOSANITARY CERTIFICATE VIEWS
+# ─────────────────────────────────────
+
+class PhytosanitaryCertCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
+    model = PhytosanitaryCertificate
+    template_name = 'sales_orders/batches/phytosanitary_form.html'
+    fields = ['certificate_number', 'issuing_office', 'inspector_name',
+              'inspection_date', 'issued_date', 'expiry_date', 'notes']
+
+    def get_batch(self):
+        return get_object_or_404(Batch, pk=self.kwargs['batch_pk'], company=self.request.user.company)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['batch'] = self.get_batch()
+        return context
+
+    def form_valid(self, form):
+        batch = self.get_batch()
+        form.instance.batch = batch
+        form.instance.company = self.request.user.company
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.kwargs['batch_pk']})
+
+
+class PhytosanitaryCertUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
+    model = PhytosanitaryCertificate
+    template_name = 'sales_orders/batches/phytosanitary_form.html'
+    fields = ['certificate_number', 'issuing_office', 'inspector_name',
+              'inspection_date', 'issued_date', 'expiry_date', 'notes']
+
+    def get_object(self):
+        obj = super().get_object()
+        if obj.company != self.request.user.company:
+            from django.http import Http404
+            raise Http404
+        return obj
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['batch'] = self.object.batch
+        return context
+
+    def get_success_url(self):
+        return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.object.batch_id})
+
+
+class PhytosanitaryCertDeleteView(ManagerRequiredMixin, DeleteView):
+    model = PhytosanitaryCertificate
+
+    def get_object(self):
+        obj = super().get_object()
+        if obj.company != self.request.user.company:
+            from django.http import Http404
+            raise Http404
+        return obj
+
+    def get_success_url(self):
+        return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.object.batch_id})
+
+
+# ─────────────────────────────────────
+# BATCH QUALITY TEST VIEWS
+# ─────────────────────────────────────
+
+class BatchQualityTestCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
+    model = BatchQualityTest
+    template_name = 'sales_orders/batches/quality_form.html'
+    fields = ['test_type', 'lab_name', 'lab_certificate_ref', 'test_date', 'result', 'notes']
+
+    def get_batch(self):
+        return get_object_or_404(Batch, pk=self.kwargs['batch_pk'], company=self.request.user.company)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['batch'] = self.get_batch()
+        return context
+
+    def form_valid(self, form):
+        batch = self.get_batch()
+        form.instance.batch = batch
+        form.instance.company = self.request.user.company
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.kwargs['batch_pk']})
+
+
+class BatchQualityTestUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
+    model = BatchQualityTest
+    template_name = 'sales_orders/batches/quality_form.html'
+    fields = ['test_type', 'lab_name', 'lab_certificate_ref', 'test_date', 'result', 'notes']
+
+    def get_object(self):
+        obj = super().get_object()
+        if obj.company != self.request.user.company:
+            from django.http import Http404
+            raise Http404
+        return obj
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['batch'] = self.object.batch
+        return context
+
+    def get_success_url(self):
+        return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.object.batch_id})
+
+
+class BatchQualityTestDeleteView(ManagerRequiredMixin, DeleteView):
+    model = BatchQualityTest
+
+    def get_object(self):
+        obj = super().get_object()
+        if obj.company != self.request.user.company:
+            from django.http import Http404
+            raise Http404
+        return obj
+
+    def get_success_url(self):
+        return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.object.batch_id})
 
 
 class BatchCertificateView(StaffRequiredMixin, View):

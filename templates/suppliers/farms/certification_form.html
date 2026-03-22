@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}Add Certification — {{ farm.name }} — AgriOps{% endblock %}
+{% block page_title %}Add Certification{% endblock %}
+{% block content %}
+<div class="max-w-2xl">
+  <a href="{% url 'suppliers:farm_detail' farm.pk %}" class="text-sm text-slate-500 hover:text-slate-100 transition-colors flex items-center gap-1 w-fit mb-4">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    Back to {{ farm.name }}
+  </a>
+  <div class="bg-card border border-border rounded-xl p-6">
+    <h2 class="text-base font-bold text-slate-100 mb-1">Add Certification</h2>
+    <p class="text-xs text-slate-500 font-mono mb-5">Farm: {{ farm.name }} · {{ farm.supplier.name }}</p>
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      {% for field in form %}
+      <div>
+        <label class="block text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">
+          {{ field.label }}{% if field.field.required %} <span class="text-red-400 normal-case font-sans">*</span>{% endif %}
+        </label>
+        {{ field }}
+        {% if field.help_text %}<p class="text-xs text-slate-600 mt-1">{{ field.help_text }}</p>{% endif %}
+        {% if field.errors %}<p class="text-xs text-red-400 mt-1">{{ field.errors.0 }}</p>{% endif %}
+      </div>
+      {% endfor %}
+      <div class="flex gap-3 pt-2">
+        <button type="submit" class="px-5 py-2 bg-green hover:bg-green-dim text-bg font-bold text-sm rounded-lg transition-colors">
+          Save Certification
+        </button>
+        <a href="{% url 'suppliers:farm_detail' farm.pk %}" class="px-5 py-2 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

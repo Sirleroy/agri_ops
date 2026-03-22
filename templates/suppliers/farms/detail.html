@@ -10,6 +10,8 @@
     <div class="flex items-center gap-3">
       {% if farm.compliance_status == 'compliant' %}
         <span class="px-3 py-1 rounded-full text-xs font-mono bg-green/10 text-green border border-green/20">✓ EUDR Verified</span>
+      {% elif farm.compliance_status == 'disqualified' %}
+        <span class="px-3 py-1 rounded-full text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20">✗ Disqualified — post-cutoff deforestation</span>
       {% elif farm.compliance_status == 'expired' %}
         <span class="px-3 py-1 rounded-full text-xs font-mono bg-orange-500/10 text-orange-400 border border-orange-500/20">⚠ Verification Expired</span>
       {% elif farm.compliance_status == 'high_risk' %}
@@ -209,6 +211,38 @@
     }
   })();
   </script>
+
+  <!-- Certifications card -->
+  <div class="bg-card border border-border rounded-xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Certifications</p>
+      <a href="{% url 'suppliers:farm_cert_create' farm.pk %}"
+         class="text-xs font-mono text-green hover:text-green-dim transition-colors">+ Add Certification</a>
+    </div>
+    {% if certifications %}
+      <div class="space-y-2">
+        {% for cert in certifications %}
+        <div class="flex items-start justify-between py-2 border-b border-border last:border-0">
+          <div>
+            <p class="text-sm text-slate-100">{{ cert.get_cert_type_display }}</p>
+            <p class="text-xs text-slate-500 font-mono">{{ cert.certifying_body }}{% if cert.certificate_number %} · {{ cert.certificate_number }}{% endif %}{% if cert.expiry_date %} · Expires {{ cert.expiry_date }}{% endif %}</p>
+          </div>
+          <div class="flex items-center gap-3 flex-shrink-0">
+            {% if cert.is_current %}
+              <span class="text-xs font-mono text-green">✓ Current</span>
+            {% else %}
+              <span class="text-xs font-mono text-red-400">Expired</span>
+            {% endif %}
+            <button @click="openDeleteModal('{% url 'suppliers:farm_cert_delete' cert.pk %}', '{{ cert.get_cert_type_display|escapejs }}')"
+                    class="text-xs text-slate-600 hover:text-red-400 font-mono transition-colors">Delete</button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-sm text-slate-500">No certifications recorded. Organic, GlobalG.A.P., and Rainforest Alliance certifications can be added here.</p>
+    {% endif %}
+  </div>
 
   <!-- Documents card -->
   <div class="bg-card border border-border rounded-xl p-6">

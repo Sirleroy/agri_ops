@@ -58,6 +58,18 @@ class Product(models.Model):
         max_length=20, blank=True,
         help_text="Harmonised System code required for EUDR due diligence statement (e.g. 1201 for soya beans)."
     )
+    nafdac_registration_number = models.CharField(
+        max_length=50, blank=True,
+        help_text="NAFDAC registration or export notification number. Required for processed food/agricultural products."
+    )
+    eu_novel_food_status = models.BooleanField(
+        null=True, blank=True,
+        help_text="Is this product approved under EU Novel Food Regulation (EU) 2015/2283? Applies to baobab fruit pulp (approved 2008)."
+    )
+    eu_novel_food_ref = models.CharField(
+        max_length=100, blank=True,
+        help_text="EU Novel Food approval reference (e.g. Commission Decision 2008/575/EC for baobab)."
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

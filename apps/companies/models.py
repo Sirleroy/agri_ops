@@ -20,6 +20,15 @@ class Company(models.Model):
         choices=PLAN_CHOICES,
         default='free'
     )
+    # Nigerian export compliance
+    nepc_registration_number = models.CharField(
+        max_length=50, blank=True,
+        help_text="Nigerian Export Promotion Council registration number. Required before any export transaction."
+    )
+    nepc_registration_expiry = models.DateField(
+        null=True, blank=True,
+        help_text="NEPC registration expiry date."
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

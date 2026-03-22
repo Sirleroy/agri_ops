@@ -144,6 +144,40 @@ class Farm(models.Model):
         return 'compliant'
 
 
+class FarmCertification(models.Model):
+    CERT_TYPE_CHOICES = [
+        ('organic_eu',          'Organic EU (2018/848)'),
+        ('globalgap',           'GlobalG.A.P.'),
+        ('fairtrade',           'Fairtrade'),
+        ('rainforest_alliance', 'Rainforest Alliance'),
+        ('iscc',                'ISCC (Sustainability & Carbon)'),
+        ('other',               'Other'),
+    ]
+
+    company          = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='farm_certifications')
+    farm             = models.ForeignKey(Farm, on_delete=models.CASCADE, related_name='certifications')
+    cert_type        = models.CharField(max_length=30, choices=CERT_TYPE_CHOICES)
+    certifying_body  = models.CharField(max_length=255, help_text="e.g. ECOCERT, Control Union, SGS")
+    certificate_number = models.CharField(max_length=100, blank=True)
+    issued_date      = models.DateField(null=True, blank=True)
+    expiry_date      = models.DateField(null=True, blank=True)
+    notes            = models.TextField(blank=True)
+    created_at       = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['cert_type']
+
+    def __str__(self):
+        return f"{self.get_cert_type_display()} — {self.farm.name}"
+
+    @property
+    def is_current(self):
+        if not self.expiry_date:
+            return True
+        from django.utils import timezone
+        return self.expiry_date >= timezone.now().date()
+
+
 class ComplianceDocument(models.Model):
     DOC_TYPE_CHOICES = [
         ('farm_map',        'Farm Map'),

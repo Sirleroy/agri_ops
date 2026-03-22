@@ -1,6 +1,7 @@
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
-from .models import Supplier, Farm
+from django.shortcuts import get_object_or_404
+from .models import Supplier, Farm, FarmCertification
 from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 
@@ -106,6 +107,7 @@ class FarmDetailView(StaffRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['documents'] = self.object.documents.filter(is_current=True)
+        context['certifications'] = self.object.certifications.all()
         return context
 
 
@@ -179,3 +181,45 @@ class FarmDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
             from django.http import Http404
             raise Http404
         return obj
+
+
+# ─────────────────────────────────────
+# FARM CERTIFICATION VIEWS
+# ─────────────────────────────────────
+
+class FarmCertificationCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
+    model = FarmCertification
+    template_name = 'suppliers/farms/certification_form.html'
+    fields = ['cert_type', 'certifying_body', 'certificate_number', 'issued_date', 'expiry_date', 'notes']
+
+    def get_farm(self):
+        farm = get_object_or_404(Farm, pk=self.kwargs['farm_pk'], company=self.request.user.company)
+        return farm
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['farm'] = self.get_farm()
+        return context
+
+    def form_valid(self, form):
+        farm = self.get_farm()
+        form.instance.farm = farm
+        form.instance.company = self.request.user.company
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('suppliers:farm_detail', kwargs={'pk': self.kwargs['farm_pk']})
+
+
+class FarmCertificationDeleteView(ManagerRequiredMixin, DeleteView):
+    model = FarmCertification
+
+    def get_object(self):
+        obj = super().get_object()
+        if obj.company != self.request.user.company:
+            from django.http import Http404
+            raise Http404
+        return obj
+
+    def get_success_url(self):
+        return reverse_lazy('suppliers:farm_detail', kwargs={'pk': self.object.farm_id})
