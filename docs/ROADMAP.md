@@ -47,17 +47,36 @@ Session authentication, JWT API, role-based access control (system_role + job_ti
 
 ---
 
-## Phase 4.5 — EUDR Compliance Gaps 🔄 In Progress
-Required before Phase 5. Gaps identified against Article 9 of EU Regulation 2023/1115:
+## Phase 4.5 — Compliance Infrastructure 🔄 In Progress
+Required before Phase 5. Two gap analyses completed against EU and Nigerian export regulations.
 
-- Farm: deforestation_reference_date (default 2020-12-31) + land_cleared_after_cutoff flag — HIGH
-- Product: hs_code field for due diligence statement — MEDIUM
-- Batch: quantity_kg field (net mass in kg, operator-confirmed) — MEDIUM
-- Farm: harvest_year (production period proxy per Article 9(1)(d)) — MEDIUM
-- EUDR commodity scope flag — lookup list distinguishing regulated vs non-regulated commodities — MEDIUM
-- Supplier: verify/add postal address + email, surface on certificate — LOW-MEDIUM
-- Batch: is_locked flag on dispatched batches (5-year retention) — LOW
-- Nigeria risk classification — check EU country list, surface status in EUDR report header — MONITORING
+### EUDR Gaps — closed March 2026
+Gaps identified against Article 9 of EU Regulation 2023/1115. See [eudr-compliance-gaps.md](eudr-compliance-gaps.md).
+
+- Farm: `deforestation_reference_date` (default 2020-12-31) + `land_cleared_after_cutoff` flag — HIGH ✅
+- Farm: `harvest_year` — production period proxy per Article 9(1)(d) — MEDIUM ✅
+- Product: `hs_code` for due diligence statement — MEDIUM ✅
+- Batch: `quantity_kg` (net mass in kg, operator-confirmed) — MEDIUM ✅
+- EUDR commodity scope — `EUDR_COMMODITIES` lookup set, `is_eudr_commodity` + `is_disqualified` properties on Farm — MEDIUM ✅
+- Certificate PDF: supplier chain section, harvest year + reference date columns — LOW-MEDIUM ✅
+- Batch: `is_locked` flag + delete guard (5-year retention) — LOW ✅
+- Nigeria risk classification — check EU country list, surface in EUDR report header — MONITORING
+
+### Export Compliance Gaps — closed March 2026
+Gaps identified against Nigerian export law and EU market entry requirements beyond EUDR. See [export-compliance-gaps.md](export-compliance-gaps.md).
+
+**High — blocks first commercial shipment:**
+- `PhytosanitaryCertificate` model linked to Batch (NAQS cert number, issuing office, inspector, dates) ✅
+- `BatchQualityTest` model linked to Batch (MRL, aflatoxin, moisture, heavy metals — pass/fail + lab ref) ✅
+
+**Medium:**
+- Company: `nepc_registration_number` + `nepc_registration_expiry` (NEPC exporter registration) ✅
+- SalesOrder: `nxp_reference` (CBN Form NXP) + `certificate_of_origin_ref` (CoO) ✅
+- Product: `nafdac_registration_number` (NAFDAC export notification) ✅
+- `FarmCertification` model linked to Farm (Organic EU, GlobalG.A.P., Fairtrade, Rainforest Alliance, ISCC) ✅
+
+**Low:**
+- Product: `eu_novel_food_status` + `eu_novel_food_ref` (baobab novel food approval ref) ✅
 
 ---
 
