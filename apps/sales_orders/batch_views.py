@@ -74,6 +74,13 @@ class BatchUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
             raise Http404
         return obj
 
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if obj.is_locked:
+            from django.core.exceptions import PermissionDenied
+            raise PermissionDenied("This batch is locked and cannot be edited. Unlock it first (org admin only).")
+        return super().dispatch(request, *args, **kwargs)
+
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         from apps.suppliers.models import Farm
@@ -208,6 +215,23 @@ class BatchQualityTestDeleteView(ManagerRequiredMixin, DeleteView):
 
     def get_success_url(self):
         return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.object.batch_id})
+
+
+class BatchToggleLockView(ManagerRequiredMixin, View):
+    """
+    Lock or unlock a batch.
+    Locking: manager or above.
+    Unlocking: org_admin only — prevents managers from unlocking submitted DDS batches.
+    """
+    def post(self, request, pk):
+        from django.shortcuts import redirect
+        from django.core.exceptions import PermissionDenied
+        batch = get_object_or_404(Batch, pk=pk, company=request.user.company)
+        if batch.is_locked and not request.user.is_org_admin:
+            raise PermissionDenied("Only an organisation admin can unlock a batch.")
+        batch.is_locked = not batch.is_locked
+        batch.save(update_fields=['is_locked', 'updated_at'])
+        return redirect('sales_orders:batch_detail', pk=pk)
 
 
 class BatchCertificateView(StaffRequiredMixin, View):

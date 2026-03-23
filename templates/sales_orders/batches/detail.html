@@ -10,6 +10,9 @@
       {% if batch.sales_order %}
       <span class="px-3 py-1 rounded-full text-xs font-mono bg-slate-500/10 text-slate-400 border border-slate-500/20">{{ batch.sales_order.order_number }}</span>
       {% endif %}
+      {% if batch.is_locked %}
+      <span class="px-3 py-1 rounded-full text-xs font-mono bg-orange-500/10 text-orange-400 border border-orange-500/20">⚿ Locked</span>
+      {% endif %}
     </div>
     <div class="flex items-center gap-3">
       <a href="{% url 'sales_orders:batch_certificate' batch.pk %}"
@@ -19,10 +22,24 @@
         </svg>
         Download Certificate
       </a>
+      {% if not batch.is_locked %}
       <a href="{% url 'sales_orders:batch_update' batch.pk %}"
          class="border border-border text-slate-400 hover:text-slate-100 hover:border-slate-400 font-bold text-xs px-4 py-2 rounded-lg transition-colors">
         Edit
       </a>
+      {% endif %}
+      {% if request.user.is_manager_or_above %}
+      <form method="post" action="{% url 'sales_orders:batch_lock' batch.pk %}">
+        {% csrf_token %}
+        {% if batch.is_locked %}
+          {% if request.user.is_org_admin %}
+          <button type="submit" class="border border-orange-500/30 text-orange-400 hover:text-orange-300 font-bold text-xs px-4 py-2 rounded-lg transition-colors">Unlock</button>
+          {% endif %}
+        {% else %}
+        <button type="submit" class="border border-border text-slate-400 hover:text-orange-400 hover:border-orange-500/30 font-bold text-xs px-4 py-2 rounded-lg transition-colors">Lock</button>
+        {% endif %}
+      </form>
+      {% endif %}
     </div>
   </div>
 
@@ -99,8 +116,10 @@
   <div class="bg-card border border-border rounded-xl p-6">
     <div class="flex items-center justify-between mb-4">
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Phytosanitary Certificates (NAQS)</p>
+      {% if not batch.is_locked %}
       <a href="{% url 'sales_orders:phytosanitary_create' batch.pk %}"
          class="text-xs font-mono text-green hover:text-green-dim transition-colors">+ Add Certificate</a>
+      {% endif %}
     </div>
     {% if phytosanitary_certs %}
       <div class="space-y-2">
@@ -134,8 +153,10 @@
   <div class="bg-card border border-border rounded-xl p-6">
     <div class="flex items-center justify-between mb-4">
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Quality Tests (MRL / Aflatoxin)</p>
+      {% if not batch.is_locked %}
       <a href="{% url 'sales_orders:quality_create' batch.pk %}"
          class="text-xs font-mono text-green hover:text-green-dim transition-colors">+ Add Test</a>
+      {% endif %}
     </div>
     {% if quality_tests %}
       <div class="space-y-2">

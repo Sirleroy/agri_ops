@@ -26,6 +26,7 @@
           <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Sales Order</th>
           <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Farms</th>
           <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Created</th>
+          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Status</th>
           <th class="px-5 py-3"></th>
         </tr>
       </thead>
@@ -37,6 +38,13 @@
           <td class="px-5 py-3 text-slate-400">{{ batch.sales_order.order_number|default:"—" }}</td>
           <td class="px-5 py-3 text-slate-400">{{ batch.farms.count }}</td>
           <td class="px-5 py-3 text-slate-500 font-mono text-xs">{{ batch.created_at|date:"d M Y" }}</td>
+          <td class="px-5 py-3">
+            {% if batch.is_locked %}
+            <span class="px-2 py-0.5 rounded text-xs font-mono bg-orange-500/10 text-orange-400 border border-orange-500/20">Locked</span>
+            {% else %}
+            <span class="text-xs font-mono text-slate-600">—</span>
+            {% endif %}
+          </td>
           <td class="px-5 py-3 text-right">
             <a href="{% url 'sales_orders:batch_detail' batch.pk %}"
                class="text-xs text-green hover:text-green-dim font-mono transition-colors mr-3">View</a>
