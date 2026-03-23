@@ -14,6 +14,7 @@ class SupplierListView(StaffRequiredMixin, ListView):
     model = Supplier
     template_name = 'suppliers/list.html'
     context_object_name = 'suppliers'
+    paginate_by = 50
 
     def get_queryset(self):
         return super().get_queryset().filter(company=self.request.user.company)
@@ -87,6 +88,7 @@ class FarmListView(StaffRequiredMixin, ListView):
     model = Farm
     template_name = 'suppliers/farms/list.html'
     context_object_name = 'farms'
+    paginate_by = 50
 
     def get_queryset(self):
         return Farm.objects.filter(company=self.request.user.company).select_related('supplier')

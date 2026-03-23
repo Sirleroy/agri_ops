@@ -9,6 +9,7 @@ class SalesOrderListView(StaffRequiredMixin, ListView):
     model = SalesOrder
     template_name = 'sales_orders/list.html'
     context_object_name = 'orders'
+    paginate_by = 50
 
     def get_queryset(self):
         return super().get_queryset().filter(company=self.request.user.company)

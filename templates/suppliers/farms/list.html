@@ -7,7 +7,7 @@
 
   <div class="flex items-center justify-between gap-4">
     <div class="flex items-center gap-3 min-w-0 flex-1">
-      <p class="text-sm text-slate-400 flex-shrink-0 hidden sm:block">All farms registered for EUDR compliance</p>
+      <p class="text-sm text-slate-400 font-mono flex-shrink-0 hidden sm:block">{{ page_obj.paginator.count }} farm{{ page_obj.paginator.count|pluralize }}</p>
       <input id="tableSearch" type="text" placeholder="Search farms…"
         class="bg-bg border border-border rounded-lg px-3 py-1.5 text-sm text-slate-200 placeholder-slate-600 focus:border-green outline-none min-w-0 flex-1 sm:flex-none sm:w-56 transition-colors">
     </div>
@@ -96,6 +96,18 @@
       </tbody>
     </table>
   </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="flex items-center justify-center gap-3 py-4">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">Previous</a>
+    {% endif %}
+    <span class="text-slate-500 text-sm font-mono">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">Next</a>
+    {% endif %}
+  </div>
+  {% endif %}
 
 </div>
 

@@ -9,6 +9,7 @@ class ProductListView(StaffRequiredMixin, ListView):
     model = Product
     template_name = 'products/list.html'
     context_object_name = 'products'
+    paginate_by = 50
 
     def get_queryset(self):
         return super().get_queryset().filter(company=self.request.user.company)

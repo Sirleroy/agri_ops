@@ -10,6 +10,7 @@ class UserListView(ManagerRequiredMixin, ListView):
     template_name = 'users/list.html'
     context_object_name = 'users'
     ordering = ['last_name', 'first_name']
+    paginate_by = 50
 
     def get_queryset(self):
         return super().get_queryset().filter(company=self.request.user.company)

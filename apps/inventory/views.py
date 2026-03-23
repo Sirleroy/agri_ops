@@ -9,6 +9,7 @@ class InventoryListView(StaffRequiredMixin, ListView):
     model = Inventory
     template_name = 'inventory/list.html'
     context_object_name = 'inventory_items'
+    paginate_by = 50
 
     def get_queryset(self):
         return super().get_queryset().filter(company=self.request.user.company)

@@ -16,6 +16,7 @@ class BatchListView(StaffRequiredMixin, ListView):
     model = Batch
     template_name = 'sales_orders/batches/list.html'
     context_object_name = 'batches'
+    paginate_by = 50
 
     def get_queryset(self):
         return Batch.objects.filter(company=self.request.user.company).select_related('sales_order')
