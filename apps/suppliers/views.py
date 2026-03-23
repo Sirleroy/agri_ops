@@ -2,7 +2,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404
 from .models import Supplier, Farm, FarmCertification
-from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin
+from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin, OtherRevealMixin
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 
 
@@ -40,11 +40,12 @@ class SupplierDetailView(StaffRequiredMixin, DetailView):
         return context
 
 
-class SupplierCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
+class SupplierCreateView(OtherRevealMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = Supplier
     template_name = 'suppliers/form.html'
     fields = ['name', 'category', 'contact_person', 'phone', 'email',
               'country', 'city', 'address', 'is_active']
+    other_reveal_fields = ['category']
     success_url = reverse_lazy('suppliers:list')
 
     def form_valid(self, form):
@@ -52,11 +53,12 @@ class SupplierCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class SupplierUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
+class SupplierUpdateView(OtherRevealMixin, AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = Supplier
     template_name = 'suppliers/form.html'
     fields = ['name', 'category', 'contact_person', 'phone', 'email',
               'country', 'city', 'address', 'is_active']
+    other_reveal_fields = ['category']
     success_url = reverse_lazy('suppliers:list')
 
     def get_object(self):
@@ -189,10 +191,11 @@ class FarmDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
 # FARM CERTIFICATION VIEWS
 # ─────────────────────────────────────
 
-class FarmCertificationCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
+class FarmCertificationCreateView(OtherRevealMixin, DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = FarmCertification
     template_name = 'suppliers/farms/certification_form.html'
     fields = ['cert_type', 'certifying_body', 'certificate_number', 'issued_date', 'expiry_date', 'notes']
+    other_reveal_fields = ['cert_type']
 
     def get_farm(self):
         farm = get_object_or_404(Farm, pk=self.kwargs['farm_pk'], company=self.request.user.company)
@@ -225,3 +228,4 @@ class FarmCertificationDeleteView(ManagerRequiredMixin, DeleteView):
 
     def get_success_url(self):
         return reverse_lazy('suppliers:farm_detail', kwargs={'pk': self.object.farm_id})
+

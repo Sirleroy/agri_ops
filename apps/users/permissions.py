@@ -38,6 +38,22 @@ class OrgAdminRequiredMixin(RoleRequiredMixin):
     required_role = 'org_admin'
 
 
+class OtherRevealMixin:
+    """
+    Add data-other attr to select fields so the global JS can show/hide
+    a free-text input when the user picks 'Other'.
+    Set other_reveal_fields = ['category'] (or similar) in the view.
+    """
+    other_reveal_fields = []
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        for field_name in self.other_reveal_fields:
+            if field_name in form.fields:
+                form.fields[field_name].widget.attrs['data-other'] = f'id_{field_name}_other'
+        return form
+
+
 class DatePickerMixin:
     """Replace all DateField widgets with HTML5 date pickers."""
     def get_form(self, form_class=None):

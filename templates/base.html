@@ -487,5 +487,25 @@
     document.addEventListener('DOMContentLoaded', markOverdueRows);
   </script>
 
+  <script>
+    // Global "Other" reveal — any <select data-other="id_foo_other"> shows
+    // the element with that id when the selected value is 'other'.
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('select[data-other]').forEach(select => {
+        const otherId = select.dataset.other;
+        const otherInput = document.getElementById(otherId);
+        if (!otherInput) return;
+        const toggle = () => {
+          const isOther = select.value === 'other';
+          otherInput.style.display = isOther ? 'block' : 'none';
+          otherInput.required = isOther;
+          if (!isOther) otherInput.value = '';
+        };
+        select.addEventListener('change', toggle);
+        toggle();
+      });
+    });
+  </script>
+
 </body>
 </html>
