@@ -1,7 +1,7 @@
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from .models import Product
-from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin
+from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin, OtherRevealMixin
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 
 
@@ -28,12 +28,13 @@ class ProductDetailView(StaffRequiredMixin, DetailView):
         return obj
 
 
-class ProductCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
+class ProductCreateView(OtherRevealMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = Product
     template_name = 'products/form.html'
     fields = ['name', 'description', 'category', 'unit', 'unit_price', 'hs_code',
               'nafdac_registration_number', 'eu_novel_food_status', 'eu_novel_food_ref',
               'supplier', 'is_active']
+    other_reveal_fields = ['category']
     success_url = reverse_lazy('products:list')
 
     def form_valid(self, form):
@@ -41,12 +42,13 @@ class ProductCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class ProductUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
+class ProductUpdateView(OtherRevealMixin, AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = Product
     template_name = 'products/form.html'
     fields = ['name', 'description', 'category', 'unit', 'unit_price', 'hs_code',
               'nafdac_registration_number', 'eu_novel_food_status', 'eu_novel_food_ref',
               'supplier', 'is_active']
+    other_reveal_fields = ['category']
     success_url = reverse_lazy('products:list')
 
     def get_object(self):

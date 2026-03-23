@@ -18,6 +18,12 @@
           {{ field.label }}{% if field.field.required %} <span class="text-red-400 normal-case font-sans">*</span>{% endif %}
         </label>
         {{ field }}
+        {% if field.name == 'cert_type' %}
+        <input type="text" id="id_cert_type_other" name="cert_type_other"
+               placeholder="Please specify…"
+               class="mt-2 w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-green"
+               style="display:none">
+        {% endif %}
         {% if field.help_text %}<p class="text-xs text-slate-600 mt-1">{{ field.help_text }}</p>{% endif %}
         {% if field.errors %}<p class="text-xs text-red-400 mt-1">{{ field.errors.0 }}</p>{% endif %}
       </div>

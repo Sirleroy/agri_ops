@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.core.cache import cache
-from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin
+from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin, OtherRevealMixin
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin
 from .batch import Batch
 from .quality import PhytosanitaryCertificate, BatchQualityTest
@@ -159,10 +159,11 @@ class PhytosanitaryCertDeleteView(ManagerRequiredMixin, DeleteView):
 # BATCH QUALITY TEST VIEWS
 # ─────────────────────────────────────
 
-class BatchQualityTestCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
+class BatchQualityTestCreateView(OtherRevealMixin, DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = BatchQualityTest
     template_name = 'sales_orders/batches/quality_form.html'
     fields = ['test_type', 'lab_name', 'lab_certificate_ref', 'test_date', 'result', 'notes']
+    other_reveal_fields = ['test_type']
 
     def get_batch(self):
         return get_object_or_404(Batch, pk=self.kwargs['batch_pk'], company=self.request.user.company)
@@ -182,10 +183,11 @@ class BatchQualityTestCreateView(DatePickerMixin, AuditCreateMixin, StaffRequire
         return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.kwargs['batch_pk']})
 
 
-class BatchQualityTestUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, UpdateView):
+class BatchQualityTestUpdateView(OtherRevealMixin, DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = BatchQualityTest
     template_name = 'sales_orders/batches/quality_form.html'
     fields = ['test_type', 'lab_name', 'lab_certificate_ref', 'test_date', 'result', 'notes']
+    other_reveal_fields = ['test_type']
 
     def get_object(self):
         obj = super().get_object()
