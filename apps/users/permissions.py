@@ -36,3 +36,17 @@ class ManagerRequiredMixin(RoleRequiredMixin):
 
 class OrgAdminRequiredMixin(RoleRequiredMixin):
     required_role = 'org_admin'
+
+
+class DatePickerMixin:
+    """Replace all DateField widgets with HTML5 date pickers."""
+    def get_form(self, form_class=None):
+        from django import forms
+        form = super().get_form(form_class)
+        for field in form.fields.values():
+            if isinstance(field, forms.DateField):
+                field.widget = forms.DateInput(
+                    attrs={'type': 'date'},
+                    format='%Y-%m-%d',
+                )
+        return form

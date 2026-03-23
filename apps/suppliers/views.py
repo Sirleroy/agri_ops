@@ -2,7 +2,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404
 from .models import Supplier, Farm, FarmCertification
-from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin
+from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 
 
@@ -113,7 +113,7 @@ class FarmDetailView(StaffRequiredMixin, DetailView):
         return context
 
 
-class FarmCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
+class FarmCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = Farm
     template_name = 'suppliers/farms/form.html'
     fields = ['supplier', 'name', 'farmer_name', 'country', 'state_region',
@@ -140,7 +140,7 @@ class FarmCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
         return form
 
 
-class FarmUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
+class FarmUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = Farm
     template_name = 'suppliers/farms/form.html'
     fields = ['supplier', 'name', 'farmer_name', 'country', 'state_region',
@@ -189,7 +189,7 @@ class FarmDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
 # FARM CERTIFICATION VIEWS
 # ─────────────────────────────────────
 
-class FarmCertificationCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
+class FarmCertificationCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = FarmCertification
     template_name = 'suppliers/farms/certification_form.html'
     fields = ['cert_type', 'certifying_body', 'certificate_number', 'issued_date', 'expiry_date', 'notes']

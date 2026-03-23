@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.core.cache import cache
-from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin
+from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin
 from .batch import Batch
 from .quality import PhytosanitaryCertificate, BatchQualityTest
@@ -95,7 +95,7 @@ class BatchUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
 # PHYTOSANITARY CERTIFICATE VIEWS
 # ─────────────────────────────────────
 
-class PhytosanitaryCertCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
+class PhytosanitaryCertCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = PhytosanitaryCertificate
     template_name = 'sales_orders/batches/phytosanitary_form.html'
     fields = ['certificate_number', 'issuing_office', 'inspector_name',
@@ -119,7 +119,7 @@ class PhytosanitaryCertCreateView(AuditCreateMixin, StaffRequiredMixin, CreateVi
         return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.kwargs['batch_pk']})
 
 
-class PhytosanitaryCertUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
+class PhytosanitaryCertUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = PhytosanitaryCertificate
     template_name = 'sales_orders/batches/phytosanitary_form.html'
     fields = ['certificate_number', 'issuing_office', 'inspector_name',
@@ -159,7 +159,7 @@ class PhytosanitaryCertDeleteView(ManagerRequiredMixin, DeleteView):
 # BATCH QUALITY TEST VIEWS
 # ─────────────────────────────────────
 
-class BatchQualityTestCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
+class BatchQualityTestCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = BatchQualityTest
     template_name = 'sales_orders/batches/quality_form.html'
     fields = ['test_type', 'lab_name', 'lab_certificate_ref', 'test_date', 'result', 'notes']
@@ -182,7 +182,7 @@ class BatchQualityTestCreateView(AuditCreateMixin, StaffRequiredMixin, CreateVie
         return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.kwargs['batch_pk']})
 
 
-class BatchQualityTestUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
+class BatchQualityTestUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = BatchQualityTest
     template_name = 'sales_orders/batches/quality_form.html'
     fields = ['test_type', 'lab_name', 'lab_certificate_ref', 'test_date', 'result', 'notes']

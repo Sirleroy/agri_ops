@@ -1,7 +1,7 @@
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from .models import PurchaseOrder
-from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin
+from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 
 
@@ -28,7 +28,7 @@ class PurchaseOrderDetailView(StaffRequiredMixin, DetailView):
         return obj
 
 
-class PurchaseOrderCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
+class PurchaseOrderCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = PurchaseOrder
     template_name = 'purchase_orders/form.html'
     fields = ['supplier', 'order_number', 'status', 'expected_delivery', 'notes']
@@ -39,7 +39,7 @@ class PurchaseOrderCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class PurchaseOrderUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
+class PurchaseOrderUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = PurchaseOrder
     template_name = 'purchase_orders/form.html'
     fields = ['supplier', 'order_number', 'status', 'expected_delivery', 'notes']
