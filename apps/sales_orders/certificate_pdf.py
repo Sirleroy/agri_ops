@@ -87,6 +87,7 @@ def generate_certificate(batch):
     story.append(op_t)
 
     # ── Supplier chain ────────────────────────────────────────
+    farms = batch.farms.select_related('supplier').all()
     suppliers = {farm.supplier for farm in farms if farm.supplier}
     if suppliers:
         story.append(Paragraph("Supplier Chain", ParagraphStyle("s1b", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceBefore=6*mm, spaceAfter=3*mm)))
@@ -109,7 +110,6 @@ def generate_certificate(batch):
         story.append(sup_t)
 
     # ── Farm traceability ─────────────────────────────────────
-    farms = batch.farms.select_related('supplier').all()
     story.append(Paragraph(f"Farm Traceability — {farms.count()} farms", ParagraphStyle("s2", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceBefore=6*mm, spaceAfter=3*mm)))
 
     farm_data = [["Farm", "Supplier", "Location", "Area", "Harvest", "Ref. Date", "EUDR"]]
