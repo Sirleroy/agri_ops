@@ -4,6 +4,7 @@ Generates a unique batch number and a public token for QR code URL.
 """
 import uuid
 from django.db import models, IntegrityError
+from django.core.validators import MinValueValidator
 from apps.companies.models import Company
 from apps.suppliers.models import Farm
 
@@ -33,6 +34,7 @@ class Batch(models.Model):
     commodity    = models.CharField(max_length=100)
     quantity_kg  = models.DecimalField(
         max_digits=12, decimal_places=3, null=True, blank=True,
+        validators=[MinValueValidator(0)],
         help_text="Net mass in kilograms — required for EUDR due diligence statement (Article 9)."
     )
     is_locked    = models.BooleanField(

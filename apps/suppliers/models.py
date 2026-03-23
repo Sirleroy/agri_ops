@@ -65,7 +65,7 @@ class Farm(models.Model):
                        null=True, blank=True,
                        help_text="GeoJSON Polygon. Export from SW Maps or NCAN Farm Mapper."
                      )
-    area_hectares  = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    area_hectares  = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(0)])
     country        = models.CharField(max_length=100)
     state_region   = models.CharField(max_length=100, blank=True)
     commodity      = models.CharField(max_length=100, help_text="e.g. Soy, Maize, Cocoa")
