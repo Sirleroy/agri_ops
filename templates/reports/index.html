@@ -4,7 +4,8 @@
 {% block content %}
 <div x-data="{ tab: '{{ active_tab }}' }" class="space-y-6">
 
-  <!-- Financial summary strip -->
+  <!-- Financial summary strip — org_admin only -->
+  {% if request.user.is_org_admin %}
   <form method="get" id="periodForm" class="bg-card border border-border rounded-xl px-5 py-3 flex items-center gap-4 flex-wrap">
     <input type="hidden" name="tab" value="{{ active_tab }}">
     <select name="period" onchange="document.getElementById('periodForm').submit()"
@@ -35,6 +36,7 @@
       </div>
     </div>
   </form>
+  {% endif %}
 
   <!-- Tab switcher -->
   <div class="flex items-center gap-1 bg-card border border-border rounded-xl p-1 w-full sm:w-fit">
