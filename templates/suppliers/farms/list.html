@@ -73,7 +73,7 @@
             <div class="flex items-center gap-2">
               <a href="{% url 'suppliers:farm_update' farm.pk %}"
                  class="text-xs text-slate-400 hover:text-green transition-colors">Edit</a>
-              {% if request.user.is_manager_or_above %}
+              {% if request.user.system_role == 'org_admin' %}
               <button @click="openDeleteModal('{% url 'suppliers:farm_delete' farm.pk %}', '{{ farm.name|escapejs }}')"
                       class="text-xs text-slate-400 hover:text-red-400 transition-colors">Delete</button>
               {% endif %}
