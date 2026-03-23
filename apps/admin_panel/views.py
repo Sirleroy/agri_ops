@@ -142,6 +142,22 @@ def admin_invite_user(request):
 
 
 @org_admin_required
+def admin_edit_user(request, user_id):
+    company = request.user.company
+    user = get_object_or_404(CustomUser, id=user_id, company=company)
+    if request.method == 'POST':
+        job_title = request.POST.get('job_title', '').strip()
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        user.job_title = job_title
+        user.first_name = first_name
+        user.last_name = last_name
+        user.save()
+        messages.success(request, f'Profile updated for {user.get_full_name() or user.username}.')
+    return redirect('admin_panel:users')
+
+
+@org_admin_required
 def admin_company_settings(request):
     company = request.user.company
     if request.method == 'POST':

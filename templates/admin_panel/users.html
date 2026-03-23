@@ -8,7 +8,7 @@
   <div class="section-title">Invite New User</div>
   <form method="post" action="{% url 'admin_panel:invite_user' %}">
     {% csrf_token %}
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:0.75rem;align-items:end;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr auto;gap:0.75rem;align-items:end;">
       <div class="form-group" style="margin:0;">
         <label>First Name *</label>
         <input type="text" name="first_name" required>
@@ -20,6 +20,10 @@
       <div class="form-group" style="margin:0;">
         <label>Email *</label>
         <input type="email" name="email" required>
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label>Job Title</label>
+        <input type="text" name="job_title" placeholder="e.g. Field Officer">
       </div>
       <div class="form-group" style="margin:0;">
         <label>Role</label>
@@ -64,7 +68,9 @@
             <span class="badge badge-red">Inactive</span>
           {% endif %}
         </td>
-        <td>
+        <td style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;">
+          <button type="button" class="btn" style="padding:0.3rem 0.7rem;font-size:0.75rem;"
+            onclick="document.getElementById('edit-row-{{ user.id }}').style.display = document.getElementById('edit-row-{{ user.id }}').style.display === 'none' ? 'table-row' : 'none'">Edit</button>
           {% if user != request.user %}
           <form method="post" action="{% url 'admin_panel:deactivate_user' user.id %}" style="display:inline;">
             {% csrf_token %}
@@ -76,6 +82,26 @@
           {% else %}
           <span style="color:var(--dim);font-size:0.75rem;">You</span>
           {% endif %}
+        </td>
+      </tr>
+      <tr id="edit-row-{{ user.id }}" style="display:none;background:var(--surface);">
+        <td colspan="6" style="padding:1rem;">
+          <form method="post" action="{% url 'admin_panel:edit_user' user.id %}" style="display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap;">
+            {% csrf_token %}
+            <div class="form-group" style="margin:0;min-width:140px;">
+              <label>First Name</label>
+              <input type="text" name="first_name" value="{{ user.first_name }}">
+            </div>
+            <div class="form-group" style="margin:0;min-width:140px;">
+              <label>Last Name</label>
+              <input type="text" name="last_name" value="{{ user.last_name }}">
+            </div>
+            <div class="form-group" style="margin:0;min-width:180px;">
+              <label>Job Title</label>
+              <input type="text" name="job_title" value="{{ user.job_title }}" placeholder="e.g. Field Officer">
+            </div>
+            <button type="submit" class="btn btn-green">Save</button>
+          </form>
         </td>
       </tr>
       {% empty %}
