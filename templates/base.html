@@ -205,16 +205,18 @@
         <!-- Sales -->
         <div class="px-2">
           <p x-show="sidebarOpen || mobileOpen" class="px-3 pt-3 pb-1 text-xs font-mono tracking-widest text-slate-600 uppercase">Sales</p>
+          {% with u=request.resolver_match.url_name %}
           <a href="{% url 'sales_orders:list' %}"
-             class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all text-sm font-medium relative {% if request.resolver_match.namespace == 'sales_orders' %}nav-active{% endif %}">
+             class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all text-sm font-medium relative {% if request.resolver_match.namespace == 'sales_orders' and u != 'batch_list' and u != 'batch_detail' and u != 'batch_create' and u != 'batch_update' %}nav-active{% endif %}">
             <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             <span x-show="sidebarOpen || mobileOpen" x-transition.opacity>Sales Orders</span>
           </a>
           <a href="{% url 'sales_orders:batch_list' %}"
-             class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all text-sm font-medium relative {% if request.resolver_match.url_name in 'batch_list,batch_detail,batch_create,batch_update' %}nav-active{% endif %}">
+             class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all text-sm font-medium relative {% if u == 'batch_list' or u == 'batch_detail' or u == 'batch_create' or u == 'batch_update' %}nav-active{% endif %}">
             <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             <span x-show="sidebarOpen || mobileOpen" x-transition.opacity>Batches</span>
           </a>
+          {% endwith %}
         </div>
 
         <!-- Reports -->
@@ -301,7 +303,7 @@
             </button>
 
             <!-- Dropdown -->
-            <div x-show="bellOpen"
+            <div x-cloak x-show="bellOpen"
                  x-transition:enter="transition ease-out duration-150"
                  x-transition:enter-start="opacity-0 -translate-y-1"
                  x-transition:enter-end="opacity-100 translate-y-0"
