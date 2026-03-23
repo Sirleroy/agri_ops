@@ -4,8 +4,38 @@
 {% block page_title %}Audit Log{% endblock %}
 
 {% block content %}
+<div class="card" style="margin-bottom:1.5rem;">
+  <form method="get" style="display:flex;gap:0.5rem;align-items:flex-end;flex-wrap:wrap;">
+    <div>
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.35rem;">Period</div>
+      <div style="display:flex;gap:0.35rem;">
+        <a href="?{% if q %}q={{ q }}&{% endif %}" class="btn {% if not period %}btn-green{% endif %}" style="padding:0.35rem 0.75rem;font-size:0.78rem;">All</a>
+        <a href="?period=today{% if q %}&q={{ q }}{% endif %}" class="btn {% if period == 'today' %}btn-green{% endif %}" style="padding:0.35rem 0.75rem;font-size:0.78rem;">Today</a>
+        <a href="?period=7d{% if q %}&q={{ q }}{% endif %}" class="btn {% if period == '7d' %}btn-green{% endif %}" style="padding:0.35rem 0.75rem;font-size:0.78rem;">7 days</a>
+        <a href="?period=30d{% if q %}&q={{ q }}{% endif %}" class="btn {% if period == '30d' %}btn-green{% endif %}" style="padding:0.35rem 0.75rem;font-size:0.78rem;">30 days</a>
+      </div>
+    </div>
+    <div style="flex:1;min-width:220px;">
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.35rem;">Search</div>
+      {% if period %}<input type="hidden" name="period" value="{{ period }}">{% endif %}
+      <div style="display:flex;gap:0.35rem;">
+        <input type="text" name="q" value="{{ q }}" placeholder="User, model, action, object…" style="flex:1;">
+        <button type="submit" class="btn btn-green" style="padding:0.35rem 0.75rem;font-size:0.78rem;">Search</button>
+        {% if q %}<a href="?{% if period %}period={{ period }}{% endif %}" class="btn" style="padding:0.35rem 0.75rem;font-size:0.78rem;">Clear</a>{% endif %}
+      </div>
+    </div>
+  </form>
+</div>
+
 <div class="card">
-  <div class="section-title">Activity Log — Last 200 Events</div>
+  <div class="section-title">
+    Activity Log
+    {% if period == 'today' %} — Today
+    {% elif period == '7d' %} — Last 7 Days
+    {% elif period == '30d' %} — Last 30 Days
+    {% else %} — Last 200 Events{% endif %}
+    {% if q %} · "{{ q }}"{% endif %}
+  </div>
   <table>
     <thead>
       <tr><th>Time</th><th>User</th><th>Action</th><th>Model</th><th>Object</th><th>IP</th></tr>
@@ -26,9 +56,12 @@
         <td style="color:var(--dim);font-family:monospace;font-size:0.78rem;">{{ log.ip_address|default:"—" }}</td>
       </tr>
       {% empty %}
-      <tr><td colspan="6" style="color:var(--dim)">No activity recorded yet</td></tr>
+      <tr><td colspan="6" style="color:var(--dim)">No activity recorded yet{% if q or period %} — try clearing your filters{% endif %}</td></tr>
       {% endfor %}
     </tbody>
   </table>
+  <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);font-size:0.72rem;color:var(--dim);">
+    Audit logs retained for 365 days per internal policy. All actions are timestamped and IP-attributed.
+  </div>
 </div>
 {% endblock %}

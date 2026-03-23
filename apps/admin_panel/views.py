@@ -187,11 +187,33 @@ def admin_company_settings(request):
 
 @org_admin_required
 def admin_audit_log(request):
+    import datetime
+    from django.db.models import Q
     company = request.user.company
-    audit_logs = AuditLog.objects.filter(company=company).order_by('-timestamp')[:200]
+    qs = AuditLog.objects.filter(company=company).order_by('-timestamp')
+
+    period = request.GET.get('period', '')
+    if period == 'today':
+        qs = qs.filter(timestamp__date=timezone.now().date())
+    elif period == '7d':
+        qs = qs.filter(timestamp__gte=timezone.now() - datetime.timedelta(days=7))
+    elif period == '30d':
+        qs = qs.filter(timestamp__gte=timezone.now() - datetime.timedelta(days=30))
+
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(
+            Q(user__username__icontains=q) |
+            Q(model_name__icontains=q) |
+            Q(action__icontains=q) |
+            Q(object_repr__icontains=q)
+        )
+
     return render(request, 'admin_panel/audit_log.html', {
-        'audit_logs': audit_logs,
+        'audit_logs': qs[:200],
         'company': company,
+        'period': period,
+        'q': q,
     })
 
 
