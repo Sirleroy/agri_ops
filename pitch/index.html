@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgriOps — Investor Pitch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0f1a;
+  --surface: #0f1825;
+  --card: #131f2e;
+  --border: #1e2d40;
+  --green: #22c55e;
+  --green-dim: #16a34a;
+  --green-glow: rgba(34,197,94,0.12);
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --dim: #475569;
+  --accent: #22c55e;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; scroll-snap-type: y mandatory; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Crimson Pro', Georgia, serif;
+  overflow-x: hidden;
+}
+
+/* ── Slide base ── */
+.slide {
+  min-height: 100vh;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 80px 100px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Grid background */
+.slide::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+/* Slide number */
+.slide-num {
+  position: absolute;
+  top: 36px;
+  right: 100px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 2px;
+}
+
+/* Footer */
+.slide-footer {
+  position: absolute;
+  bottom: 36px;
+  left: 100px;
+  right: 100px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 1px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+/* Green accent line — left edge */
+.slide-accent {
+  position: absolute;
+  left: 0;
+  top: 15%;
+  bottom: 15%;
+  width: 3px;
+  background: linear-gradient(180deg, transparent, var(--green), transparent);
+  opacity: 0.6;
+}
+
+/* ── Typography ── */
+.label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--green);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(56px, 7vw, 88px);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -3px;
+  color: var(--text);
+}
+
+h1 .green { color: var(--green); }
+
+h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(36px, 4.5vw, 56px);
+  font-weight: 700;
+  letter-spacing: -1.5px;
+  color: var(--text);
+  margin-bottom: 32px;
+  line-height: 1.1;
+}
+
+.lead {
+  font-size: clamp(20px, 2vw, 26px);
+  font-weight: 300;
+  color: var(--muted);
+  line-height: 1.6;
+  max-width: 760px;
+  margin-bottom: 32px;
+}
+
+.highlight {
+  color: var(--green);
+  font-style: italic;
+}
+
+/* ── List items ── */
+.items {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 800px;
+}
+
+.items li {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  font-size: clamp(18px, 1.8vw, 22px);
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.items li::before {
+  content: '→';
+  color: var(--green);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+/* ── Stat cards ── */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 40px;
+  max-width: 900px;
+}
+
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--green), transparent);
+  opacity: 0.6;
+}
+
+.stat-value {
+  font-family: 'Syne', sans-serif;
+  font-size: 42px;
+  font-weight: 800;
+  color: var(--green);
+  letter-spacing: -2px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* ── Budget table ── */
+.budget {
+  width: 100%;
+  max-width: 760px;
+  border-collapse: collapse;
+  margin-top: 32px;
+}
+
+.budget tr {
+  border-bottom: 1px solid var(--border);
+}
+
+.budget tr:last-child {
+  border-bottom: none;
+  border-top: 1px solid var(--green);
+}
+
+.budget td {
+  padding: 16px 12px;
+  font-size: 18px;
+  color: var(--muted);
+}
+
+.budget td:last-child {
+  text-align: right;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+  font-size: 16px;
+}
+
+.budget tr:last-child td {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 20px;
+}
+
+.budget tr:last-child td:last-child {
+  color: var(--green);
+  font-size: 22px;
+}
+
+/* ── Two column layout ── */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: start;
+}
+
+/* ── Quote / callout ── */
+.callout {
+  border-left: 3px solid var(--green);
+  padding: 20px 28px;
+  background: var(--green-glow);
+  border-radius: 0 8px 8px 0;
+  margin-top: 32px;
+  max-width: 800px;
+}
+
+.callout p {
+  font-size: clamp(18px, 1.8vw, 22px);
+  color: var(--text);
+  font-style: italic;
+  line-height: 1.6;
+}
+
+/* ── Hero slide specific ── */
+#hero {
+  background: radial-gradient(ellipse at 20% 50%, rgba(34,197,94,0.06) 0%, transparent 60%);
+}
+
+.hero-tagline {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--green);
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  margin-top: 32px;
+  margin-bottom: 0;
+}
+
+.hero-sub {
+  font-size: clamp(18px, 2vw, 24px);
+  color: var(--muted);
+  font-weight: 300;
+  max-width: 640px;
+  line-height: 1.6;
+  margin-top: 20px;
+}
+
+/* Farm polygon decoration */
+.farm-deco {
+  position: absolute;
+  right: 80px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+/* ── Nav dots ── */
+.nav-dots {
+  position: fixed;
+  right: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 100;
+}
+
+.nav-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  padding: 0;
+}
+
+.nav-dot.active { background: var(--green); transform: scale(1.4); }
+.nav-dot:hover { background: var(--muted); }
+
+/* ── Milestone timeline ── */
+.milestones {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-width: 800px;
+  margin-top: 8px;
+}
+
+.milestone {
+  display: flex;
+  gap: 24px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+  align-items: flex-start;
+}
+
+.milestone:last-child { border-bottom: none; }
+
+.milestone-marker {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.milestone-marker span {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--green);
+}
+
+.milestone-text {
+  font-size: 18px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.milestone-text strong {
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 2px;
+}
+
+/* ── Animations ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.slide > * {
+  animation: fadeUp 0.6s ease both;
+}
+
+.slide > *:nth-child(2) { animation-delay: 0.1s; }
+.slide > *:nth-child(3) { animation-delay: 0.2s; }
+.slide > *:nth-child(4) { animation-delay: 0.3s; }
+.slide > *:nth-child(5) { animation-delay: 0.4s; }
+
+/* Bottom accent line */
+.bottom-accent {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--green) 30%, var(--green) 70%, transparent);
+  opacity: 0.3;
+}
+</style>
+</head>
+<body>
+
+<!-- Nav dots -->
+<nav class="nav-dots" id="navDots"></nav>
+
+<!-- ── SLIDE 1: HERO ── -->
+<section class="slide" id="hero">
+  <div class="slide-accent"></div>
+  <div class="label">Non-Dilutive Funding Proposal · 2026</div>
+  <h1>Agri<span class="green">Ops</span></h1>
+  <p class="hero-sub">Traceability and compliance infrastructure for African agricultural exports. Mapping farms. Verifying supply chains. Automating compliance.</p>
+  <p class="hero-tagline">Supply Chain Intelligence</p>
+
+  <!-- Farm polygon decoration -->
+  <svg class="farm-deco" width="420" height="380" viewBox="0 0 420 380">
+    <polygon points="180,30 360,80 400,200 280,290 100,260 40,140" fill="rgba(34,197,94,0.06)" stroke="#22c55e" stroke-width="1.5"/>
+    <polygon points="195,55 340,98 375,195 275,268 118,244 78,144" fill="none" stroke="#22c55e" stroke-width="0.6" stroke-dasharray="4,6"/>
+    <polygon points="260,110 370,140 385,230 300,290 195,268 175,185" fill="rgba(34,197,94,0.04)" stroke="#22c55e" stroke-width="1"/>
+    <line x1="180" y1="30" x2="260" y2="110" stroke="#22c55e" stroke-width="0.6" stroke-dasharray="3,5" opacity="0.5"/>
+    <line x1="360" y1="80" x2="370" y2="140" stroke="#22c55e" stroke-width="0.6" stroke-dasharray="3,5" opacity="0.5"/>
+    <g fill="#22c55e">
+      <circle cx="180" cy="30" r="5"/><circle cx="180" cy="30" r="2.5" fill="#0a0f1a"/>
+      <circle cx="360" cy="80" r="5"/><circle cx="360" cy="80" r="2.5" fill="#0a0f1a"/>
+      <circle cx="400" cy="200" r="5"/><circle cx="400" cy="200" r="2.5" fill="#0a0f1a"/>
+      <circle cx="280" cy="290" r="5"/><circle cx="280" cy="290" r="2.5" fill="#0a0f1a"/>
+      <circle cx="100" cy="260" r="5"/><circle cx="100" cy="260" r="2.5" fill="#0a0f1a"/>
+      <circle cx="40" cy="140" r="5"/><circle cx="40" cy="140" r="2.5" fill="#0a0f1a"/>
+    </g>
+  </svg>
+
+  <div class="slide-footer">
+    <span>agriops.io</span>
+    <span>founder@agriops.io</span>
+  </div>
+  <div class="slide-num">01 / 13</div>
+  <div class="bottom-accent"></div>
+</section>
+
+<!-- ── SLIDE 2: THE PROBLEM ── -->
+<section class="slide">
+  <div class="slide-accent"></div>
+  <div class="label">The Problem</div>
+  <h2>Global markets are demanding traceable, deforestation-free supply chains.</h2>
+  <ul class="items">
+    <li>Exporters lack farm-level geolocation data</li>
+    <li>Traceability systems are fragmented across disconnected tools</li>
+    <li>Compliance reporting is entirely manual and error-prone</li>
+    <li>Smallholder farms remain invisible to global buyers</li>
+  </ul>
+  <div class="slide-footer"><span>agriops.io</span><span>The Problem</span></div>
+  <div class="slide-num">02 / 13</div>
+  <div class="bottom-accent"></div>
+</section>
+
+<!-- ── SLIDE 3: REGULATORY SHIFT ── -->
+<section class="slide">
+  <div class="slide-accent"></div>
+  <div class="label">The Regulatory Shift</div>
+  <h2>The EU Deforestation Regulation has changed the rules of market access.</h2>
+  <p class="lead">Effective 2025, exporters must prove their commodities are not sourced from deforested land — with documentary evidence at the farm level.</p>
+  <ul class="items">
+    <li>Farm geolocation and polygon boundaries required</li>
+    <li>Supply chain traceability from farm to shipment</li>
+    <li>Due diligence statements for every export consignment</li>
+    <li>5-year record retention for compliance audit</li>
+  </ul>
+  <div class="slide-footer"><span>agriops.io</span><span>EU Regulation 2023/1115</span></div>
+  <div class="slide-num">03 / 13</div>
+  <div class="bottom-accent"></div>
+</section>
+
+<!-- ── SLIDE 4: THE GAP ── -->
+<section class="slide">
+  <div class="slide-accent"></div>
+  <div class="label">The Gap</div>
+  <h2>Most exporters cannot meet these requirements today.</h2>
+  <ul class="items">
+    <li>No farm mapping datasets exist at scale</li>
+    <li>No structured farmer identity records</li>
+    <li>No traceability infrastructure connecting farm to export</li>
+    <li>No automated compliance reporting tools built for the African context</li>
+  </ul>
+  <div class="callout">
+    <p>"The infrastructure to prove deforestation-free sourcing simply does not exist for most smallholder supply chains in West Africa."</p>
+  </div>
+  <div class="slide-footer"><span>agriops.io</span><span>The Gap</span></div>
+  <div class="slide-num">04 / 13</div>
+  <div class="bottom-accent"></div>
+</section>
+
+<!-- ── SLIDE 5: THE SOLUTION ── -->
+<section class="slide">
+  <div class="slide-accent"></div>
+  <div class="label">The Solution</div>
+  <h2>AgriOps captures and verifies agricultural activity at the farm level.</h2>
+  <div class="two-col">
+    <ul class="items">
+      <li>Farm boundary mapping via GPS polygon capture</li>
+      <li>Farmer identity registry with supply chain linkage</li>
+      <li>Multi-tenant compliance platform for exporters</li>
+      <li>Automated EUDR due diligence reporting</li>
+      <li>Batch traceability with QR-verified certificates</li>
+    </ul>
+    <div>
+      <div class="stat-card" style="margin-bottom:16px;">
+        <div class="stat-value">app.</div>
+        <div class="stat-label">agriops.io — live platform</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">EUDR</div>
+        <div class="stat-label">Article 9 compliant architecture</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer"><span>agriops.io</span><span>The Solution</span></div>
+  <div class="slide-num">05 / 13</div>
+  <div class="bottom-accent"></div>
+</section>
+
+<!-- ── SLIDE 6: THE DATASET ── -->
+<section class="slide">
+  <div class="slide-accent"></div>
+  <div class="label">The Moat</div>
+  <h2>Farm mapping is the most defensible dataset in agricultural systems.</h2>
+  <p class="lead">Once captured, farm boundaries, crop production data, supplier relationships, and commodity traceability compound into a long-term agricultural intelligence layer.</p>
+  <ul class="items">
+    <li>GPS polygon boundaries — precise, reusable, permanent</li>
+    <li>Farmer identity registry linked to each farm plot</li>
+    <li>Historical traceability chain per commodity lot</li>
+    <li>EUDR deforestation reference baseline locked at 2020</li>
+  </ul>
+  <div class="callout">
+    <p>Competitors would need years of field operations to replicate this dataset. The data captured today is the infrastructure for every future intelligence product.</p>
+  </div>
+  <div class="slide-footer"><span>agriops.io</span><span>Competitive Moat</span></div>
+  <div class="slide-num">06 / 13</div>
+  <div class="bottom-accent"></div>
+</section>
+
+<!-- ── SLIDE 7: TRACTION ── -->
+<section class="slide">
+  <div class="slide-accent"></div>
+  <div class="label">Traction</div>
+  <h2>Platform live. Field operations active.</h2>
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-value">Live</div>
+      <div class="stat-label">app.agriops.io</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">550+</div>
+      <div class="stat-label">Farms queued — AKE Collective</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">3</div>
+      <div class="stat-label">Cooperatives in active conversations</div>
+    </div>
+  </div>
+  <ul class="items" style="margin-top:32px;">
+    <li>Platform deployed with full EUDR compliance architecture</li>
+    <li>Field mapping operations active across Bauchi and Plateau States</li>
+    <li>Community outreach underway — 8 farming communities across 3 states</li>
+    <li>Regional head conducting parallel outreach in Taraba State</li>
+  </ul>
+  <div class="slide-footer"><span>agriops.io</span><span>Traction</span></div>
+  <div class="slide-num">07 / 13</div>
+  <div class="bottom-accent"></div>
+</section>
+
+<!-- ── SLIDE 8: MARKET ── -->
+<section class="slide">
+  <div class="slide-accent"></div>
+  <div class="label">Market Opportunity</div>
+  <h2>Nigeria's agricultural export market faces an existential compliance deadline.</h2>
+  <div class="stats" style="margin-bottom:32px;">
+    <div class="stat-card">
+      <div class="stat-value">$750M</div>
+      <div class="stat-label">Annual agri exports to EU</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">120k+</div>
+      <div class="stat-label">Smallholder farms in export chains</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">$250M+</div>
+      <div class="stat-label">Export contracts at risk</div>
+    </div>
+  </div>
+  <ul class="items">
+    <li>1,500+ cooperatives aggregating smallholder production</li>
+    <li>AgriOps enables continued EU market access for exporters and farmers</li>
+    <li>Initial focus: soybean, sesame, cashew — highest EUDR risk categories</li>
+  </ul>
+  <div class="slide-footer"><span>agriops.io</span><span>Market Opportunity</span></div>
+  <div class="slide-num">08 / 13</div>
+  <div class="bottom-accent"></div>
+</section>
+
+<!-- ── SLIDE 9: IMPACT ── -->
+<section class="slide">
+  <div class="slide-accent"></div>
+  <div class="label">Impact</div>
+  <h2>Beyond compliance — agricultural intelligence for smallholder markets.</h2>
+  <ul class="items">
+    <li>Maintain EU export access for thousands of smallholder farmers</li>
+    <li>Increase supply chain transparency from farm to buyer</li>
+    <li>Build the first structured farmer identity registry at scale in Nigeria</li>
+    <li>Reduce deforestation risk through verified land use documentation</li>
+    <li>Enable NGO and development programme monitoring and reporting</li>
+  </ul>
+  <div class="callout">
+    <p>Every farm mapped is a farmer brought into the formal economy with a permanent, verifiable identity in a global supply chain.</p>
+  </div>
+  <div class="slide-footer"><span>agriops.io</span><span>Impact</span></div>
+  <div class="slide-num">09 / 13</div>
+  <div class="bottom-accent"></div>
+</section>
+
+<!-- ── SLIDE 10: TEAM ── -->
+<section class="slide">
+  <div class="slide-accent"></div>
+  <div class="label">Why We Can Execute</div>
+  <h2>Built by an operator who has lived the problem.</h2>
+  <ul class="items">
+    <li>4+ years managing agricultural export operations in Nigeria</li>
+    <li>Direct exposure to EU compliance requirements through active export contracts</li>
+    <li>Established relationships with farming cooperatives and village leadership</li>
+    <li>Technical capability to build, deploy, and operate the platform independently</li>
+    <li>Currently conducting field operations across Bauchi, Plateau, and Taraba States</li>
+  </ul>
+  <div class="callout">
+    <p>The platform was not built in response to a market report. It was built because we needed it to run our own export operations.</p>
+  </div>
+  <div class="slide-footer"><span>agriops.io</span><span>Team</span></div>
+  <div class="slide-num">10 / 13</div>
+  <div class="bottom-accent"></div>
+</section>
+
+<!-- ── SLIDE 11: MILESTONES ── -->
+<section class="slide">
+  <div class="slide-accent"></div>
+  <div class="label">6-Month Milestones</div>
+  <h2>Proving the model in Nigeria before expanding regionally.</h2>
+  <div class="milestones">
+    <div class="milestone">
+      <div class="milestone-marker"><span>01</span></div>
+      <div class="milestone-text"><strong>2,000 farms mapped and verified</strong>GPS polygon boundaries, farmer identity, deforestation baseline documented</div>
+    </div>
+    <div class="milestone">
+      <div class="milestone-marker"><span>02</span></div>
+      <div class="milestone-text"><strong>5 cooperatives onboarded</strong>Full traceability chain from farm to export batch operational</div>
+    </div>
+    <div class="milestone">
+      <div class="milestone-marker"><span>03</span></div>
+      <div class="milestone-text"><strong>30,000 metric tons traced to farm origin</strong>EUDR-compliant due diligence statements generated per export consignment</div>
+    </div>
+    <div class="milestone">
+      <div class="milestone-marker"><span>04</span></div>
+      <div class="milestone-text"><strong>$150k ARR from exporter subscriptions</strong>Platform revenue from compliance intelligence SaaS</div>
+    </div>
+  </div>
+  <div class="slide-footer"><span>agriops.io</span><span>6-Month Plan</span></div>
+  <div class="slide-num">11 / 13</div>
+  <div class="bottom-accent"></div>
+</section>
+
+<!-- ── SLIDE 12: BUDGET ── -->
+<section class="slide">
+  <div class="slide-accent"></div>
+  <div class="label">Use of Funds</div>
+  <h2>Seeking <span class="highlight">$120,000</span> to map 2,000 farms across 3 export cooperatives.</h2>
+  <table class="budget">
+    <tr>
+      <td>Field mapping operations — personnel, transport, field logistics</td>
+      <td>$45,000</td>
+    </tr>
+    <tr>
+      <td>Mapping equipment and mobile tools</td>
+      <td>$15,000</td>
+    </tr>
+    <tr>
+      <td>Platform development — compliance features, buyer portal</td>
+      <td>$40,000</td>
+    </tr>
+    <tr>
+      <td>Farmer onboarding, training, and community engagement</td>
+      <td>$20,000</td>
+    </tr>
+    <tr>
+      <td><strong>Total</strong></td>
+      <td><strong>$120,000</strong></td>
+    </tr>
+  </table>
+  <div class="callout" style="margin-top:24px;">
+    <p>Impact: Enable <strong>$12M in export contracts</strong> benefiting <strong>5,000+ smallholder farmers</strong> across three Nigerian states.</p>
+  </div>
+  <div class="slide-footer"><span>agriops.io</span><span>Use of Funds</span></div>
+  <div class="slide-num">12 / 13</div>
+  <div class="bottom-accent"></div>
+</section>
+
+<!-- ── SLIDE 13: CLOSE ── -->
+<section class="slide" style="background: radial-gradient(ellipse at 30% 50%, rgba(34,197,94,0.06) 0%, transparent 60%);">
+  <div class="slide-accent"></div>
+  <div class="label">Get In Touch</div>
+  <h1>Let's build the infrastructure African agriculture needs.</h1>
+  <p class="hero-sub">Every farm mapped is a farmer brought into the global economy with a permanent, verifiable identity in the supply chain.</p>
+  <div style="margin-top:48px;display:flex;gap:24px;flex-wrap:wrap;">
+    <div class="stat-card" style="min-width:220px;">
+      <div class="stat-value" style="font-size:20px;">founder@agriops.io</div>
+      <div class="stat-label">Email</div>
+    </div>
+    <div class="stat-card" style="min-width:220px;">
+      <div class="stat-value" style="font-size:20px;">agriops.io</div>
+      <div class="stat-label">Platform</div>
+    </div>
+    <div class="stat-card" style="min-width:220px;">
+      <div class="stat-value" style="font-size:20px;">app.agriops.io</div>
+      <div class="stat-label">Live Demo</div>
+    </div>
+  </div>
+  <div class="slide-footer"><span>AgriOps · 2026</span><span>Supply Chain Intelligence</span></div>
+  <div class="slide-num">13 / 13</div>
+  <div class="bottom-accent"></div>
+</section>
+
+<script>
+// Nav dots
+const slides = document.querySelectorAll('.slide');
+const navDots = document.getElementById('navDots');
+
+slides.forEach((_, i) => {
+  const dot = document.createElement('button');
+  dot.className = 'nav-dot';
+  dot.setAttribute('aria-label', `Slide ${i + 1}`);
+  dot.addEventListener('click', () => slides[i].scrollIntoView({ behavior: 'smooth' }));
+  navDots.appendChild(dot);
+});
+
+// Active dot on scroll
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const idx = Array.from(slides).indexOf(entry.target);
+      document.querySelectorAll('.nav-dot').forEach((d, i) => {
+        d.classList.toggle('active', i === idx);
+      });
+    }
+  });
+}, { threshold: 0.5 });
+
+slides.forEach(s => observer.observe(s));
+
+// Keyboard navigation
+document.addEventListener('keydown', e => {
+  const current = Array.from(slides).findIndex(s => {
+    const rect = s.getBoundingClientRect();
+    return rect.top >= -10 && rect.top < window.innerHeight / 2;
+  });
+  if (e.key === 'ArrowDown' && current < slides.length - 1) slides[current + 1].scrollIntoView({ behavior: 'smooth' });
+  if (e.key === 'ArrowUp' && current > 0) slides[current - 1].scrollIntoView({ behavior: 'smooth' });
+});
+</script>
+</body>
+</html>
