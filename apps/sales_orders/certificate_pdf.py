@@ -46,6 +46,7 @@ def generate_certificate(batch):
     )
 
     story = []
+    is_eu = getattr(batch.sales_order, 'is_eu_export', False)
 
     # ── Header ────────────────────────────────────────────────
     header_data = [[
@@ -112,30 +113,40 @@ def generate_certificate(batch):
     # ── Farm traceability ─────────────────────────────────────
     story.append(Paragraph(f"Farm Traceability — {farms.count()} farms", ParagraphStyle("s2", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceBefore=6*mm, spaceAfter=3*mm)))
 
-    farm_data = [["Farm", "Supplier", "Location", "Area", "Harvest", "Ref. Date", "EUDR"]]
+    if is_eu:
+        farm_data = [["Farm", "Supplier", "Location", "Area", "Harvest", "Ref. Date", "EUDR"]]
+    else:
+        farm_data = [["Farm", "Supplier", "Location", "Area", "Harvest", "Ref. Date"]]
+
     for farm in farms:
         ref_date = str(farm.deforestation_reference_date) if farm.deforestation_reference_date else "—"
         harvest = str(farm.harvest_year) if farm.harvest_year else "—"
-        if farm.is_disqualified:
-            eudr_status = "✗ Disqualified"
-        elif farm.is_eudr_verified:
-            eudr_status = "✓ Verified"
-        else:
-            eudr_status = "Pending"
-        farm_data.append([
+        row = [
             farm.name,
             farm.supplier.name if farm.supplier else "—",
             f"{farm.country} / {farm.state_region or '—'}",
             f"{farm.area_hectares} ha" if farm.area_hectares else "—",
             harvest,
             ref_date,
-            eudr_status,
-        ])
+        ]
+        if is_eu:
+            if farm.is_disqualified:
+                eudr_status = "✗ Disqualified"
+            elif farm.is_eudr_verified:
+                eudr_status = "✓ Verified"
+            else:
+                eudr_status = "Pending"
+            row.append(eudr_status)
+        farm_data.append(row)
 
+    empty_cols = [""] * (7 if is_eu else 6)
     if len(farm_data) == 1:
-        farm_data.append(["No farms linked", "", "", "", "", "", ""])
+        farm_data.append(["No farms linked"] + empty_cols[1:])
 
-    farm_t = Table(farm_data, colWidths=[35*mm, 35*mm, 35*mm, 17*mm, 15*mm, 22*mm, 16*mm])
+    if is_eu:
+        farm_t = Table(farm_data, colWidths=[35*mm, 35*mm, 35*mm, 17*mm, 15*mm, 22*mm, 16*mm])
+    else:
+        farm_t = Table(farm_data, colWidths=[40*mm, 40*mm, 40*mm, 20*mm, 20*mm, 25*mm])
     farm_t.setStyle(TableStyle([
         ("BACKGROUND", (0,0), (-1,0), DARK),
         ("TEXTCOLOR", (0,0), (-1,0), WHITE),
@@ -149,30 +160,31 @@ def generate_certificate(batch):
     ]))
     story.append(farm_t)
 
-    # ── Declaration ───────────────────────────────────────────
-    story.append(Spacer(1, 6*mm))
-    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#cbd5e1"), spaceAfter=4*mm))
-    story.append(Paragraph("Due Diligence Declaration", ParagraphStyle("s3", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceAfter=3*mm)))
-    story.append(Paragraph(
-        f"The operator <b>{batch.company.name}</b> declares that all commodities in batch "
-        f"<b>{batch.batch_number}</b> have been sourced in compliance with EU Deforestation "
-        f"Regulation (EU) 2023/1115. Farm-level geolocation data and risk assessments are "
-        f"retained in the AgriOps platform and available for audit.",
-        ParagraphStyle("body", fontName="Helvetica", fontSize=9, textColor=colors.HexColor("#334155"), spaceAfter=6*mm)
-    ))
+    # ── Declaration (EU export only) ──────────────────────────
+    if is_eu:
+        story.append(Spacer(1, 6*mm))
+        story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#cbd5e1"), spaceAfter=4*mm))
+        story.append(Paragraph("Due Diligence Declaration", ParagraphStyle("s3", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceAfter=3*mm)))
+        story.append(Paragraph(
+            f"The operator <b>{batch.company.name}</b> declares that all commodities in batch "
+            f"<b>{batch.batch_number}</b> have been sourced in compliance with EU Deforestation "
+            f"Regulation (EU) 2023/1115. Farm-level geolocation data and risk assessments are "
+            f"retained in the AgriOps platform and available for audit.",
+            ParagraphStyle("body", fontName="Helvetica", fontSize=9, textColor=colors.HexColor("#334155"), spaceAfter=6*mm)
+        ))
 
-    story.append(Spacer(1, 8*mm))
-    sig_data = [["Authorised Signatory", "Date"], [" " * 50, str(date.today())]]
-    sig_t = Table(sig_data, colWidths=[100*mm, 75*mm])
-    sig_t.setStyle(TableStyle([
-        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-        ("FONTSIZE", (0,0), (-1,-1), 8),
-        ("TEXTCOLOR", (0,0), (-1,0), SLATE),
-        ("LINEBELOW", (0,1), (0,1), 0.5, DARK),
-        ("TOPPADDING", (0,0), (-1,-1), 4),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 12),
-    ]))
-    story.append(sig_t)
+        story.append(Spacer(1, 8*mm))
+        sig_data = [["Authorised Signatory", "Date"], [" " * 50, str(date.today())]]
+        sig_t = Table(sig_data, colWidths=[100*mm, 75*mm])
+        sig_t.setStyle(TableStyle([
+            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+            ("FONTSIZE", (0,0), (-1,-1), 8),
+            ("TEXTCOLOR", (0,0), (-1,0), SLATE),
+            ("LINEBELOW", (0,1), (0,1), 0.5, DARK),
+            ("TOPPADDING", (0,0), (-1,-1), 4),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 12),
+        ]))
+        story.append(sig_t)
 
     story.append(Spacer(1, 4*mm))
     story.append(Paragraph(

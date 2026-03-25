@@ -45,6 +45,10 @@ class SalesOrder(models.Model):
         max_length=50, blank=True,
         help_text="Certificate of Origin reference number issued by Nigerian Chamber of Commerce / Customs."
     )
+    is_eu_export = models.BooleanField(
+        default=False,
+        help_text="Flag for EU-bound shipments. Enables EUDR compliance sections on traceability certificate."
+    )
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
