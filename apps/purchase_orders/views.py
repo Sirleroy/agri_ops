@@ -12,7 +12,7 @@ class PurchaseOrderListView(StaffRequiredMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        return super().get_queryset().filter(company=self.request.user.company)
+        return super().get_queryset().filter(company=self.request.user.company).select_related('supplier', 'company')
 
 
 class PurchaseOrderDetailView(StaffRequiredMixin, DetailView):

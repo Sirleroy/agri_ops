@@ -29,7 +29,7 @@ class UserDetailView(ManagerRequiredMixin, DetailView):
         return obj
 
 
-class UserUpdateView(OrgAdminRequiredMixin, UpdateView):
+class UserUpdateView(AuditUpdateMixin, OrgAdminRequiredMixin, UpdateView):
     model = CustomUser
     template_name = 'users/form.html'
     fields = ['username', 'first_name', 'last_name', 'email',

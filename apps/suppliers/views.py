@@ -216,7 +216,7 @@ class FarmCertificationCreateView(OtherRevealMixin, DatePickerMixin, AuditCreate
         return reverse_lazy('suppliers:farm_detail', kwargs={'pk': self.kwargs['farm_pk']})
 
 
-class FarmCertificationDeleteView(ManagerRequiredMixin, DeleteView):
+class FarmCertificationDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
     model = FarmCertification
 
     def get_object(self):
