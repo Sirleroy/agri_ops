@@ -1,0 +1,107 @@
+{% extends 'legal/base.html' %}
+{% block title %}Privacy Policy — AgriOps{% endblock %}
+{% block page_title %}Privacy Policy{% endblock %}
+{% block doc_title %}Privacy Policy{% endblock %}
+
+{% block doc_body %}
+
+<p>This Privacy Policy explains how <strong>AgriOps Technologies Limited</strong> ("AgriOps", "we", "us") collects, uses, stores, and protects personal data when you use the AgriOps platform ("Platform").</p>
+<p>We are committed to handling personal data responsibly and in accordance with the Nigeria Data Protection Act 2023 (NDPA) and, where applicable, the EU General Data Protection Regulation (GDPR).</p>
+
+<h2>1. Who This Policy Applies To</h2>
+<p>This policy applies to:</p>
+<ul>
+  <li>Authorised Users — employees or contractors of our Customers who access the Platform;</li>
+  <li>Visitors to our marketing and documentation sites;</li>
+  <li>Individuals whose personal data is uploaded to the Platform as part of supply chain records (e.g. farmer names, supplier contacts).</li>
+</ul>
+
+<h2>2. Data We Collect</h2>
+
+<h3>Account and User Data</h3>
+<ul>
+  <li>Name, email address, job title, phone number;</li>
+  <li>Login credentials (passwords are hashed and never stored in plain text);</li>
+  <li>Role and permissions within the Customer's organisation;</li>
+  <li>Login timestamps and IP addresses (for security and audit purposes).</li>
+</ul>
+
+<h3>Supply Chain and Operational Data</h3>
+<p>This data is entered by Customers and includes:</p>
+<ul>
+  <li>Supplier names, addresses, contact details;</li>
+  <li>Farmer names, farm locations (GPS coordinates and polygon boundaries), land area, harvest records;</li>
+  <li>Purchase and sales order details, product and inventory records;</li>
+  <li>EUDR compliance data including deforestation risk status and reference dates.</li>
+</ul>
+
+<h3>Usage and Technical Data</h3>
+<ul>
+  <li>Log data: pages visited, actions taken, timestamps;</li>
+  <li>Device and browser information;</li>
+  <li>Session data (managed via server-side session cookies).</li>
+</ul>
+
+<h2>3. How We Use Personal Data</h2>
+<ul>
+  <li><strong>To provide the Platform</strong> — processing data to deliver the features and functions of the service;</li>
+  <li><strong>Security and fraud prevention</strong> — monitoring for suspicious activity, enforcing brute-force protections, maintaining audit logs;</li>
+  <li><strong>Customer support</strong> — responding to queries and resolving issues;</li>
+  <li><strong>Compliance</strong> — meeting our legal obligations under Nigerian law and, where applicable, EU regulations;</li>
+  <li><strong>Platform improvement</strong> — aggregate, anonymised analysis of usage patterns to improve the product.</li>
+</ul>
+<p>We do not sell personal data. We do not use Customer Data for advertising or marketing purposes.</p>
+
+<h2>4. Legal Basis for Processing (GDPR)</h2>
+<p>Where GDPR applies, we process personal data on the following bases:</p>
+<ul>
+  <li><strong>Contract</strong> — processing necessary to perform our agreement with the Customer (Art. 6(1)(b));</li>
+  <li><strong>Legal obligation</strong> — processing required to comply with applicable law (Art. 6(1)(c));</li>
+  <li><strong>Legitimate interests</strong> — security monitoring, fraud prevention, and platform improvement (Art. 6(1)(f)).</li>
+</ul>
+
+<h2>5. Data Sharing</h2>
+<p>We do not share personal data with third parties except:</p>
+<ul>
+  <li><strong>Sub-processors</strong> — infrastructure providers (hosting, email delivery) who process data on our behalf under data processing agreements. A current list of sub-processors is available on request;</li>
+  <li><strong>Legal requirements</strong> — where required by applicable law, court order, or regulatory authority;</li>
+  <li><strong>Business transfers</strong> — in the event of a merger or acquisition, with appropriate data protection obligations transferred.</li>
+</ul>
+
+<h2>6. International Data Transfers</h2>
+<p>AgriOps is based in Nigeria. Customer Data may be processed or stored on servers outside Nigeria. Where Customer Data includes personal data of EU residents, we ensure appropriate safeguards are in place (such as Standard Contractual Clauses) for any transfer outside the EU/EEA.</p>
+
+<h2>7. Data Retention</h2>
+<ul>
+  <li><strong>Account data</strong> — retained for the duration of the Customer's Subscription plus 90 days post-termination for data export, then deleted;</li>
+  <li><strong>Audit logs</strong> — retained for 365 days per our internal policy;</li>
+  <li><strong>Supply chain records</strong> — retained for the duration of the Subscription; Customers are responsible for exporting data before termination;</li>
+  <li><strong>Login and access logs</strong> — retained for 90 days for security purposes.</li>
+</ul>
+
+<h2>8. Your Rights</h2>
+<p>Depending on your jurisdiction, you may have the right to:</p>
+<ul>
+  <li>Access the personal data we hold about you;</li>
+  <li>Correct inaccurate data;</li>
+  <li>Request deletion of your data (subject to legal and contractual obligations);</li>
+  <li>Object to or restrict certain processing;</li>
+  <li>Data portability — receive your data in a structured, machine-readable format;</li>
+  <li>Lodge a complaint with a supervisory authority (e.g. NITDA in Nigeria, or your national DPA in the EU).</li>
+</ul>
+<p>To exercise these rights, contact us at <strong>privacy@agriops.io</strong>. We will respond within 30 days.</p>
+
+<h2>9. Security</h2>
+<p>We implement industry-standard technical and organisational measures including: encrypted data in transit (TLS), hashed passwords, session timeouts, brute-force protection, role-based access controls, and audit logging of all data changes. We conduct periodic security reviews.</p>
+
+<h2>10. Cookies</h2>
+<p>We use a minimal number of cookies necessary to operate the Platform. See our <a href="{% url 'legal:cookies' %}">Cookie Policy</a> for details.</p>
+
+<h2>11. Changes to This Policy</h2>
+<p>We may update this policy to reflect changes in law or our practices. Material changes will be communicated by email or in-platform notice. The effective date above indicates the most recent revision.</p>
+
+<h2>12. Contact</h2>
+<p>For privacy questions or to exercise your rights: <strong>privacy@agriops.io</strong></p>
+<p>Data Controller: <strong>AgriOps Technologies Limited</strong>, <strong>No 25, Temple Road, Jos, Plateau State, Nigeria</strong></p>
+
+{% endblock %}

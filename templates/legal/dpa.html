@@ -1,0 +1,123 @@
+{% extends 'legal/base.html' %}
+{% block title %}Data Processing Agreement — AgriOps{% endblock %}
+{% block page_title %}Data Processing Agreement{% endblock %}
+{% block doc_title %}Data Processing Agreement{% endblock %}
+
+{% block doc_body %}
+
+<p>This Data Processing Agreement ("DPA") forms part of the Terms of Service between <strong>AgriOps Technologies Limited</strong> ("Processor") and the Customer ("Controller"), and governs the processing of personal data by AgriOps on behalf of the Customer.</p>
+<p>This DPA applies where the Customer's use of the Platform involves the processing of personal data subject to the EU General Data Protection Regulation (GDPR), the UK GDPR, the Nigeria Data Protection Act 2023, or any other applicable data protection law.</p>
+
+<h2>1. Definitions</h2>
+<ul>
+  <li><strong>Controller</strong> — the Customer, who determines the purposes and means of processing personal data;</li>
+  <li><strong>Processor</strong> — AgriOps, who processes personal data on behalf of the Controller;</li>
+  <li><strong>Personal Data</strong> — any information relating to an identified or identifiable natural person included in Customer Data;</li>
+  <li><strong>Processing</strong> — any operation performed on personal data, including collection, storage, use, disclosure, or deletion;</li>
+  <li><strong>Sub-processor</strong> — any third party engaged by AgriOps to process personal data on behalf of the Controller.</li>
+</ul>
+
+<h2>2. Subject Matter and Nature of Processing</h2>
+<p>AgriOps processes personal data as necessary to provide the Platform services described in the Terms of Service, including:</p>
+<ul>
+  <li>Storing and managing supply chain records containing personal data (farmer names, supplier contacts, employee accounts);</li>
+  <li>Generating compliance documents and traceability certificates;</li>
+  <li>Maintaining audit logs of user actions;</li>
+  <li>Providing access controls, authentication, and session management.</li>
+</ul>
+
+<h2>3. Categories of Personal Data and Data Subjects</h2>
+<p><strong>Categories of personal data processed:</strong></p>
+<ul>
+  <li>Identity data: names, job titles;</li>
+  <li>Contact data: email addresses, phone numbers, postal addresses;</li>
+  <li>Location data: GPS coordinates and farm polygon boundaries associated with named farmers;</li>
+  <li>Access and audit data: IP addresses, login timestamps, action logs.</li>
+</ul>
+<p><strong>Categories of data subjects:</strong></p>
+<ul>
+  <li>Authorised Users (Customer employees and contractors);</li>
+  <li>Suppliers and their contact personnel;</li>
+  <li>Farmers and smallholder operators in the Customer's supply chain.</li>
+</ul>
+
+<h2>4. Duration</h2>
+<p>This DPA remains in effect for the duration of the Terms of Service. Upon termination, AgriOps will retain Customer Data for 30 days to enable export, then securely delete it in accordance with the Terms of Service and Section 9 of this DPA.</p>
+
+<h2>5. Controller Obligations</h2>
+<p>The Controller warrants and represents that:</p>
+<ul>
+  <li>It has a lawful basis for processing the personal data it uploads to the Platform;</li>
+  <li>It has provided all required notices and obtained all required consents from data subjects where applicable;</li>
+  <li>Its instructions to AgriOps comply with applicable data protection law;</li>
+  <li>It is responsible for the accuracy and legality of the personal data it submits.</li>
+</ul>
+
+<h2>6. Processor Obligations</h2>
+<p>AgriOps shall:</p>
+<ul>
+  <li>Process personal data only on documented instructions from the Controller (i.e. to provide the Platform services), unless required otherwise by applicable law;</li>
+  <li>Ensure that personnel authorised to process personal data are bound by appropriate confidentiality obligations;</li>
+  <li>Implement and maintain the technical and organisational security measures described in Section 7;</li>
+  <li>Notify the Controller without undue delay upon becoming aware of a personal data breach affecting the Controller's data;</li>
+  <li>Assist the Controller in fulfilling data subject rights requests and data protection impact assessments, to the extent reasonably practicable;</li>
+  <li>Delete or return all personal data upon termination as specified in Section 9;</li>
+  <li>Make available to the Controller all information reasonably necessary to demonstrate compliance with this DPA.</li>
+</ul>
+
+<h2>7. Technical and Organisational Security Measures</h2>
+<p>AgriOps maintains the following controls:</p>
+<ul>
+  <li><strong>Encryption in transit</strong> — TLS for all data transmitted between the Platform and users;</li>
+  <li><strong>Access controls</strong> — role-based permissions; Authorised Users can only access their own organisation's data;</li>
+  <li><strong>Authentication</strong> — password hashing (PBKDF2), brute-force protection (account lockout after 5 failed attempts), TOTP for administrative access;</li>
+  <li><strong>Session management</strong> — 8-hour session timeout, secure session cookies;</li>
+  <li><strong>Audit logging</strong> — all create, update, and delete actions are logged with user identity, timestamp, and IP address, retained for 365 days;</li>
+  <li><strong>Tenant isolation</strong> — all data is scoped by organisation; cross-tenant data access is prevented at the application layer;</li>
+  <li><strong>Vulnerability management</strong> — periodic security reviews; dependencies monitored for known vulnerabilities.</li>
+</ul>
+
+<h2>8. Sub-processors</h2>
+<p>The Controller provides general authorisation for AgriOps to engage sub-processors to assist in providing the Platform services. AgriOps will:</p>
+<ul>
+  <li>Maintain a list of current sub-processors, available to the Controller on request;</li>
+  <li>Notify the Controller of any intended changes to sub-processors (additions or replacements) with reasonable advance notice;</li>
+  <li>Impose data protection obligations on sub-processors equivalent to those in this DPA;</li>
+  <li>Remain liable to the Controller for the acts and omissions of its sub-processors.</li>
+</ul>
+
+<h2>9. Deletion and Return of Data</h2>
+<p>Upon termination of the Terms of Service, AgriOps will:</p>
+<ul>
+  <li>Make Customer Data available for export for 30 days following termination;</li>
+  <li>Securely delete all Customer Data from live systems within 60 days of termination;</li>
+  <li>Provide written confirmation of deletion upon request;</li>
+  <li>Retain data only where required by applicable law (e.g. audit logs required by a regulatory authority).</li>
+</ul>
+
+<h2>10. International Data Transfers</h2>
+<p>Where personal data originating from the EU/EEA or UK is transferred to and processed in Nigeria or another third country, AgriOps will ensure appropriate transfer safeguards are in place, including:</p>
+<ul>
+  <li>Standard Contractual Clauses (SCCs) approved by the European Commission; or</li>
+  <li>Any other transfer mechanism recognised under applicable data protection law.</li>
+</ul>
+<p>The Controller may request a copy of applicable transfer mechanisms by contacting <strong>privacy@agriops.io</strong>.</p>
+
+<h2>11. Audit Rights</h2>
+<p>AgriOps will make available to the Controller all information reasonably necessary to demonstrate compliance with this DPA. The Controller may request an audit of AgriOps's data processing activities upon 30 days' written notice and at the Controller's expense. Audits must be conducted during normal business hours and must not unreasonably disrupt AgriOps's operations.</p>
+
+<h2>12. Data Breach Notification</h2>
+<p>AgriOps will notify the Controller without undue delay — and in any event within 72 hours of becoming aware — of any personal data breach affecting Customer Data. Notification will include, to the extent known at the time:</p>
+<ul>
+  <li>Nature of the breach and categories and approximate number of individuals affected;</li>
+  <li>Likely consequences of the breach;</li>
+  <li>Measures taken or proposed to address the breach.</li>
+</ul>
+
+<h2>13. Conflict</h2>
+<p>In the event of any conflict between this DPA and the Terms of Service, this DPA shall prevail with respect to the processing of personal data.</p>
+
+<h2>14. Contact</h2>
+<p>Data protection enquiries: <strong>privacy@agriops.io</strong></p>
+
+{% endblock %}

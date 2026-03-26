@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-8 pb-16">
+
+  <div>
+    <a href="{% url 'dashboard:home' %}" class="text-sm text-slate-500 hover:text-slate-100 transition-colors flex items-center gap-1 w-fit mb-6">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      Back to Dashboard
+    </a>
+    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Legal</p>
+    <h1 class="text-2xl font-bold text-slate-100">{% block doc_title %}{% endblock %}</h1>
+    <p class="text-sm text-slate-500 mt-1">Effective date: {% block effective_date %}26 March 2026{% endblock %}</p>
+  </div>
+
+  <div class="bg-card border border-border rounded-xl p-8 prose prose-invert prose-sm max-w-none
+              prose-headings:font-bold prose-headings:text-slate-100
+              prose-h2:text-base prose-h2:mt-8 prose-h2:mb-3
+              prose-h3:text-sm prose-h3:mt-6 prose-h3:mb-2
+              prose-p:text-slate-400 prose-p:leading-relaxed
+              prose-li:text-slate-400
+              prose-strong:text-slate-200
+              prose-a:text-green prose-a:no-underline hover:prose-a:underline">
+    {% block doc_body %}{% endblock %}
+  </div>
+
+</div>
+{% endblock %}

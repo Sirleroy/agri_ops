@@ -2,10 +2,21 @@ from apps.dashboard.landing import LandingView
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
+from django.views.generic import TemplateView
 from agri_ops_project.health import health_check
 from apps.sales_orders.batch_views import PublicTraceView
 from apps.dashboard.access_views import RequestAccessView
 
+
+_legal = lambda t: TemplateView.as_view(template_name=f'legal/{t}.html')
+
+legal_urls = ([
+    path('terms/',    _legal('terms'),   name='terms'),
+    path('privacy/',  _legal('privacy'), name='privacy'),
+    path('dpa/',      _legal('dpa'),     name='dpa'),
+    path('cookies/',  _legal('cookies'), name='cookies'),
+    path('aup/',      _legal('aup'),     name='aup'),
+], 'legal')
 
 urlpatterns = [
     path('', include('ops_dashboard.urls')),
@@ -16,6 +27,7 @@ urlpatterns = [
     path('reports/', include('apps.reports.urls', namespace='reports')),
     path('trace/<uuid:token>/', PublicTraceView.as_view(), name='public_trace'),
     path('request-access/', RequestAccessView.as_view(), name='request_access'),
+    path('legal/', include(legal_urls)),
 
     # Authentication
     path('login/', auth_views.LoginView.as_view(), name='login'),
