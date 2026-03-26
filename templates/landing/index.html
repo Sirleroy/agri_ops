@@ -202,6 +202,21 @@
       .eudr-grid { grid-template-columns: 1fr; gap: 40px; }
     }
 
+    /* Bottom 2 intelligence cards — centered on desktop */
+    .bottom-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    @media (min-width: 900px) {
+      .bottom-cards-grid {
+        max-width: calc(50% - 10px);
+        margin-left: auto;
+        margin-right: auto;
+      }
+    }
+
     /* Two-journey grid */
     .journey-grid {
       display: grid;
@@ -560,6 +575,10 @@
         <p style="font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:#f1f5f9;margin-bottom:6px;">Sesame Grade 1</p>
         <p style="font-size:13px;color:#64748b;">1,840 units sold · highest revenue SKU this period</p>
       </div>
+
+    </div>
+
+    <div class="bottom-cards-grid">
 
       <div class="reveal delay-2" style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;position:relative;overflow:hidden;">
         <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#fb923c,transparent);"></div>
