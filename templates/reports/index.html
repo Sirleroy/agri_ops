@@ -83,7 +83,7 @@
       <!-- Filter by date -->
       <div class="py-4 border-t border-border">
         <p class="text-xs font-mono text-slate-400 uppercase tracking-widest mb-3">Filter by Date Range</p>
-        <form method="get" action="{% url 'reports:eudr' %}" class="flex flex-col sm:flex-row sm:items-center gap-2">
+        <form method="get" action="{% url 'reports:eudr' %}" class="flex flex-col sm:flex-row sm:items-center gap-2" data-download>
           <input type="date" name="from" style="width:auto"
                  class="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
           <span class="text-xs text-slate-600 hidden sm:inline">to</span>
@@ -108,7 +108,7 @@
           Required for per-contract EU due diligence submissions.
         </p>
         {% if customers %}
-        <form method="get" action="{% url 'reports:eudr' %}" class="flex flex-col sm:flex-row sm:items-center gap-2">
+        <form method="get" action="{% url 'reports:eudr' %}" class="flex flex-col sm:flex-row sm:items-center gap-2" data-download>
           <select name="customer" style="width:auto"
                   class="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
             <option value="">Select buyer…</option>
@@ -134,7 +134,7 @@
       <div class="py-4 border-t border-border">
         <p class="text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">Filter by Sales Order</p>
         <p class="text-xs text-slate-600 mb-3">Single-transaction report — for one specific order reference.</p>
-        <form method="get" action="{% url 'reports:eudr' %}" class="flex flex-col sm:flex-row sm:items-center gap-2">
+        <form method="get" action="{% url 'reports:eudr' %}" class="flex flex-col sm:flex-row sm:items-center gap-2" data-download>
           <input type="text" name="order" placeholder="e.g. SO-00023" style="width:auto"
                  class="flex-1 sm:max-w-[11rem] bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
           <button type="submit"
@@ -200,7 +200,7 @@
             <p class="text-xs text-slate-500 mt-0.5">PO volume, received count, and delivery rate per supplier</p>
           </div>
         </div>
-        <form method="get" action="{% url 'reports:ops' %}" class="space-y-3">
+        <form method="get" action="{% url 'reports:ops' %}" class="space-y-3" data-download>
           <input type="hidden" name="type" value="suppliers">
           <div class="flex items-center gap-2">
             <input type="date" name="from"
@@ -234,7 +234,7 @@
             <p class="text-xs text-slate-500 mt-0.5">All sales orders with customer, status, and total value</p>
           </div>
         </div>
-        <form method="get" action="{% url 'reports:ops' %}" class="space-y-3">
+        <form method="get" action="{% url 'reports:ops' %}" class="space-y-3" data-download>
           <input type="hidden" name="type" value="sales">
           <div class="flex items-center gap-2">
             <input type="date" name="from"
@@ -268,7 +268,7 @@
             <p class="text-xs text-slate-500 mt-0.5">Current stock levels, lot numbers, quality grades, and low-stock flags</p>
           </div>
         </div>
-        <form method="get" action="{% url 'reports:ops' %}" class="space-y-3">
+        <form method="get" action="{% url 'reports:ops' %}" class="space-y-3" data-download>
           <input type="hidden" name="type" value="inventory">
           <p class="text-xs text-slate-600">Point-in-time snapshot — date filter not applicable</p>
           <button type="submit"
@@ -296,7 +296,7 @@
             <p class="text-xs text-slate-500 mt-0.5">All POs with supplier, status, expected delivery, and value</p>
           </div>
         </div>
-        <form method="get" action="{% url 'reports:ops' %}" class="space-y-3">
+        <form method="get" action="{% url 'reports:ops' %}" class="space-y-3" data-download>
           <input type="hidden" name="type" value="purchase-orders">
           <div class="flex items-center gap-2">
             <input type="date" name="from"
@@ -333,7 +333,7 @@
             </p>
           </div>
         </div>
-        <form method="get" action="{% url 'reports:ops' %}">
+        <form method="get" action="{% url 'reports:ops' %}" data-download>
           <input type="hidden" name="type" value="farms">
           <button type="submit"
                   class="flex items-center gap-2 bg-surface border border-border hover:border-purple-400 text-xs text-slate-300 hover:text-purple-300 px-5 py-2 rounded-lg transition-colors font-mono">

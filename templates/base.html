@@ -444,14 +444,42 @@
   <script>
     /* Form submit loading state */
     document.addEventListener('submit', function (e) {
-      const btn = e.target.querySelector('button[type="submit"]:not([data-no-loading])');
-      if (btn) {
-        btn.disabled = true;
-        btn.innerHTML =
-          '<svg class="w-4 h-4 animate-spin inline mr-2" fill="none" viewBox="0 0 24 24">' +
-          '<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>' +
-          '<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 22 6.477 22 12h-4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.568 3 7.197l3-2.647z"></path>' +
-          '</svg>Saving…';
+      var form = e.target;
+      var btn = form.querySelector('button[type="submit"]:not([data-no-loading])');
+      if (!btn) return;
+
+      var isDownload = form.hasAttribute('data-download');
+      var label = isDownload ? 'Generating\u2026' : 'Saving\u2026';
+
+      /* Build spinner node */
+      var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('class', 'w-4 h-4 animate-spin inline mr-2');
+      svg.setAttribute('fill', 'none');
+      svg.setAttribute('viewBox', '0 0 24 24');
+      var circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('class', 'opacity-25');
+      circle.setAttribute('cx', '12'); circle.setAttribute('cy', '12');
+      circle.setAttribute('r', '10'); circle.setAttribute('stroke', 'currentColor');
+      circle.setAttribute('stroke-width', '4');
+      var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('class', 'opacity-75');
+      path.setAttribute('fill', 'currentColor');
+      path.setAttribute('d', 'M4 12a8 8 0 018-8V0C5.373 0 22 6.477 22 12h-4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.568 3 7.197l3-2.647z');
+      svg.appendChild(circle);
+      svg.appendChild(path);
+
+      /* Stash original content, replace with spinner + label */
+      btn.dataset.originalHtml = btn.textContent.trim();
+      btn.disabled = true;
+      btn.textContent = label;
+      btn.prepend(svg);
+
+      if (isDownload) {
+        /* Reset after 5s so button stays usable */
+        setTimeout(function () {
+          btn.disabled = false;
+          btn.textContent = btn.dataset.originalHtml;
+        }, 5000);
       }
     });
 

@@ -294,7 +294,7 @@
   </div>
   <div class="border-t border-border pt-4">
     <p class="text-xs font-mono text-slate-600 mb-2">Filter by date:</p>
-    <form method="get" action="{% url 'reports:eudr' %}" class="flex flex-col sm:flex-row sm:items-center gap-2">
+    <form method="get" action="{% url 'reports:eudr' %}" class="flex flex-col sm:flex-row sm:items-center gap-2" data-download>
       <input type="date" name="from" style="width:auto"
              class="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
       <span class="text-xs text-slate-600 hidden sm:inline">to</span>
