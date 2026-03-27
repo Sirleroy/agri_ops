@@ -172,7 +172,6 @@ def generate_compliance_report(company, user, filters=None):
         ("City / Region", company.city or "—"),
         ("Contact Email", company.email or "—"),
         ("Contact Phone", company.phone or "—"),
-        ("Plan Tier", company.get_plan_tier_display()),
         ("Report Date", date.today().strftime("%d %B %Y")),
     ]))
 
