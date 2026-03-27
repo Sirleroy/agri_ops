@@ -46,8 +46,12 @@
         </dd>
       </div>
       <div>
-        <dt class="text-xs text-slate-500 font-mono mb-1">Farmer Name</dt>
-        <dd class="text-slate-100">{{ farm.farmer_name|default:"—" }}</dd>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Farmer</dt>
+        <dd class="text-slate-100">
+          {% if farm.farmer %}
+            <a href="{% url 'suppliers:farmer_detail' farm.farmer.pk %}" class="hover:text-green transition-colors">{{ farm.farmer.name }}</a>
+          {% else %}—{% endif %}
+        </dd>
       </div>
       <div>
         <dt class="text-xs text-slate-500 font-mono mb-1">Commodity</dt>
@@ -150,7 +154,7 @@
       };
 
       const farmName = "{{ farm.name|escapejs }}";
-      const farmerName = "{{ farm.farmer_name|default:""|escapejs }}";
+      const farmerName = "{{ farm.farmer.name|default:""|escapejs }}";
       const commodity = "{{ farm.commodity|escapejs }}";
       const area = "{{ farm.area_hectares|default:"—"|escapejs }}";
 

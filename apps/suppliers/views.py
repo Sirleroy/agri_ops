@@ -189,7 +189,7 @@ class FarmDetailView(StaffRequiredMixin, DetailView):
 class FarmCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = Farm
     template_name = 'suppliers/farms/form.html'
-    fields = ['supplier', 'name', 'farmer_name', 'country', 'state_region',
+    fields = ['supplier', 'name', 'farmer', 'country', 'state_region',
               'commodity', 'area_hectares', 'harvest_year',
               'deforestation_risk_status', 'deforestation_reference_date', 'land_cleared_after_cutoff',
               'mapping_date', 'mapped_by', 'geolocation']
@@ -201,11 +201,12 @@ class FarmCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, Crea
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
-        # Scope supplier dropdown to current company only
         form.fields['supplier'].queryset = Supplier.objects.filter(
             company=self.request.user.company
         )
-        # Scope mapped_by to current company only
+        form.fields['farmer'].queryset = Farmer.objects.filter(
+            company=self.request.user.company
+        )
         from apps.users.models import CustomUser
         form.fields['mapped_by'].queryset = CustomUser.objects.filter(
             company=self.request.user.company
@@ -216,7 +217,7 @@ class FarmCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, Crea
 class FarmUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = Farm
     template_name = 'suppliers/farms/form.html'
-    fields = ['supplier', 'name', 'farmer_name', 'country', 'state_region',
+    fields = ['supplier', 'name', 'farmer', 'country', 'state_region',
               'commodity', 'area_hectares', 'harvest_year',
               'deforestation_risk_status', 'deforestation_reference_date', 'land_cleared_after_cutoff',
               'mapping_date', 'mapped_by', 'geolocation',
@@ -233,6 +234,9 @@ class FarmUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, Upda
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         form.fields['supplier'].queryset = Supplier.objects.filter(
+            company=self.request.user.company
+        )
+        form.fields['farmer'].queryset = Farmer.objects.filter(
             company=self.request.user.company
         )
         from apps.users.models import CustomUser
