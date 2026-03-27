@@ -10,6 +10,24 @@ EUDR_COMMODITIES = {
 }
 
 
+class Farmer(models.Model):
+    company    = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='farmers')
+    name       = models.CharField(max_length=255)
+    phone      = models.CharField(max_length=20, blank=True)
+    village    = models.CharField(max_length=100, blank=True)
+    lga        = models.CharField(max_length=100, blank=True, verbose_name="LGA")
+    nin        = models.CharField(max_length=20, blank=True, verbose_name="NIN",
+                                  help_text="National Identification Number")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
 class Supplier(models.Model):
     CATEGORY_CHOICES = [
         ('seeds', 'Seeds'),
@@ -60,6 +78,7 @@ class Farm(models.Model):
     company        = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='farms')
     supplier       = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='farms')
     name           = models.CharField(max_length=255)
+    farmer         = models.ForeignKey(Farmer, null=True, blank=True, on_delete=models.SET_NULL, related_name='farms')
     farmer_name    = models.CharField(max_length=255, blank=True)
     geolocation    = models.JSONField(
                        null=True, blank=True,

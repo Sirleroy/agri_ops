@@ -186,9 +186,14 @@
         <div class="px-2">
           <p x-show="sidebarOpen || mobileOpen" class="px-3 pt-3 pb-1 text-xs font-mono tracking-widest text-slate-600 uppercase">Procurement</p>
           <a href="{% url 'suppliers:list' %}"
-             class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all text-sm font-medium relative {% if request.resolver_match.namespace == 'suppliers' %}nav-active{% endif %}">
+             class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all text-sm font-medium relative {% if request.resolver_match.url_name in 'list,detail,create,update,delete' and request.resolver_match.namespace == 'suppliers' %}nav-active{% endif %}">
             <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/></svg>
             <span x-show="sidebarOpen || mobileOpen" x-transition.opacity>Suppliers</span>
+          </a>
+          <a href="{% url 'suppliers:farmer_list' %}"
+             class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all text-sm font-medium relative {% if request.resolver_match.url_name == 'farmer_list' or request.resolver_match.url_name == 'farmer_detail' %}nav-active{% endif %}">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            <span x-show="sidebarOpen || mobileOpen" x-transition.opacity>Farmers</span>
           </a>
           <a href="{% url 'suppliers:farm_list' %}"
              class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all text-sm font-medium relative {% if request.resolver_match.url_name == 'farm_list' or request.resolver_match.url_name == 'farm_detail' %}nav-active{% endif %}">

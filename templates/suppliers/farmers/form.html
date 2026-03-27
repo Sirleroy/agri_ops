@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}{% if form.instance.pk %}Edit Farmer{% else %}New Farmer{% endif %} — AgriOps{% endblock %}
+{% block page_title %}{% if form.instance.pk %}Edit Farmer{% else %}New Farmer{% endif %}{% endblock %}
+{% block content %}
+
+<div class="max-w-2xl">
+  <div class="bg-card border border-border rounded-xl p-6">
+
+    <form method="post">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="mb-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20">
+          {% for error in form.non_field_errors %}
+            <p class="text-sm text-red-400 font-mono">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Identity</p>
+      <div class="grid grid-cols-2 gap-4 mb-6">
+
+        <!-- Name spans full width -->
+        <div class="col-span-2">
+          <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">Full Name *</label>
+          <div class="[&>input]:w-full [&>input]:bg-surface [&>input]:border [&>input]:border-border [&>input]:rounded-lg [&>input]:px-4 [&>input]:py-3 [&>input]:text-sm [&>input]:text-slate-100 [&>input]:outline-none [&>input]:placeholder-slate-600">
+            {{ form.name }}
+          </div>
+          {% if form.name.errors %}<p class="mt-1 text-xs font-mono text-red-400">{{ form.name.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">Phone</label>
+          <div class="[&>input]:w-full [&>input]:bg-surface [&>input]:border [&>input]:border-border [&>input]:rounded-lg [&>input]:px-4 [&>input]:py-3 [&>input]:text-sm [&>input]:text-slate-100 [&>input]:outline-none [&>input]:placeholder-slate-600">
+            {{ form.phone }}
+          </div>
+          {% if form.phone.errors %}<p class="mt-1 text-xs font-mono text-red-400">{{ form.phone.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">NIN</label>
+          <div class="[&>input]:w-full [&>input]:bg-surface [&>input]:border [&>input]:border-border [&>input]:rounded-lg [&>input]:px-4 [&>input]:py-3 [&>input]:text-sm [&>input]:text-slate-100 [&>input]:outline-none [&>input]:placeholder-slate-600 font-mono">
+            {{ form.nin }}
+          </div>
+          {% if form.nin.errors %}<p class="mt-1 text-xs font-mono text-red-400">{{ form.nin.errors.0 }}</p>{% endif %}
+        </div>
+
+      </div>
+
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4 pt-4 border-t border-border">Location</p>
+      <div class="grid grid-cols-2 gap-4 mb-6">
+
+        <div>
+          <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">Village</label>
+          <div class="[&>input]:w-full [&>input]:bg-surface [&>input]:border [&>input]:border-border [&>input]:rounded-lg [&>input]:px-4 [&>input]:py-3 [&>input]:text-sm [&>input]:text-slate-100 [&>input]:outline-none [&>input]:placeholder-slate-600">
+            {{ form.village }}
+          </div>
+          {% if form.village.errors %}<p class="mt-1 text-xs font-mono text-red-400">{{ form.village.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">LGA</label>
+          <div class="[&>input]:w-full [&>input]:bg-surface [&>input]:border [&>input]:border-border [&>input]:rounded-lg [&>input]:px-4 [&>input]:py-3 [&>input]:text-sm [&>input]:text-slate-100 [&>input]:outline-none [&>input]:placeholder-slate-600">
+            {{ form.lga }}
+          </div>
+          {% if form.lga.errors %}<p class="mt-1 text-xs font-mono text-red-400">{{ form.lga.errors.0 }}</p>{% endif %}
+        </div>
+
+      </div>
+
+      <div class="flex gap-3 pt-4 border-t border-border">
+        <button type="submit"
+          class="flex-1 bg-green hover:bg-green-dim text-bg font-bold text-sm py-3 rounded-lg transition-colors">
+          {% if form.instance.pk %}Save Changes{% else %}Register Farmer{% endif %}
+        </button>
+        <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}{% url 'suppliers:farmer_list' %}{% endif %}"
+          class="flex-1 text-center border border-border text-slate-400 hover:text-slate-100 text-sm py-3 rounded-lg transition-colors">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,9 +1,80 @@
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404
-from .models import Supplier, Farm, FarmCertification
+from .models import Supplier, Farm, FarmCertification, Farmer
 from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin, OtherRevealMixin
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
+
+
+# ─────────────────────────────────────
+# FARMER VIEWS
+# ─────────────────────────────────────
+
+class FarmerListView(StaffRequiredMixin, ListView):
+    model = Farmer
+    template_name = 'suppliers/farmers/list.html'
+    context_object_name = 'farmers'
+    paginate_by = 50
+
+    def get_queryset(self):
+        return Farmer.objects.filter(company=self.request.user.company)
+
+
+class FarmerDetailView(StaffRequiredMixin, DetailView):
+    model = Farmer
+    template_name = 'suppliers/farmers/detail.html'
+    context_object_name = 'farmer'
+
+    def get_object(self):
+        obj = super().get_object()
+        if obj.company != self.request.user.company:
+            from django.http import Http404
+            raise Http404
+        return obj
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['farms'] = self.object.farms.filter(
+            company=self.request.user.company
+        ).select_related('supplier').order_by('name')
+        return context
+
+
+class FarmerCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
+    model = Farmer
+    template_name = 'suppliers/farmers/form.html'
+    fields = ['name', 'phone', 'village', 'lga', 'nin']
+    success_url = reverse_lazy('suppliers:farmer_list')
+
+    def form_valid(self, form):
+        form.instance.company = self.request.user.company
+        return super().form_valid(form)
+
+
+class FarmerUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
+    model = Farmer
+    template_name = 'suppliers/farmers/form.html'
+    fields = ['name', 'phone', 'village', 'lga', 'nin']
+    success_url = reverse_lazy('suppliers:farmer_list')
+
+    def get_object(self):
+        obj = super().get_object()
+        if obj.company != self.request.user.company:
+            from django.http import Http404
+            raise Http404
+        return obj
+
+
+class FarmerDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
+    model = Farmer
+    success_url = reverse_lazy('suppliers:farmer_list')
+
+    def get_object(self):
+        obj = super().get_object()
+        if obj.company != self.request.user.company:
+            from django.http import Http404
+            raise Http404
+        return obj
 
 
 # ─────────────────────────────────────

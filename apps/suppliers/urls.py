@@ -4,6 +4,13 @@ from . import views
 app_name = 'suppliers'
 
 urlpatterns = [
+    # Farmers
+    path('farmers/', views.FarmerListView.as_view(), name='farmer_list'),
+    path('farmers/new/', views.FarmerCreateView.as_view(), name='farmer_create'),
+    path('farmers/<int:pk>/', views.FarmerDetailView.as_view(), name='farmer_detail'),
+    path('farmers/<int:pk>/edit/', views.FarmerUpdateView.as_view(), name='farmer_update'),
+    path('farmers/<int:pk>/delete/', views.FarmerDeleteView.as_view(), name='farmer_delete'),
+
     # Suppliers
     path('', views.SupplierListView.as_view(), name='list'),
     path('new/', views.SupplierCreateView.as_view(), name='create'),
