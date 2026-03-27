@@ -60,6 +60,20 @@
     </div>
   </div>
 
+  {% if linked_batch %}
+  <a href="{% url 'sales_orders:batch_certificate' linked_batch.pk %}"
+     class="flex items-center justify-between w-full bg-green/10 border border-green/30 hover:bg-green/20 rounded-xl px-5 py-4 transition-colors group">
+    <div class="flex items-center gap-3">
+      <svg class="w-5 h-5 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <div>
+        <p class="text-sm font-bold text-green">Download EUDR Certificate</p>
+        <p class="text-xs text-green/70 font-mono">Batch {{ linked_batch.batch_number }} · {{ linked_batch.farms.count }} farm{{ linked_batch.farms.count|pluralize }} linked</p>
+      </div>
+    </div>
+    <svg class="w-4 h-4 text-green/60 group-hover:text-green transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+  </a>
+  {% endif %}
+
   <div class="bg-card border border-border rounded-xl overflow-x-auto">
     <div class="px-5 py-3 border-b border-border bg-white/[0.02]">
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Line Items</p>
@@ -95,6 +109,51 @@
         {% endfor %}
       </tbody>
     </table>
+  </div>
+
+  <!-- Farm Traceability -->
+  <div class="bg-card border border-border rounded-xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Farm Traceability</p>
+        <p class="text-xs text-slate-600 mt-1">Link the farms that supplied this order for EUDR compliance</p>
+      </div>
+      {% if linked_batch %}
+      <span class="px-2 py-1 rounded text-xs font-mono bg-green/10 text-green border border-green/20">{{ linked_batch.farms.count }} farm{{ linked_batch.farms.count|pluralize }} linked</span>
+      {% endif %}
+    </div>
+
+    <form method="post" action="{% url 'sales_orders:link_farms' order.pk %}">
+      {% csrf_token %}
+      <div class="space-y-2 mb-4 max-h-64 overflow-y-auto pr-1">
+        {% for farm in available_farms %}
+        <label class="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-transparent hover:border-border hover:bg-white/[0.02] cursor-pointer transition-colors">
+          <input type="checkbox" name="farm_pks" value="{{ farm.pk }}"
+            {% if linked_batch and farm in linked_batch.farms.all %}checked{% endif %}
+            class="w-4 h-4 accent-green rounded">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-slate-200 font-medium truncate">{{ farm.name }}</p>
+            <p class="text-xs text-slate-500 font-mono">{{ farm.supplier.name }} · {{ farm.commodity }}{% if farm.area_hectares %} · {{ farm.area_hectares }} ha{% endif %}</p>
+          </div>
+          {% if farm.compliance_status == 'compliant' %}
+            <span class="text-xs font-mono text-green flex-shrink-0">✓ Verified</span>
+          {% elif farm.compliance_status == 'disqualified' %}
+            <span class="text-xs font-mono text-red-400 flex-shrink-0">Disqualified</span>
+          {% else %}
+            <span class="text-xs font-mono text-slate-500 flex-shrink-0">Pending</span>
+          {% endif %}
+        </label>
+        {% empty %}
+        <p class="text-sm text-slate-500 py-4 text-center">No farms registered yet. <a href="{% url 'suppliers:farm_create' %}" class="text-green hover:text-green-dim transition-colors">Add a farm →</a></p>
+        {% endfor %}
+      </div>
+      {% if available_farms %}
+      <button type="submit"
+        class="w-full bg-green hover:bg-green-dim text-bg font-bold text-sm py-2.5 rounded-lg transition-colors">
+        {% if linked_batch %}Update Linked Farms{% else %}Link Farms to This Order{% endif %}
+      </button>
+      {% endif %}
+    </form>
   </div>
 
 </div>
