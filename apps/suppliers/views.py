@@ -201,6 +201,7 @@ class FarmCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, Crea
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
+        form.fields['name'].label = 'Farm / Plot Name'
         form.fields['supplier'].queryset = Supplier.objects.filter(
             company=self.request.user.company
         )
@@ -233,6 +234,7 @@ class FarmUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, Upda
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
+        form.fields['name'].label = 'Farm / Plot Name'
         form.fields['supplier'].queryset = Supplier.objects.filter(
             company=self.request.user.company
         )
