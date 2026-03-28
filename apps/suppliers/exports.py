@@ -85,6 +85,7 @@ def _doc_header(company, title, subtitle, st):
         ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
         ("LEFTPADDING", (0, 0), (-1, -1), 0),
         ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING", (0, 1), (0, 1), 5),  # space below title to clear subtitle
     ]))
 
     right_text = (
@@ -323,7 +324,7 @@ def farm_registry_pdf(company):
                 farm.verification_expiry.strftime("%d %b %Y") if farm.verification_expiry else "—",
             ])
 
-        col_widths = [48*mm, 32*mm, 38*mm, 24*mm, 16*mm, 38*mm, 22*mm, 22*mm]
+        col_widths = [40*mm, 32*mm, 38*mm, 24*mm, 16*mm, 38*mm, 30*mm, 22*mm]
         t = Table(data, colWidths=col_widths, repeatRows=1)
         style = _table_style(len(col_widths))
 
