@@ -331,7 +331,7 @@ class PublicTraceView(View):
           <th>Supplier</th>
           <th>Location</th>
           <th>Area</th>
-          <th>EUDR Status</th>
+          <th>Compliance Status</th>
         </tr>
       </thead>
       <tbody>

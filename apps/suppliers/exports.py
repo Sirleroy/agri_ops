@@ -234,7 +234,7 @@ def farm_registry_csv(company):
     writer.writerow([
         'Farm / Plot Name', 'Farmer', 'Supplier', 'Commodity',
         'Area (ha)', 'Country', 'State / Region',
-        'Deforestation Risk', 'EUDR Status', 'Verification Expiry',
+        'Deforestation Risk', 'Compliance Status', 'Verification Expiry',
         'Harvest Year', 'Mapping Date',
     ])
 
@@ -309,7 +309,7 @@ def farm_registry_pdf(company):
     if farms.exists():
         data = [[
             "Farm / Plot Name", "Farmer", "Supplier", "Commodity",
-            "Area (ha)", "Country / State", "EUDR Status", "Expiry"
+            "Area (ha)", "Country / State", "Compliance Status", "Expiry"
         ]]
         for farm in farms:
             data.append([
