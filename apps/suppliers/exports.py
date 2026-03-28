@@ -37,7 +37,7 @@ def _styles():
         "brand": ParagraphStyle("brand", fontName="Helvetica-Bold", fontSize=9,
                                 textColor=GREEN),
         "title": ParagraphStyle("title", fontName="Helvetica-Bold", fontSize=18,
-                                textColor=DARK, spaceAfter=1*mm),
+                                textColor=DARK, spaceBefore=2*mm, spaceAfter=3*mm),
         "subtitle": ParagraphStyle("subtitle", fontName="Helvetica", fontSize=9,
                                    textColor=SLATE_500, spaceAfter=5*mm),
         "meta": ParagraphStyle("meta", fontName="Helvetica", fontSize=8,
@@ -82,7 +82,7 @@ def _doc_header(company, title, subtitle, st):
     left_t = Table(left_rows, colWidths=[118*mm])
     left_t.setStyle(TableStyle([
         ("TOPPADDING", (0, 0), (-1, -1), 0),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
         ("LEFTPADDING", (0, 0), (-1, -1), 0),
         ("RIGHTPADDING", (0, 0), (-1, -1), 0),
     ]))
