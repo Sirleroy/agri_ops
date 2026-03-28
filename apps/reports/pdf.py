@@ -76,6 +76,7 @@ def _header_table(company, generated_by, st):
         ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
         ("LEFTPADDING", (0, 0), (-1, -1), 0),
         ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING", (0, 1), (0, 1), 9),  # space below title to clear subtitle
     ]))
 
     right_text = (
