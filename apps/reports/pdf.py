@@ -64,22 +64,34 @@ def _styles():
 
 def _header_table(company, generated_by, st):
     """Top header — company name + report metadata."""
-    left = [
-        Paragraph("AGRIOPS", ParagraphStyle("ag", fontName="Helvetica-Bold",
-                  fontSize=9, textColor=GREEN)),
-        Paragraph("EUDR Compliance Report", st["title"]),
-        Paragraph(f"Operator: {company.name}  ·  {company.city}, {company.country}", st["subtitle"]),
+    left_rows = [
+        [Paragraph("AGRIOPS", ParagraphStyle("ag", fontName="Helvetica-Bold",
+                   fontSize=9, textColor=GREEN))],
+        [Paragraph("EUDR Compliance Report", st["title"])],
+        [Paragraph(f"Operator: {company.name}  ·  {company.city}, {company.country}", st["subtitle"])],
     ]
-    right = [
-        Paragraph(f"Generated: {date.today().strftime('%d %B %Y')}", st["small"]),
-        Paragraph(f"By: {generated_by}", st["small"]),
-        Paragraph("CONFIDENTIAL", ParagraphStyle("conf", fontName="Helvetica-Bold",
-                  fontSize=8, textColor=RED)),
-    ]
-    t = Table([[left, right]], colWidths=[120*mm, 60*mm])
+    left_t = Table(left_rows, colWidths=[118*mm])
+    left_t.setStyle(TableStyle([
+        ("TOPPADDING", (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+    ]))
+
+    right_text = (
+        f"Generated: {date.today().strftime('%d %B %Y')}<br/>"
+        f"By: {generated_by}<br/>"
+        f"<b>CONFIDENTIAL</b>"
+    )
+    right_para = Paragraph(
+        right_text,
+        ParagraphStyle("conf_r", fontName="Helvetica", fontSize=8,
+                       textColor=SLATE_500, alignment=TA_RIGHT)
+    )
+
+    t = Table([[left_t, right_para]], colWidths=[120*mm, 60*mm])
     t.setStyle(TableStyle([
-        ("VALIGN", (0,0), (-1,-1), "TOP"),
-        ("ALIGN", (1,0), (1,0), "RIGHT"),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
     ]))
     return t
 

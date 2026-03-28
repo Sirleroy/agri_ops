@@ -72,22 +72,35 @@ def _page_footer_landscape(canvas, doc):
 
 def _doc_header(company, title, subtitle, st):
     """Standard AgriOps branded header block."""
-    left = [
-        Paragraph("AGRIOPS", st["brand"]),
-        Paragraph(title, st["title"]),
-        Paragraph(subtitle, st["subtitle"]),
+    # Use a nested single-column table for the left side to avoid
+    # ReportLab's unreliable list-in-cell rendering.
+    left_rows = [
+        [Paragraph("AGRIOPS", st["brand"])],
+        [Paragraph(title, st["title"])],
+        [Paragraph(subtitle, st["subtitle"])],
     ]
+    left_t = Table(left_rows, colWidths=[118*mm])
+    left_t.setStyle(TableStyle([
+        ("TOPPADDING", (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+    ]))
+
     right_text = (
         f"Company: {company.name}<br/>"
         f"Generated: {date.today().strftime('%d %B %Y')}<br/>"
-        f"CONFIDENTIAL"
+        f"<b>CONFIDENTIAL</b>"
     )
-    right = [Paragraph(right_text, st["meta"])]
+    right_para = Paragraph(
+        right_text,
+        ParagraphStyle("meta_r", fontName="Helvetica", fontSize=8,
+                       textColor=SLATE_500, alignment=TA_RIGHT)
+    )
 
-    t = Table([[left, right]], colWidths=[120*mm, 55*mm])
+    t = Table([[left_t, right_para]], colWidths=[120*mm, 55*mm])
     t.setStyle(TableStyle([
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("ALIGN", (1, 0), (1, 0), "RIGHT"),
     ]))
     return t
 
