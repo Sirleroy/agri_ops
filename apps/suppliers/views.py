@@ -3,6 +3,7 @@ from django.views import View
 from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404
 from .models import Supplier, Farm, FarmCertification, Farmer
+from .forms import FarmerForm, FarmForm, FarmUpdateForm
 from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin, OtherRevealMixin
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 
@@ -44,8 +45,13 @@ class FarmerDetailView(StaffRequiredMixin, DetailView):
 class FarmerCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = Farmer
     template_name = 'suppliers/farmers/form.html'
-    fields = ['name', 'phone', 'village', 'lga', 'nin']
+    form_class = FarmerForm
     success_url = reverse_lazy('suppliers:farmer_list')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['company'] = self.request.user.company
+        return kwargs
 
     def form_valid(self, form):
         form.instance.company = self.request.user.company
@@ -55,7 +61,7 @@ class FarmerCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
 class FarmerUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = Farmer
     template_name = 'suppliers/farmers/form.html'
-    fields = ['name', 'phone', 'village', 'lga', 'nin']
+    form_class = FarmerForm
     success_url = reverse_lazy('suppliers:farmer_list')
 
     def get_object(self):
@@ -64,6 +70,11 @@ class FarmerUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
             from django.http import Http404
             raise Http404
         return obj
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['company'] = self.request.user.company
+        return kwargs
 
 
 class FarmerExportView(StaffRequiredMixin, View):
@@ -210,40 +221,23 @@ class FarmDetailView(StaffRequiredMixin, DetailView):
 class FarmCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = Farm
     template_name = 'suppliers/farms/form.html'
-    fields = ['supplier', 'name', 'farmer', 'country', 'state_region',
-              'commodity', 'area_hectares', 'harvest_year',
-              'deforestation_risk_status', 'deforestation_reference_date', 'land_cleared_after_cutoff',
-              'mapping_date', 'mapped_by', 'geolocation']
+    form_class = FarmForm
     success_url = reverse_lazy('suppliers:farm_list')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['company'] = self.request.user.company
+        return kwargs
 
     def form_valid(self, form):
         form.instance.company = self.request.user.company
         return super().form_valid(form)
 
-    def get_form(self, form_class=None):
-        form = super().get_form(form_class)
-        form.fields['name'].label = 'Farm / Plot Name'
-        form.fields['supplier'].queryset = Supplier.objects.filter(
-            company=self.request.user.company
-        )
-        form.fields['farmer'].queryset = Farmer.objects.filter(
-            company=self.request.user.company
-        )
-        from apps.users.models import CustomUser
-        form.fields['mapped_by'].queryset = CustomUser.objects.filter(
-            company=self.request.user.company
-        )
-        return form
-
 
 class FarmUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = Farm
     template_name = 'suppliers/farms/form.html'
-    fields = ['supplier', 'name', 'farmer', 'country', 'state_region',
-              'commodity', 'area_hectares', 'harvest_year',
-              'deforestation_risk_status', 'deforestation_reference_date', 'land_cleared_after_cutoff',
-              'mapping_date', 'mapped_by', 'geolocation',
-              'is_eudr_verified', 'verified_by', 'verified_date', 'verification_expiry']
+    form_class = FarmUpdateForm
     success_url = reverse_lazy('suppliers:farm_list')
 
     def get_object(self):
@@ -253,23 +247,10 @@ class FarmUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, Upda
             raise Http404
         return obj
 
-    def get_form(self, form_class=None):
-        form = super().get_form(form_class)
-        form.fields['name'].label = 'Farm / Plot Name'
-        form.fields['supplier'].queryset = Supplier.objects.filter(
-            company=self.request.user.company
-        )
-        form.fields['farmer'].queryset = Farmer.objects.filter(
-            company=self.request.user.company
-        )
-        from apps.users.models import CustomUser
-        form.fields['mapped_by'].queryset = CustomUser.objects.filter(
-            company=self.request.user.company
-        )
-        form.fields['verified_by'].queryset = CustomUser.objects.filter(
-            company=self.request.user.company
-        )
-        return form
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['company'] = self.request.user.company
+        return kwargs
 
 
 class FarmDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
