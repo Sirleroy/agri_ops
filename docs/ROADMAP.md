@@ -47,36 +47,42 @@ Session authentication, JWT API, role-based access control (system_role + job_ti
 
 ---
 
-## Phase 4.5 — Compliance Infrastructure 🔄 In Progress
-Required before Phase 5. Two gap analyses completed against EU and Nigerian export regulations.
+## Phase 4.5 — Compliance Infrastructure ✅ Complete
+Two gap analyses completed against EU and Nigerian export regulations. All gaps closed.
 
 ### EUDR Gaps — closed March 2026
-Gaps identified against Article 9 of EU Regulation 2023/1115. See [eudr-compliance-gaps.md](eudr-compliance-gaps.md).
-
-- Farm: `deforestation_reference_date` (default 2020-12-31) + `land_cleared_after_cutoff` flag — HIGH ✅
-- Farm: `harvest_year` — production period proxy per Article 9(1)(d) — MEDIUM ✅
-- Product: `hs_code` for due diligence statement — MEDIUM ✅
-- Batch: `quantity_kg` (net mass in kg, operator-confirmed) — MEDIUM ✅
-- EUDR commodity scope — `EUDR_COMMODITIES` lookup set, `is_eudr_commodity` + `is_disqualified` properties on Farm — MEDIUM ✅
-- Certificate PDF: supplier chain section, harvest year + reference date columns — LOW-MEDIUM ✅
-- Batch: `is_locked` flag + delete guard (5-year retention) — LOW ✅
-- Nigeria risk classification — check EU country list, surface in EUDR report header — MONITORING
+- Farm: `deforestation_reference_date` (default 2020-12-31) + `land_cleared_after_cutoff` flag ✅
+- Farm: `harvest_year` — production period proxy per Article 9(1)(d) ✅
+- Product: `hs_code` for due diligence statement ✅
+- Batch: `quantity_kg` (net mass in kg, operator-confirmed) ✅
+- EUDR commodity scope — `EUDR_COMMODITIES` lookup set, `is_eudr_commodity` + `is_disqualified` properties on Farm ✅
+- Certificate PDF: supplier chain section, harvest year + reference date columns ✅
+- Batch: `is_locked` flag + delete guard (5-year retention) ✅
+- Nigeria risk classification — MONITORING
 
 ### Export Compliance Gaps — closed March 2026
-Gaps identified against Nigerian export law and EU market entry requirements beyond EUDR. See [export-compliance-gaps.md](export-compliance-gaps.md).
+- `PhytosanitaryCertificate` model linked to Batch ✅
+- `BatchQualityTest` model linked to Batch ✅
+- Company: `nepc_registration_number` + `nepc_registration_expiry` ✅
+- SalesOrder: `nxp_reference` + `certificate_of_origin_ref` ✅
+- Product: `nafdac_registration_number` ✅
+- `FarmCertification` model linked to Farm ✅
+- Product: `eu_novel_food_status` + `eu_novel_food_ref` ✅
 
-**High — blocks first commercial shipment:**
-- `PhytosanitaryCertificate` model linked to Batch (NAQS cert number, issuing office, inspector, dates) ✅
-- `BatchQualityTest` model linked to Batch (MRL, aflatoxin, moisture, heavy metals — pass/fail + lab ref) ✅
+---
 
-**Medium:**
-- Company: `nepc_registration_number` + `nepc_registration_expiry` (NEPC exporter registration) ✅
-- SalesOrder: `nxp_reference` (CBN Form NXP) + `certificate_of_origin_ref` (CoO) ✅
-- Product: `nafdac_registration_number` (NAFDAC export notification) ✅
-- `FarmCertification` model linked to Farm (Organic EU, GlobalG.A.P., Fairtrade, Rainforest Alliance, ISCC) ✅
+## Phase 4.6 — UX Simplification & Farmer Registry ✅ Complete
+Shipped March 2026. Driven by live contract execution (soy export, Ake Collective) — all features confirmed against real operational need, not hypothetical users.
 
-**Low:**
-- Product: `eu_novel_food_status` + `eu_novel_food_ref` (baobab novel food approval ref) ✅
+- **Farmer model** — proper farmer registry (name, phone, village, LGA, NIN). Replaces free-text `farmer_name` on Farm with a FK to a structured Farmer record ✅
+- **Farm form** — `farmer` dropdown scoped to tenant, `farmer_name` field retired from UI ✅
+- **PO auto-receipt** — "Mark as Received" button on PO detail automatically stocks inventory for each line item. No separate inventory trip required ✅
+- **Batch embedded in SO flow** — farm linking moved to Sales Order detail page. User selects farms, Batch is created transparently. Batches removed from sidebar nav ✅
+- **EUDR certificate on SO** — download button appears on Sales Order detail once farms are linked ✅
+- **Farmer & Farm registry exports** — CSV and PDF export on both list pages. Branded PDF with AgriOps header, colour-coded EUDR status, page numbers ✅
+- **PDF header fix** — resolved jumbled header rendering across all PDF generators (EUDR report, registry exports) ✅
+
+**Discipline note:** From Phase 4.6 forward, no feature is built until confirmed by field use or direct user feedback. The live soy export contract is the primary signal source.
 
 ---
 
@@ -130,4 +136,4 @@ Trade shows: Biofach, SIAL Paris, Fi Europe.
 
 ---
 
-*Last updated: March 2026*
+*Last updated: 28 March 2026*

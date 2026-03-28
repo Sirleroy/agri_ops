@@ -4,21 +4,21 @@ title: EUDR Compliance Gaps — v1
 ---
 # EUDR Compliance Gaps — v1
 
-Analysis against EU Regulation 2023/1115 (EUDR), Article 9. Identified March 2026.
+Analysis against EU Regulation 2023/1115 (EUDR), Article 9. Identified March 2026. **All gaps closed as of 28 March 2026.**
 
 ---
 
-## Gap Summary
+## Gap Summary — All Closed ✅
 
-| Gap | Priority | Model Change | UI Change |
-|---|---|---|---|
-| Deforestation cut-off date reference | High | Farm: `deforestation_reference_date`, `land_cleared_after_cutoff` | Farm form + certificate PDF |
-| HS code on products | Medium | Product: `hs_code` | Product form + certificate PDF |
-| Quantity in kg on batch | Medium | Batch: `quantity_kg` | Batch form + certificate PDF |
-| Production date range | Medium | Farm: `harvest_year` | Farm form |
-| EUDR commodity scope flag | Medium | None (lookup list in code) | Compliance warnings on batch/farm |
-| Supplier address + email on certificate | Low-Medium | Verify/add to Supplier model | Certificate PDF |
-| 5-year record retention / batch locking | Low | Batch: `is_locked` | Delete guards |
+| Gap | Priority | Status |
+|---|---|---|
+| Deforestation cut-off date reference | High | ✅ Closed |
+| HS code on products | Medium | ✅ Closed |
+| Quantity in kg on batch | Medium | ✅ Closed |
+| Production date range | Medium | ✅ Closed |
+| EUDR commodity scope flag | Medium | ✅ Closed |
+| Supplier address + email on certificate | Low-Medium | ✅ Closed |
+| 5-year record retention / batch locking | Low | ✅ Closed |
 
 ---
 
@@ -97,4 +97,4 @@ Not a platform gap but an operational one. Nigeria's classification was due from
 
 ---
 
-*Identified: March 2026 — Target: Phase 4.5 before Buyer Portal launch*
+*Identified: March 2026 — All gaps closed: 28 March 2026*

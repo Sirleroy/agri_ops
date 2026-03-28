@@ -1,8 +1,8 @@
 # AgriOps — System Overview
 
-**Version:** 2.0
-**Date:** March 2026
-**Status:** Phase 3 Complete
+**Version:** 3.0
+**Date:** 28 March 2026
+**Status:** Phase 4.6 Complete — live contract execution (Ake Collective soy export)
 
 ---
 
@@ -89,16 +89,21 @@ agri_ops/
 |---|---|---|---|
 | Company | companies | Tenant root | — |
 | CustomUser | users | Platform users with RBAC | ✅ |
-| Supplier | suppliers | Trading entities | ✅ |
-| Farm | suppliers | Physical farm plots — EUDR unit | ✅ |
+| Farmer | suppliers | Individual farmer registry — name, phone, village, LGA, NIN | ✅ |
+| Supplier | suppliers | Trading entities and cooperatives | ✅ |
+| Farm | suppliers | Physical farm plots — EUDR compliance unit | ✅ |
+| FarmCertification | suppliers | Farm-level certifications (Organic, GlobalG.A.P., etc.) | ✅ |
 | ComplianceDocument | suppliers | Farm compliance file attachments | ✅ |
 | Product | products | Commodity catalogue | ✅ |
-| Inventory | inventory | Stock levels per product | ✅ |
+| Inventory | inventory | Stock levels — auto-updated on PO receipt | ✅ |
 | PurchaseOrder | purchase_orders | Procurement records | ✅ |
 | PurchaseOrderItem | purchase_orders | Line items | ✅ |
 | SalesOrder | sales_orders | Customer order records | ✅ |
 | SalesOrderItem | sales_orders | Line items | ✅ |
-| AuditLog | audit | Write action history | ✅ |
+| Batch | sales_orders | EUDR traceability — links SO to Farms. Created transparently | ✅ |
+| PhytosanitaryCertificate | sales_orders | NAQS cert linked to Batch | ✅ |
+| BatchQualityTest | sales_orders | Lab quality tests linked to Batch | ✅ |
+| AuditLog | audit | Write action history — all create/update/delete | ✅ |
 
 Full ERD: `/docs/diagrams/erd.dbml`
 Full data model documentation: `/docs/design/data-model.md`
@@ -116,7 +121,7 @@ Full data model documentation: `/docs/design/data-model.md`
 | Manage users | ❌ | ❌ | ❌ | ✅ |
 | Manage company settings | ❌ | ❌ | ❌ | ✅ |
 | View compliance reports | ❌ | ✅ | ✅ | ✅ |
-| Export compliance data | ❌ | ❌ | ✅ | ✅ |
+| Export data (CSV/PDF) | ❌ | ✅ | ✅ | ✅ |
 | Change system_role | ❌ | ❌ | ❌ | ✅ |
 
 All permission checks use `system_role` exclusively. See ADR 002.
@@ -135,17 +140,23 @@ Diagram: `/docs/diagrams/tenant-isolation.mermaid`
 
 ## 7. EUDR Compliance Module
 
-AgriOps includes a dedicated compliance module supporting the EU Deforestation Regulation. The traceability chain runs:
+AgriOps includes a dedicated compliance module supporting the EU Deforestation Regulation. The full traceability chain runs:
 ```
-Company → Supplier → Farm → Product → Inventory → PurchaseOrder → SalesOrder
+Farmer → Farm → Supplier → PurchaseOrder → Inventory → SalesOrderItem → SalesOrder → Batch → EUDR Certificate PDF
 ```
 
 Key compliance data stored per Farm:
 - GeoJSON polygon (farm boundary)
+- Deforestation reference date (must be on or before 31 Dec 2020)
+- Land cleared after cutoff flag (automatic disqualification)
 - Deforestation risk classification
+- Harvest year (production period proxy per Article 9(1)(d))
 - Verification status and expiry
+- Farm certifications (Organic, GlobalG.A.P., Rainforest Alliance, etc.)
 - Compliance documents
 - Audit trail (mapped_by, verified_by)
+
+**Batch** is the EUDR submission unit. It links a Sales Order to the specific farms that supplied the commodity, records net mass in kg, and generates the traceability certificate PDF. Batches are created transparently when a user links farms to a Sales Order — they are not a directly navigable section of the UI.
 
 Full specification: `/docs/design/compliance-module.md`
 
@@ -227,6 +238,10 @@ Full contract: `/docs/design/api-contract.md`
 |---|---|---|
 | 1 | Local prototype — models, CRUD UI, admin | ✅ Complete |
 | 2 | Auth, RBAC, tenant isolation, audit log, EUDR schema, API, security headers | ✅ Complete |
-| 3 | Cloud deployment, CI/CD, closed beta | Planned |
-| 4 | Inventory enhancements, bulk GeoJSON importer, traceability certificates, Stripe, farm maps | Planned |
-| 5 | Buyer portal, market intelligence dashboards, commodity price trends | Planned |
+| 3 | Cloud deployment, CI/CD, closed beta, monitoring | ✅ Complete |
+| 4 | Inventory enhancements, traceability certificates, farm maps, batch QR codes | ✅ Complete |
+| 4.5 | EUDR + export compliance gap closure, phytosanitary certs, quality tests | ✅ Complete |
+| 4.6 | Farmer registry, UX simplification, PO auto-receipt, data exports (CSV/PDF) | ✅ Complete |
+| 5 | Buyer portal — field-triggered, pending first live tenant | 🔄 Planned |
+| 6 | Market intelligence — commodity prices, harvest forecasting | 🔄 Planned |
+| 7 | AI intelligence — Anthropic API, document parsing, compliance narratives | 🔄 Planned |
