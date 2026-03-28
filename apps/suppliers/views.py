@@ -1,4 +1,5 @@
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.views import View
 from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404
 from .models import Supplier, Farm, FarmCertification, Farmer
@@ -63,6 +64,26 @@ class FarmerUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
             from django.http import Http404
             raise Http404
         return obj
+
+
+class FarmerExportView(StaffRequiredMixin, View):
+    def get(self, request):
+        from .exports import farmer_registry_csv, farmer_registry_pdf
+        fmt = request.GET.get('format', 'csv')
+        company = request.user.company
+        if fmt == 'pdf':
+            return farmer_registry_pdf(company)
+        return farmer_registry_csv(company)
+
+
+class FarmExportView(StaffRequiredMixin, View):
+    def get(self, request):
+        from .exports import farm_registry_csv, farm_registry_pdf
+        fmt = request.GET.get('format', 'csv')
+        company = request.user.company
+        if fmt == 'pdf':
+            return farm_registry_pdf(company)
+        return farm_registry_csv(company)
 
 
 class FarmerDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):

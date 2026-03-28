@@ -6,6 +6,7 @@ app_name = 'suppliers'
 urlpatterns = [
     # Farmers
     path('farmers/', views.FarmerListView.as_view(), name='farmer_list'),
+    path('farmers/export/', views.FarmerExportView.as_view(), name='farmer_export'),
     path('farmers/new/', views.FarmerCreateView.as_view(), name='farmer_create'),
     path('farmers/<int:pk>/', views.FarmerDetailView.as_view(), name='farmer_detail'),
     path('farmers/<int:pk>/edit/', views.FarmerUpdateView.as_view(), name='farmer_update'),
@@ -20,6 +21,7 @@ urlpatterns = [
 
     # Farms
     path('farms/', views.FarmListView.as_view(), name='farm_list'),
+    path('farms/export/', views.FarmExportView.as_view(), name='farm_export'),
     path('farms/new/', views.FarmCreateView.as_view(), name='farm_create'),
     path('farms/<int:pk>/', views.FarmDetailView.as_view(), name='farm_detail'),
     path('farms/<int:pk>/edit/', views.FarmUpdateView.as_view(), name='farm_update'),
