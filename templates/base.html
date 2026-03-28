@@ -351,7 +351,7 @@
 
                 {% if notif_expiring_count > 0 %}
                 <div class="px-4 py-2">
-                  <p class="text-xs font-mono text-orange-400 uppercase tracking-widest mb-1">EUDR Expiring · {{ notif_expiring_count }}</p>
+                  <p class="text-xs font-mono text-orange-400 uppercase tracking-widest mb-1">Verification Expiring · {{ notif_expiring_count }}</p>
                   {% for farm in notif_expiring_farms %}
                   <a href="{% url 'suppliers:farm_detail' farm.pk %}" @click="bellOpen = false"
                      class="flex items-center justify-between py-1 text-sm text-slate-300 hover:text-green transition-colors">

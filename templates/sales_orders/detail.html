@@ -66,7 +66,7 @@
     <div class="flex items-center gap-3">
       <svg class="w-5 h-5 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       <div>
-        <p class="text-sm font-bold text-green">Download EUDR Certificate</p>
+        <p class="text-sm font-bold text-green">Download Traceability Certificate</p>
         <p class="text-xs text-green/70 font-mono">Batch {{ linked_batch.batch_number }} · {{ linked_batch.farms.count }} farm{{ linked_batch.farms.count|pluralize }} linked</p>
       </div>
     </div>
@@ -116,7 +116,7 @@
     <div class="flex items-center justify-between mb-4">
       <div>
         <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Farm Traceability</p>
-        <p class="text-xs text-slate-600 mt-1">Link the farms that supplied this order for EUDR compliance</p>
+        <p class="text-xs text-slate-600 mt-1">Link the farms that supplied this order for traceability</p>
       </div>
       {% if linked_batch %}
       <span class="px-2 py-1 rounded text-xs font-mono bg-green/10 text-green border border-green/20">{{ linked_batch.farms.count }} farm{{ linked_batch.farms.count|pluralize }} linked</span>
