@@ -202,7 +202,7 @@ def farmer_registry_pdf(company):
 
     story.append(Spacer(1, 8*mm))
     story.append(Paragraph(
-        "This document contains confidential farmer data. Handle in accordance with your data protection policy.",
+        "This document contains confidential farmer data. Handle in accordance with your organisation's data protection and compliance obligations.",
         st["footer"]
     ))
 
@@ -339,7 +339,7 @@ def farm_registry_pdf(company):
 
     story.append(Spacer(1, 8*mm))
     story.append(Paragraph(
-        "This document contains confidential farm and geolocation data. Handle in accordance with your EUDR compliance obligations.",
+        "This document contains confidential farm and geolocation data. Handle in accordance with your organisation's data protection and compliance obligations.",
         st["footer"]
     ))
 
