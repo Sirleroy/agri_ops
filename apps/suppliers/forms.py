@@ -5,6 +5,7 @@ Validation layers applied here:
   Layer 1 — GeoJSON structural validity (type, closed ring, coordinate range)
   Layer 2 — Business rule sanity (area > 0, dates logical, harvest year not future)
   Layer 3 — Duplicate detection (NIN uniqueness, name+location collision, farm name+supplier)
+  Layer 4 — Spatial overlap detection (shapely — no PostGIS required)
 """
 import datetime
 from django import forms
@@ -137,6 +138,61 @@ def _validate_geojson_polygon(value):
     return value
 
 
+# ── Spatial overlap detection (Layer 4) ──────────────────────────────────────
+
+def _geojson_to_shape(geojson):
+    """
+    Convert a GeoJSON dict (Polygon, MultiPolygon, or Feature wrapper) to a
+    shapely geometry. Returns None if conversion fails.
+    """
+    from shapely.geometry import shape
+    if not geojson:
+        return None
+    try:
+        if geojson.get('type') == 'Feature':
+            geometry = geojson.get('geometry')
+            return shape(geometry) if geometry else None
+        return shape(geojson)
+    except Exception:
+        return None
+
+
+def _find_overlapping_farm(geojson, company, exclude_pk=None):
+    """
+    Check whether the given GeoJSON polygon overlaps (shares area, not just
+    a boundary edge) with any existing farm in the same company.
+    Returns the first overlapping Farm instance, or None.
+    """
+    new_shape = _geojson_to_shape(geojson)
+    if new_shape is None:
+        return None
+
+    # Attempt to repair self-intersections before comparison
+    if not new_shape.is_valid:
+        new_shape = new_shape.buffer(0)
+
+    qs = Farm.objects.filter(company=company).exclude(geolocation__isnull=True)
+    if exclude_pk:
+        qs = qs.exclude(pk=exclude_pk)
+
+    for farm in qs.select_related('supplier'):
+        if not farm.geolocation:
+            continue
+        existing_shape = _geojson_to_shape(farm.geolocation)
+        if existing_shape is None:
+            continue
+        try:
+            if not existing_shape.is_valid:
+                existing_shape = existing_shape.buffer(0)
+            # intersection.area > 0 catches containment and overlap; ignores shared edges
+            if new_shape.intersection(existing_shape).area > 0:
+                return farm
+        except Exception:
+            continue  # skip malformed stored polygons — don't block the submission
+
+    return None
+
+
 # ── Farm (create) ─────────────────────────────────────────────────────────────
 
 class FarmForm(forms.ModelForm):
@@ -194,25 +250,39 @@ class FarmForm(forms.ModelForm):
             )
         return ref_date
 
-    # ── Layer 3: Duplicate farm detection ─────────────────────────────────────
+    # ── Layer 3 + 4: Duplicate detection and spatial overlap ──────────────────
 
     def clean(self):
         cleaned_data = super().clean()
         name     = cleaned_data.get('name', '').strip()
         supplier = cleaned_data.get('supplier')
+        geojson  = cleaned_data.get('geolocation')
+        exclude_pk = self.instance.pk if self.instance and self.instance.pk else None
 
+        # Layer 3: duplicate name+supplier
         if name and supplier:
             qs = Farm.objects.filter(
                 company=self.company,
                 name__iexact=name,
                 supplier=supplier,
             )
-            if self.instance and self.instance.pk:
-                qs = qs.exclude(pk=self.instance.pk)
+            if exclude_pk:
+                qs = qs.exclude(pk=exclude_pk)
             if qs.exists():
                 raise forms.ValidationError(
                     f"A farm named '{name}' is already registered under {supplier.name}. "
                     "Check if this is a duplicate entry."
+                )
+
+        # Layer 4: spatial overlap
+        if geojson and self.company:
+            overlapping = _find_overlapping_farm(geojson, self.company, exclude_pk=exclude_pk)
+            if overlapping:
+                raise forms.ValidationError(
+                    f"This farm boundary overlaps with '{overlapping.name}' "
+                    f"({overlapping.supplier.name}). Overlapping boundaries produce "
+                    "inaccurate area totals and invalid compliance records. "
+                    "Adjust the boundary before saving."
                 )
 
         return cleaned_data
