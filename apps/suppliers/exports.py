@@ -85,7 +85,7 @@ def _doc_header(company, title, subtitle, st):
         ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
         ("LEFTPADDING", (0, 0), (-1, -1), 0),
         ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-        ("BOTTOMPADDING", (0, 1), (0, 1), 5),  # space below title to clear subtitle
+        ("BOTTOMPADDING", (0, 1), (0, 1), 9),  # space below title to clear subtitle
     ]))
 
     right_text = (
