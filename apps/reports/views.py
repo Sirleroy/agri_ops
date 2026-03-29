@@ -27,6 +27,12 @@ class ReportsLandingView(StaffRequiredMixin, TemplateView):
             .distinct()
             .order_by('customer_name')
         )
+        context['sales_orders'] = (
+            SalesOrder.objects
+            .filter(company=company)
+            .order_by('-order_date')
+            .values('order_number', 'customer_name', 'order_date')
+        )
 
         self._add_financial_summary(context, company)
         return context
