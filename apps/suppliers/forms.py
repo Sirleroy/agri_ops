@@ -27,7 +27,10 @@ CROP_CHOICES = [
     ('Cattle', 'Cattle'),
     ('Goat', 'Goat'),
     ('Sheep', 'Sheep'),
+    ('Other', 'Other'),
 ]
+
+_KNOWN_CROPS = {c[0] for c in CROP_CHOICES if c[0] != 'Other'}
 
 
 class FarmerForm(forms.ModelForm):
@@ -36,6 +39,11 @@ class FarmerForm(forms.ModelForm):
         widget=forms.CheckboxSelectMultiple,
         required=False,
         label='Crops / Livestock',
+    )
+    crops_other = forms.CharField(
+        required=False,
+        label='Specify other crop / livestock',
+        widget=forms.TextInput(attrs={'placeholder': 'e.g. Cassava, Yam'}),
     )
 
     class Meta:
@@ -50,11 +58,21 @@ class FarmerForm(forms.ModelForm):
         self.company = company
         # Pre-populate crops checkboxes from comma-separated model value
         if self.instance and self.instance.pk and self.instance.crops:
-            self.initial['crops'] = [c.strip() for c in self.instance.crops.split(',') if c.strip()]
+            existing = [c.strip() for c in self.instance.crops.split(',') if c.strip()]
+            known    = [c for c in existing if c in _KNOWN_CROPS]
+            other    = ', '.join(c for c in existing if c not in _KNOWN_CROPS)
+            if other:
+                known.append('Other')
+                self.initial['crops_other'] = other
+            self.initial['crops'] = known
 
     def clean_crops(self):
-        crops = self.cleaned_data.get('crops', [])
-        return ', '.join(crops) if crops else ''
+        crops       = self.cleaned_data.get('crops', [])
+        crops_other = self.data.get('crops_other', '').strip()
+        known       = [c for c in crops if c != 'Other']
+        if 'Other' in crops and crops_other:
+            known.append(crops_other)
+        return ', '.join(known) if known else ''
 
     def clean_nin(self):
         nin = self.cleaned_data.get('nin', '').strip()

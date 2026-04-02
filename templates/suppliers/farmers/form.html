@@ -87,15 +87,31 @@
 
       <!-- Crops / Livestock -->
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4 pt-4 border-t border-border">Crops / Livestock</p>
-      <div class="mb-6">
+      <div class="mb-6" x-data="{ otherChecked: {{ form.crops_other.value|yesno:'true,false' }} }">
         {% if form.crops.errors %}<p class="mb-2 text-xs font-mono text-red-400">{{ form.crops.errors.0 }}</p>{% endif %}
         <div class="grid grid-cols-3 gap-2">
           {% for checkbox in form.crops %}
-          <label class="flex items-center gap-2 cursor-pointer group">
-            {{ checkbox.tag }}
-            <span class="text-sm text-slate-400 group-hover:text-slate-200 transition-colors">{{ checkbox.choice_label }}</span>
-          </label>
+            {% if checkbox.choice_label == 'Other' %}
+            <label class="flex items-center gap-2 cursor-pointer group">
+              <input type="checkbox" name="{{ checkbox.data.name }}" value="{{ checkbox.data.value }}"
+                {% if checkbox.data.selected %}checked{% endif %}
+                @change="otherChecked = $event.target.checked"
+                class="accent-green">
+              <span class="text-sm text-slate-400 group-hover:text-slate-200 transition-colors">Other</span>
+            </label>
+            {% else %}
+            <label class="flex items-center gap-2 cursor-pointer group">
+              {{ checkbox.tag }}
+              <span class="text-sm text-slate-400 group-hover:text-slate-200 transition-colors">{{ checkbox.choice_label }}</span>
+            </label>
+            {% endif %}
           {% endfor %}
+        </div>
+        <div x-show="otherChecked" x-transition class="mt-3">
+          <label class="block text-xs font-mono text-slate-400 mb-1 uppercase tracking-wide">Specify other crop / livestock</label>
+          <input type="text" name="crops_other" value="{{ form.crops_other.value|default:'' }}"
+            placeholder="e.g. Cassava, Yam"
+            class="w-full bg-surface border border-border rounded-lg px-4 py-2.5 text-sm text-slate-100 outline-none placeholder-slate-600 focus:border-green transition-colors">
         </div>
       </div>
 

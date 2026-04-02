@@ -42,7 +42,7 @@ class FarmerDetailView(StaffRequiredMixin, DetailView):
         return context
 
 
-class FarmerCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
+class FarmerCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = Farmer
     template_name = 'suppliers/farmers/form.html'
     form_class = FarmerForm
@@ -58,7 +58,7 @@ class FarmerCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class FarmerUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
+class FarmerUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = Farmer
     template_name = 'suppliers/farmers/form.html'
     form_class = FarmerForm

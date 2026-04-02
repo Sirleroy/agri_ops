@@ -11,7 +11,7 @@ EUDR_COMMODITIES = {
 
 
 class Farmer(models.Model):
-    GENDER_CHOICES = [('M', 'Male'), ('F', 'Female'), ('O', 'Other')]
+    GENDER_CHOICES = [('M', 'Male'), ('F', 'Female')]
 
     company        = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='farmers')
     first_name     = models.CharField(max_length=150)
