@@ -1,7 +1,7 @@
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.views import View
 from django.urls import reverse_lazy
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from .models import Supplier, Farm, FarmCertification, Farmer
 from .forms import FarmerForm, FarmForm, FarmUpdateForm
 from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin, OtherRevealMixin
@@ -85,6 +85,173 @@ class FarmerExportView(StaffRequiredMixin, View):
         if fmt == 'pdf':
             return farmer_registry_pdf(company)
         return farmer_registry_csv(company)
+
+
+class FarmerImportTemplateView(StaffRequiredMixin, View):
+    """Download the blank CSV template for bulk farmer import."""
+    def get(self, request):
+        import csv
+        from django.http import HttpResponse
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="AgriOps_Farmer_Import_Template.csv"'
+        writer = csv.writer(response)
+        writer.writerow([
+            'first_name', 'last_name', 'gender', 'phone', 'village', 'lga', 'nin', 'crops',
+            'consent_date',
+        ])
+        writer.writerow([
+            'Amina', 'Musa', 'F', '08012345678', 'Shendam', 'Shendam',
+            '12345678901', 'Soybeans, Groundnut', '2026-04-01',
+        ])
+        return response
+
+
+class FarmerImportErrorsView(StaffRequiredMixin, View):
+    """Download error rows from a previous import (stored in session)."""
+    def get(self, request):
+        import csv
+        from django.http import HttpResponse
+        session_key = request.GET.get('session_key', 'farmer_import_errors')
+        error_rows = request.session.get(session_key, [])
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="AgriOps_Farmer_Import_Errors.csv"'
+        writer = csv.writer(response)
+        writer.writerow([
+            'first_name', 'last_name', 'gender', 'phone', 'village', 'lga', 'nin', 'crops',
+            'consent_date', 'error_reason',
+        ])
+        for row in error_rows:
+            writer.writerow([
+                row.get('first_name', ''),
+                row.get('last_name', ''),
+                row.get('gender', ''),
+                row.get('phone', ''),
+                row.get('village', ''),
+                row.get('lga', ''),
+                row.get('nin', ''),
+                row.get('crops', ''),
+                row.get('consent_date', ''),
+                row.get('error_reason', ''),
+            ])
+        return response
+
+
+class FarmerImportView(StaffRequiredMixin, View):
+    template_name = 'suppliers/farmers/import.html'
+
+    def get(self, request):
+        return render(request, self.template_name)
+
+    def post(self, request):
+        import csv
+        import io
+        import datetime
+        from django.db import transaction
+        from .models import Farmer
+
+        csv_file = request.FILES.get('csv_file')
+        if not csv_file:
+            return render(request, self.template_name, {'form_error': 'Please select a CSV file.'})
+        if not csv_file.name.endswith('.csv'):
+            return render(request, self.template_name, {'form_error': 'File must be a .csv file.'})
+
+        company = request.user.company
+        created_count   = 0
+        duplicate_count = 0
+        error_rows      = []
+        error_detail    = []
+
+        try:
+            decoded = csv_file.read().decode('utf-8-sig')
+            reader  = csv.DictReader(io.StringIO(decoded))
+        except Exception as e:
+            return render(request, self.template_name, {'form_error': f'Could not read file: {e}'})
+
+        to_create = []
+        row_num   = 1  # header is row 0
+
+        for row in reader:
+            row_num += 1
+            first_name = (row.get('first_name') or '').strip()
+            last_name  = (row.get('last_name') or '').strip()
+            gender     = (row.get('gender') or '').strip().upper()
+            phone      = (row.get('phone') or '').strip()
+            village    = (row.get('village') or '').strip()
+            lga        = (row.get('lga') or '').strip()
+            nin        = (row.get('nin') or '').strip()
+            crops      = (row.get('crops') or '').strip()
+            consent_raw = (row.get('consent_date') or '').strip()
+
+            if not first_name:
+                error_rows.append({**row, 'error_reason': 'first_name is required'})
+                error_detail.append({'row': row_num, 'first_name': first_name, 'last_name': last_name, 'reason': 'first_name is required'})
+                continue
+
+            # Validate gender
+            if gender and gender not in ('M', 'F', 'O'):
+                gender = ''
+
+            # Parse consent date
+            consent_date = None
+            if consent_raw:
+                for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y'):
+                    try:
+                        consent_date = datetime.date.fromisoformat(consent_raw) if fmt == '%Y-%m-%d' else datetime.datetime.strptime(consent_raw, fmt).date()
+                        break
+                    except ValueError:
+                        continue
+
+            # NIN uniqueness check
+            if nin:
+                if Farmer.objects.filter(company=company, nin=nin).exists():
+                    duplicate_count += 1
+                    continue
+
+            # Name + village + LGA duplicate check
+            if first_name and village and lga:
+                if Farmer.objects.filter(
+                    company=company,
+                    first_name__iexact=first_name,
+                    last_name__iexact=last_name,
+                    village__iexact=village,
+                    lga__iexact=lga,
+                ).exists():
+                    duplicate_count += 1
+                    continue
+
+            to_create.append(Farmer(
+                company=company,
+                first_name=first_name,
+                last_name=last_name,
+                gender=gender,
+                phone=phone,
+                village=village,
+                lga=lga,
+                nin=nin,
+                crops=crops,
+                consent_given=bool(consent_date or consent_raw),
+                consent_date=consent_date,
+            ))
+
+        # Bulk create in batches of 100
+        batch_size = 100
+        with transaction.atomic():
+            for i in range(0, len(to_create), batch_size):
+                Farmer.objects.bulk_create(to_create[i:i + batch_size])
+                created_count += len(to_create[i:i + batch_size])
+
+        # Store error rows in session for download
+        session_key = 'farmer_import_errors'
+        request.session[session_key] = error_rows
+
+        result = {
+            'created':      created_count,
+            'duplicates':   duplicate_count,
+            'errors':       len(error_rows),
+            'session_key':  session_key,
+            'error_detail': error_detail,
+        }
+        return render(request, self.template_name, {'result': result})
 
 
 class FarmExportView(StaffRequiredMixin, View):

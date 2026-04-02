@@ -11,21 +11,36 @@ EUDR_COMMODITIES = {
 
 
 class Farmer(models.Model):
-    company    = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='farmers')
-    name       = models.CharField(max_length=255)
-    phone      = models.CharField(max_length=20, blank=True)
-    village    = models.CharField(max_length=100, blank=True)
-    lga        = models.CharField(max_length=100, blank=True, verbose_name="LGA")
-    nin        = models.CharField(max_length=20, blank=True, verbose_name="NIN",
-                                  help_text="National Identification Number")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    GENDER_CHOICES = [('M', 'Male'), ('F', 'Female'), ('O', 'Other')]
+
+    company        = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='farmers')
+    first_name     = models.CharField(max_length=150)
+    last_name      = models.CharField(max_length=150, blank=True)
+    gender         = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True)
+    phone          = models.CharField(max_length=20, blank=True)
+    village        = models.CharField(max_length=100, blank=True)
+    lga            = models.CharField(max_length=100, blank=True, verbose_name="LGA")
+    nin            = models.CharField(max_length=20, blank=True, verbose_name="NIN",
+                                      help_text="National Identification Number")
+    crops          = models.CharField(max_length=255, blank=True,
+                                      help_text="Comma-separated list of crops/livestock")
+    consent_given  = models.BooleanField(default=False)
+    consent_date   = models.DateField(null=True, blank=True)
+    # Bank details — parked, no UI until tenant request
+    bank_name      = models.CharField(max_length=150, blank=True)
+    account_number = models.CharField(max_length=50, blank=True)
+    created_at     = models.DateTimeField(auto_now_add=True)
+    updated_at     = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['name']
+        ordering = ['last_name', 'first_name']
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}".strip()
 
     def __str__(self):
-        return self.name
+        return self.full_name or f"Farmer #{self.pk}"
 
 
 class Supplier(models.Model):

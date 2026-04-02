@@ -15,14 +15,46 @@ from .models import Farm, Farmer, Supplier
 
 # ── Farmer ────────────────────────────────────────────────────────────────────
 
+CROP_CHOICES = [
+    ('Coffee', 'Coffee'),
+    ('Oil Palm', 'Oil Palm'),
+    ('Guinea Corn/Dawa', 'Guinea Corn/Dawa'),
+    ('Acha', 'Acha'),
+    ('Soybeans', 'Soybeans'),
+    ('Potato', 'Potato'),
+    ('Groundnut', 'Groundnut'),
+    ('Cocoa', 'Cocoa'),
+    ('Cattle', 'Cattle'),
+    ('Goat', 'Goat'),
+    ('Sheep', 'Sheep'),
+]
+
+
 class FarmerForm(forms.ModelForm):
+    crops = forms.MultipleChoiceField(
+        choices=CROP_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        label='Crops / Livestock',
+    )
+
     class Meta:
         model  = Farmer
-        fields = ['name', 'phone', 'village', 'lga', 'nin']
+        fields = [
+            'first_name', 'last_name', 'gender', 'phone', 'village', 'lga', 'nin',
+            'crops', 'consent_given', 'consent_date',
+        ]
 
     def __init__(self, *args, company=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.company = company
+        # Pre-populate crops checkboxes from comma-separated model value
+        if self.instance and self.instance.pk and self.instance.crops:
+            self.initial['crops'] = [c.strip() for c in self.instance.crops.split(',') if c.strip()]
+
+    def clean_crops(self):
+        crops = self.cleaned_data.get('crops', [])
+        return ', '.join(crops) if crops else ''
 
     def clean_nin(self):
         nin = self.cleaned_data.get('nin', '').strip()
@@ -33,21 +65,24 @@ class FarmerForm(forms.ModelForm):
             if qs.exists():
                 existing = qs.first()
                 raise forms.ValidationError(
-                    f"NIN {nin} is already registered to {existing.name}. "
+                    f"NIN {nin} is already registered to {existing.full_name}. "
                     "Each farmer must have a unique National Identification Number."
                 )
         return nin
 
     def clean(self):
-        cleaned_data = super().clean()
-        name    = cleaned_data.get('name', '').strip()
-        village = cleaned_data.get('village', '').strip()
-        lga     = cleaned_data.get('lga', '').strip()
+        cleaned_data  = super().clean()
+        first_name    = cleaned_data.get('first_name', '').strip()
+        last_name     = cleaned_data.get('last_name', '').strip()
+        village       = cleaned_data.get('village', '').strip()
+        lga           = cleaned_data.get('lga', '').strip()
+        full_name     = f"{first_name} {last_name}".strip()
 
-        if name and village and lga:
+        if first_name and village and lga:
             qs = Farmer.objects.filter(
                 company=self.company,
-                name__iexact=name,
+                first_name__iexact=first_name,
+                last_name__iexact=last_name,
                 village__iexact=village,
                 lga__iexact=lga,
             )
@@ -57,7 +92,7 @@ class FarmerForm(forms.ModelForm):
                 existing = qs.first()
                 raise forms.ValidationError(
                     f"A farmer with the same name, village, and LGA is already registered "
-                    f"({existing.name}, {existing.village}, {existing.lga}). "
+                    f"({existing.full_name}, {existing.village}, {existing.lga}). "
                     "If this is a different person, add a distinguishing detail to the name."
                 )
         return cleaned_data

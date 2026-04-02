@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
-{% block title %}{{ farmer.name }} — AgriOps{% endblock %}
-{% block page_title %}{{ farmer.name }}{% endblock %}
+{% block title %}{{ farmer.full_name }} — AgriOps{% endblock %}
+{% block page_title %}{{ farmer.full_name }}{% endblock %}
 {% block content %}
 
 <div class="max-w-3xl space-y-6">
@@ -18,8 +18,16 @@
     <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Farmer Details</p>
     <dl class="grid grid-cols-2 gap-4 text-sm">
       <div>
-        <dt class="text-xs text-slate-500 font-mono mb-1">Full Name</dt>
-        <dd class="text-slate-100 font-semibold">{{ farmer.name }}</dd>
+        <dt class="text-xs text-slate-500 font-mono mb-1">First Name</dt>
+        <dd class="text-slate-100 font-semibold">{{ farmer.first_name }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Last Name</dt>
+        <dd class="text-slate-100 font-semibold">{{ farmer.last_name|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Gender</dt>
+        <dd class="text-slate-100">{{ farmer.get_gender_display|default:"—" }}</dd>
       </div>
       <div>
         <dt class="text-xs text-slate-500 font-mono mb-1">Phone</dt>
@@ -40,6 +48,22 @@
       <div>
         <dt class="text-xs text-slate-500 font-mono mb-1">Registered</dt>
         <dd class="text-slate-100 font-mono text-xs">{{ farmer.created_at|date:"d M Y" }}</dd>
+      </div>
+      {% if farmer.crops %}
+      <div class="col-span-2">
+        <dt class="text-xs text-slate-500 font-mono mb-1">Crops / Livestock</dt>
+        <dd class="text-slate-100">{{ farmer.crops }}</dd>
+      </div>
+      {% endif %}
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Consent (NDPA 2023)</dt>
+        <dd>
+          {% if farmer.consent_given %}
+            <span class="px-2 py-0.5 rounded text-xs font-mono bg-green/10 text-green border border-green/20">Given{% if farmer.consent_date %} · {{ farmer.consent_date|date:"d M Y" }}{% endif %}</span>
+          {% else %}
+            <span class="px-2 py-0.5 rounded text-xs font-mono bg-slate-500/10 text-slate-400 border border-slate-500/20">Not recorded</span>
+          {% endif %}
+        </dd>
       </div>
     </dl>
   </div>

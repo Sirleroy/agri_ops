@@ -33,6 +33,10 @@
           </a>
         </div>
       </div>
+      <a href="{% url 'suppliers:farmer_import' %}" class="flex items-center gap-2 bg-card border border-border hover:border-slate-500 text-slate-300 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4 4l4-4m0 0l4-4m-4 4V4"/></svg>
+        Import CSV
+      </a>
       <a href="{% url 'suppliers:farmer_create' %}" class="flex items-center gap-2 bg-green hover:bg-green-dim text-bg text-sm font-bold px-4 py-2 rounded-lg transition-colors">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         Add Farmer
@@ -45,8 +49,8 @@
       <thead>
         <tr class="border-b border-border bg-white/[0.02]">
           <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Name</th>
-          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Village</th>
-          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">LGA</th>
+          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest hidden sm:table-cell">Village</th>
+          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest hidden sm:table-cell">LGA</th>
           <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Phone</th>
           <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Farms</th>
           <th class="px-5 py-3"></th>
@@ -56,10 +60,10 @@
         {% for farmer in farmers %}
         <tr data-row class="border-b border-border/50 hover:bg-white/[0.02] transition-colors">
           <td class="px-5 py-3 font-semibold text-slate-100">
-            <a href="{% url 'suppliers:farmer_detail' farmer.pk %}" class="hover:text-green transition-colors">{{ farmer.name }}</a>
+            <a href="{% url 'suppliers:farmer_detail' farmer.pk %}" class="hover:text-green transition-colors">{{ farmer.full_name }}</a>
           </td>
-          <td class="px-5 py-3 text-slate-400 font-mono text-xs">{{ farmer.village|default:"—" }}</td>
-          <td class="px-5 py-3 text-slate-400 font-mono text-xs">{{ farmer.lga|default:"—" }}</td>
+          <td class="px-5 py-3 text-slate-400 font-mono text-xs hidden sm:table-cell">{{ farmer.village|default:"—" }}</td>
+          <td class="px-5 py-3 text-slate-400 font-mono text-xs hidden sm:table-cell">{{ farmer.lga|default:"—" }}</td>
           <td class="px-5 py-3 text-slate-400">{{ farmer.phone|default:"—" }}</td>
           <td class="px-5 py-3 text-slate-400 font-mono text-xs">{{ farmer.farms.count }}</td>
           <td class="px-5 py-3">
@@ -68,7 +72,7 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
               </a>
               {% if request.user.is_manager_or_above %}
-              <button @click="openDeleteModal('{% url 'suppliers:farmer_delete' farmer.pk %}', '{{ farmer.name|escapejs }}')" class="text-slate-500 hover:text-red-400 transition-colors" title="Delete">
+              <button @click="openDeleteModal('{% url 'suppliers:farmer_delete' farmer.pk %}', '{{ farmer.full_name|escapejs }}')" class="text-slate-500 hover:text-red-400 transition-colors" title="Delete">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
               </button>
               {% endif %}

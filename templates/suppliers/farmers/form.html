@@ -17,16 +17,32 @@
         </div>
       {% endif %}
 
+      <!-- Identity -->
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Identity</p>
       <div class="grid grid-cols-2 gap-4 mb-6">
 
-        <!-- Name spans full width -->
-        <div class="col-span-2">
-          <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">Full Name *</label>
+        <div>
+          <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">First Name *</label>
           <div class="[&>input]:w-full [&>input]:bg-surface [&>input]:border [&>input]:border-border [&>input]:rounded-lg [&>input]:px-4 [&>input]:py-3 [&>input]:text-sm [&>input]:text-slate-100 [&>input]:outline-none [&>input]:placeholder-slate-600">
-            {{ form.name }}
+            {{ form.first_name }}
           </div>
-          {% if form.name.errors %}<p class="mt-1 text-xs font-mono text-red-400">{{ form.name.errors.0 }}</p>{% endif %}
+          {% if form.first_name.errors %}<p class="mt-1 text-xs font-mono text-red-400">{{ form.first_name.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">Last Name</label>
+          <div class="[&>input]:w-full [&>input]:bg-surface [&>input]:border [&>input]:border-border [&>input]:rounded-lg [&>input]:px-4 [&>input]:py-3 [&>input]:text-sm [&>input]:text-slate-100 [&>input]:outline-none [&>input]:placeholder-slate-600">
+            {{ form.last_name }}
+          </div>
+          {% if form.last_name.errors %}<p class="mt-1 text-xs font-mono text-red-400">{{ form.last_name.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">Gender</label>
+          <div class="[&>select]:w-full [&>select]:bg-surface [&>select]:border [&>select]:border-border [&>select]:rounded-lg [&>select]:px-4 [&>select]:py-3 [&>select]:text-sm [&>select]:text-slate-100 [&>select]:outline-none">
+            {{ form.gender }}
+          </div>
+          {% if form.gender.errors %}<p class="mt-1 text-xs font-mono text-red-400">{{ form.gender.errors.0 }}</p>{% endif %}
         </div>
 
         <div>
@@ -37,7 +53,7 @@
           {% if form.phone.errors %}<p class="mt-1 text-xs font-mono text-red-400">{{ form.phone.errors.0 }}</p>{% endif %}
         </div>
 
-        <div>
+        <div class="col-span-2">
           <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">NIN</label>
           <div class="[&>input]:w-full [&>input]:bg-surface [&>input]:border [&>input]:border-border [&>input]:rounded-lg [&>input]:px-4 [&>input]:py-3 [&>input]:text-sm [&>input]:text-slate-100 [&>input]:outline-none [&>input]:placeholder-slate-600 font-mono">
             {{ form.nin }}
@@ -47,6 +63,7 @@
 
       </div>
 
+      <!-- Location -->
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4 pt-4 border-t border-border">Location</p>
       <div class="grid grid-cols-2 gap-4 mb-6">
 
@@ -64,6 +81,40 @@
             {{ form.lga }}
           </div>
           {% if form.lga.errors %}<p class="mt-1 text-xs font-mono text-red-400">{{ form.lga.errors.0 }}</p>{% endif %}
+        </div>
+
+      </div>
+
+      <!-- Crops / Livestock -->
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4 pt-4 border-t border-border">Crops / Livestock</p>
+      <div class="mb-6">
+        {% if form.crops.errors %}<p class="mb-2 text-xs font-mono text-red-400">{{ form.crops.errors.0 }}</p>{% endif %}
+        <div class="grid grid-cols-3 gap-2">
+          {% for checkbox in form.crops %}
+          <label class="flex items-center gap-2 cursor-pointer group">
+            {{ checkbox.tag }}
+            <span class="text-sm text-slate-400 group-hover:text-slate-200 transition-colors">{{ checkbox.choice_label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Consent -->
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4 pt-4 border-t border-border">Consent (NDPA 2023)</p>
+      <div class="grid grid-cols-2 gap-4 mb-6">
+
+        <div class="col-span-2 flex items-center gap-3">
+          {{ form.consent_given }}
+          <label class="text-sm text-slate-300">Farmer has signed consent on paper form</label>
+          {% if form.consent_given.errors %}<p class="mt-1 text-xs font-mono text-red-400">{{ form.consent_given.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">Consent Date</label>
+          <div class="[&>input]:w-full [&>input]:bg-surface [&>input]:border [&>input]:border-border [&>input]:rounded-lg [&>input]:px-4 [&>input]:py-3 [&>input]:text-sm [&>input]:text-slate-100 [&>input]:outline-none">
+            {{ form.consent_date }}
+          </div>
+          {% if form.consent_date.errors %}<p class="mt-1 text-xs font-mono text-red-400">{{ form.consent_date.errors.0 }}</p>{% endif %}
         </div>
 
       </div>

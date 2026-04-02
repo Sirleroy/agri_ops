@@ -130,7 +130,7 @@ def _table_style(col_count):
 def farmer_registry_csv(company):
     """Returns an HttpResponse with the farmer registry as a CSV download."""
     from .models import Farmer
-    farmers = Farmer.objects.filter(company=company).prefetch_related('farms').order_by('name')
+    farmers = Farmer.objects.filter(company=company).prefetch_related('farms').order_by('last_name', 'first_name')
 
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = (
@@ -139,17 +139,21 @@ def farmer_registry_csv(company):
 
     writer = csv.writer(response)
     writer.writerow([
-        'Full Name', 'Phone', 'Village', 'LGA', 'NIN',
-        'Number of Farms', 'Registered Date'
+        'First Name', 'Last Name', 'Gender', 'Phone', 'Village', 'LGA', 'NIN',
+        'Crops / Livestock', 'Consent Given', 'Number of Farms', 'Registered Date'
     ])
 
     for f in farmers:
         writer.writerow([
-            f.name,
+            f.first_name,
+            f.last_name or '—',
+            f.get_gender_display() or '—',
             f.phone or '—',
             f.village or '—',
             f.lga or '—',
             f.nin or '—',
+            f.crops or '—',
+            'Yes' if f.consent_given else 'No',
             f.farms.count(),
             f.created_at.strftime('%d %B %Y'),
         ])
@@ -160,7 +164,7 @@ def farmer_registry_csv(company):
 def farmer_registry_pdf(company):
     """Returns an HttpResponse with the farmer registry as a branded PDF download."""
     from .models import Farmer
-    farmers = Farmer.objects.filter(company=company).prefetch_related('farms').order_by('name')
+    farmers = Farmer.objects.filter(company=company).prefetch_related('farms').order_by('last_name', 'first_name')
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -182,19 +186,21 @@ def farmer_registry_pdf(company):
     story.append(HRFlowable(width="100%", thickness=1, color=GREEN, spaceAfter=5*mm))
 
     if farmers.exists():
-        data = [["Full Name", "Phone", "Village", "LGA", "NIN", "Farms", "Registered"]]
+        data = [["Full Name", "Gender", "Phone", "Village", "LGA", "NIN", "Crops", "Farms", "Registered"]]
         for f in farmers:
             data.append([
-                f.name,
+                f.full_name,
+                f.get_gender_display() or "—",
                 f.phone or "—",
                 f.village or "—",
                 f.lga or "—",
                 f.nin or "—",
+                f.crops or "—",
                 str(f.farms.count()),
                 f.created_at.strftime("%d %b %Y"),
             ])
 
-        col_widths = [42*mm, 25*mm, 28*mm, 28*mm, 28*mm, 13*mm, 24*mm]
+        col_widths = [38*mm, 14*mm, 22*mm, 24*mm, 24*mm, 24*mm, 30*mm, 10*mm, 20*mm]
         t = Table(data, colWidths=col_widths, repeatRows=1)
         t.setStyle(_table_style(len(col_widths)))
         story.append(t)

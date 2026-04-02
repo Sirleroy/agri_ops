@@ -7,6 +7,9 @@ urlpatterns = [
     # Farmers
     path('farmers/', views.FarmerListView.as_view(), name='farmer_list'),
     path('farmers/export/', views.FarmerExportView.as_view(), name='farmer_export'),
+    path('farmers/import/', views.FarmerImportView.as_view(), name='farmer_import'),
+    path('farmers/import/template/', views.FarmerImportTemplateView.as_view(), name='farmer_import_template'),
+    path('farmers/import/errors/', views.FarmerImportErrorsView.as_view(), name='farmer_import_errors'),
     path('farmers/new/', views.FarmerCreateView.as_view(), name='farmer_create'),
     path('farmers/<int:pk>/', views.FarmerDetailView.as_view(), name='farmer_detail'),
     path('farmers/<int:pk>/edit/', views.FarmerUpdateView.as_view(), name='farmer_update'),
