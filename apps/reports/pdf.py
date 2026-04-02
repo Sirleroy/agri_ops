@@ -196,10 +196,16 @@ def generate_compliance_report(company, user, filters=None):
     ))
 
     if suppliers.exists():
-        sup_data = [["Supplier", "Category", "Country", "City"]]
+        sup_data = [["Supplier", "Category", "Email", "Country", "Address"]]
         for s in suppliers:
-            sup_data.append([s.name, s.get_category_display(), s.country, s.city or "—"])
-        sup_t = Table(sup_data, colWidths=[65*mm, 35*mm, 35*mm, 35*mm])
+            sup_data.append([
+                s.name,
+                s.get_category_display(),
+                s.email or "—",
+                s.country or "—",
+                s.address or s.city or "—",
+            ])
+        sup_t = Table(sup_data, colWidths=[52*mm, 28*mm, 42*mm, 26*mm, 26*mm])
         sup_t.setStyle(TableStyle([
             ("BACKGROUND", (0,0), (-1,0), DARK),
             ("TEXTCOLOR", (0,0), (-1,0), WHITE),
@@ -230,21 +236,30 @@ def generate_compliance_report(company, user, filters=None):
         block.append(Paragraph(f"Farm: {farm.name}", ParagraphStyle(
             "fh", fontName="Helvetica-Bold", fontSize=10, textColor=DARK
         )))
+        farmer_display = (
+            farm.farmer.full_name if farm.farmer
+            else farm.farmer_name or "—"
+        )
+        cleared = farm.land_cleared_after_cutoff
+        cleared_display = "YES — DISQUALIFIED ⚠" if cleared is True else ("NO" if cleared is False else "—")
         block.append(_kv_table([
-            ("Supplier",            farm.supplier.name if farm.supplier else "—"),
-            ("Farmer Name",         farm.farmer_name or "—"),
-            ("Commodity",           farm.commodity),
-            ("Country / Region",    f"{farm.country} / {farm.state_region or '—'}"),
-            ("Area",                f"{farm.area_hectares} ha" if farm.area_hectares else "—"),
-            ("Risk Classification", farm.get_deforestation_risk_status_display()),
-            ("Mapping Date",        str(farm.mapping_date) if farm.mapping_date else "—"),
-            ("Mapped By",           str(farm.mapped_by) if farm.mapped_by else "—"),
-            ("EUDR Verified",       "YES" if farm.is_eudr_verified else "NO"),
-            ("Verified By",         str(farm.verified_by) if farm.verified_by else "—"),
-            ("Verification Date",   str(farm.verified_date) if farm.verified_date else "—"),
-            ("Verification Expiry", str(farm.verification_expiry) if farm.verification_expiry else "—"),
-            ("Compliance Status",   farm.compliance_status.upper()),
-            ("GeoJSON Present",     "YES" if farm.geolocation else "NO"),
+            ("Supplier",                    farm.supplier.name if farm.supplier else "—"),
+            ("Farmer",                      farmer_display),
+            ("Commodity",                   farm.commodity),
+            ("Country / Region",            f"{farm.country} / {farm.state_region or '—'}"),
+            ("Area",                        f"{farm.area_hectares} ha" if farm.area_hectares else "—"),
+            ("Harvest Year",                str(farm.harvest_year) if farm.harvest_year else "—"),
+            ("Deforestation Ref. Date",     str(farm.deforestation_reference_date) if farm.deforestation_reference_date else "—"),
+            ("Land Cleared After Cutoff",   cleared_display),
+            ("Risk Classification",         farm.get_deforestation_risk_status_display()),
+            ("Mapping Date",                str(farm.mapping_date) if farm.mapping_date else "—"),
+            ("Mapped By",                   str(farm.mapped_by) if farm.mapped_by else "—"),
+            ("EUDR Verified",               "YES" if farm.is_eudr_verified else "NO"),
+            ("Verified By",                 str(farm.verified_by) if farm.verified_by else "—"),
+            ("Verification Date",           str(farm.verified_date) if farm.verified_date else "—"),
+            ("Verification Expiry",         str(farm.verification_expiry) if farm.verification_expiry else "—"),
+            ("Compliance Status",           farm.compliance_status.upper()),
+            ("GeoJSON Present",             "YES" if farm.geolocation else "NO"),
         ]))
         story.append(KeepTogether(block))
         story.append(Spacer(1, 4*mm))
@@ -280,6 +295,7 @@ def generate_compliance_report(company, user, filters=None):
 
     pos = po_qs[:20]
     story.append(Paragraph("4. Recent Purchase Orders", st["section"]))
+
     if pos.exists():
         po_data = [["Order Number", "Supplier", "Status", "Order Date"]]
         for po in pos:
@@ -305,9 +321,51 @@ def generate_compliance_report(company, user, filters=None):
     else:
         story.append(Paragraph("No purchase orders recorded.", st["body"]))
 
+    # ── Batch / DDS summary ───────────────────────────────────
+    from apps.sales_orders.models import Batch
+    batch_qs = Batch.objects.filter(company=company).select_related('sales_order').prefetch_related('farms').order_by('-created_at')
+    if filters.get('sales_order'):
+        batch_qs = batch_qs.filter(sales_order=filters['sales_order'])
+    story.append(Paragraph("5. Batch Traceability & DDS Summary", st["section"]))
+    story.append(Paragraph(
+        f"Total batches: <b>{batch_qs.count()}</b>  ·  "
+        f"Locked (submitted): <b>{batch_qs.filter(is_locked=True).count()}</b>  ·  "
+        f"Pending: <b>{batch_qs.filter(is_locked=False).count()}</b>",
+        st["body"]
+    ))
+    story.append(Spacer(1, 3*mm))
+    if batch_qs.exists():
+        batch_data = [["Batch Number", "Commodity", "Qty (kg)", "Linked Farms", "Sales Order", "Status"]]
+        for b in batch_qs[:30]:
+            farm_names = ", ".join(f.name for f in b.farms.all()) or "—"
+            so_ref = b.sales_order.order_number if b.sales_order else "—"
+            batch_data.append([
+                b.batch_number,
+                b.commodity,
+                str(b.quantity_kg) if b.quantity_kg else "—",
+                farm_names,
+                so_ref,
+                "LOCKED" if b.is_locked else "Open",
+            ])
+        b_t = Table(batch_data, colWidths=[38*mm, 22*mm, 18*mm, 42*mm, 28*mm, 18*mm])
+        b_t.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,0), DARK),
+            ("TEXTCOLOR", (0,0), (-1,0), WHITE),
+            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+            ("FONTSIZE", (0,0), (-1,-1), 8),
+            ("GRID", (0,0), (-1,-1), 0.3, SLATE_300),
+            ("ROWBACKGROUNDS", (0,1), (-1,-1), [WHITE, colors.HexColor("#f8fafc")]),
+            ("TOPPADDING", (0,0), (-1,-1), 3),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 3),
+            ("LEFTPADDING", (0,0), (-1,-1), 4),
+        ]))
+        story.append(b_t)
+    else:
+        story.append(Paragraph("No batches recorded.", st["body"]))
+
     # ── Sales orders ──────────────────────────────────────────
     sos = so_qs[:20]
-    story.append(Paragraph("5. Recent Sales Orders", st["section"]))
+    story.append(Paragraph("6. Recent Sales Orders", st["section"]))
     if sos.exists():
         so_data = [["Order Number", "Customer", "Status", "Order Date"]]
         for so in sos:
@@ -336,7 +394,7 @@ def generate_compliance_report(company, user, filters=None):
     # ── Declaration ───────────────────────────────────────────
     story.append(Spacer(1, 6*mm))
     story.append(HRFlowable(width="100%", thickness=0.5, color=SLATE_300, spaceAfter=4*mm))
-    story.append(Paragraph("6. Due Diligence Declaration", st["section"]))
+    story.append(Paragraph("7. Due Diligence Declaration", st["section"]))
     story.append(Paragraph(
         f"The operator <b>{company.name}</b> hereby declares that to the best of their knowledge, "
         "all commodities listed in this report have been sourced in compliance with the EU Deforestation "

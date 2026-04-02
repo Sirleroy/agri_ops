@@ -43,13 +43,15 @@ class Command(BaseCommand):
 
     # ─────────────────────────────────────
     def _seed(self):
+        import datetime
         from apps.companies.models import Company
         from apps.users.models import CustomUser
-        from apps.suppliers.models import Supplier, Farm
+        from apps.suppliers.models import Supplier, Farm, Farmer
         from apps.products.models import Product
         from apps.inventory.models import Inventory
         from apps.purchase_orders.models import PurchaseOrder
         from apps.sales_orders.models import SalesOrder
+        from apps.sales_orders.batch import Batch
 
         # ── TENANT 1: Ake Collective ─────────────────────────────
         ake, _ = Company.objects.get_or_create(
@@ -112,34 +114,73 @@ class Command(BaseCommand):
         )
         self.stdout.write(f'  Suppliers: {sup1}, {sup2}, {sup3}')
 
-        # Farms — Ake (EUDR traceability)
+        # Farmers — Ake (linked to farms)
+        farmer1, _ = Farmer.objects.get_or_create(
+            first_name='Haruna', last_name='Sule', company=ake,
+            defaults={
+                'gender': 'M',
+                'phone': '+234 803 123 0001',
+                'village': 'Shendam',
+                'lga': 'Shendam',
+                'nin': '12345000001',
+                'crops': 'Soybeans, Groundnut',
+                'consent_given': True,
+                'consent_date': datetime.date(2026, 3, 10),
+            }
+        )
+        farmer2, _ = Farmer.objects.get_or_create(
+            first_name='Ramatu', last_name='Abubakar', company=ake,
+            defaults={
+                'gender': 'F',
+                'phone': '+234 803 123 0002',
+                'village': 'Langtang',
+                'lga': 'Langtang North',
+                'nin': '12345000002',
+                'crops': 'Soybeans',
+                'consent_given': True,
+                'consent_date': datetime.date(2026, 3, 10),
+            }
+        )
+        self.stdout.write(f'  Farmers: {farmer1}, {farmer2}')
+
+        # Farms — Ake (EUDR traceability, fully filled for DDS)
         farm1, _ = Farm.objects.get_or_create(
             name='Sule Family Farm', company=ake,
             defaults={
                 'supplier': sup2,
-                'farmer_name': 'Malam Haruna Sule',
+                'farmer': farmer1,
                 'country': 'Nigeria',
-                'state_region': 'Katsina',
+                'state_region': 'Plateau',
                 'commodity': 'Soy',
                 'area_hectares': 12.50,
+                'harvest_year': 2025,
                 'deforestation_risk_status': 'low',
-                'is_eudr_verified': True,
+                'deforestation_reference_date': datetime.date(2020, 12, 31),
+                'land_cleared_after_cutoff': False,
+                'mapping_date': datetime.date(2026, 3, 15),
                 'mapped_by': ake_staff,
+                'is_eudr_verified': True,
                 'verified_by': ake_mgr,
+                'verified_date': datetime.date(2026, 3, 20),
+                'verification_expiry': datetime.date(2027, 3, 20),
             }
         )
         farm2, _ = Farm.objects.get_or_create(
             name='Abubakar Cooperative Plot B', company=ake,
             defaults={
                 'supplier': sup2,
-                'farmer_name': 'Hajiya Ramatu Abubakar',
+                'farmer': farmer2,
                 'country': 'Nigeria',
-                'state_region': 'Zamfara',
-                'commodity': 'Maize',
+                'state_region': 'Plateau',
+                'commodity': 'Soy',
                 'area_hectares': 8.00,
+                'harvest_year': 2025,
                 'deforestation_risk_status': 'standard',
-                'is_eudr_verified': False,
+                'deforestation_reference_date': datetime.date(2020, 12, 31),
+                'land_cleared_after_cutoff': False,
+                'mapping_date': datetime.date(2026, 3, 15),
                 'mapped_by': ake_staff,
+                'is_eudr_verified': False,
             }
         )
         self.stdout.write(f'  Farms: {farm1}, {farm2}')
@@ -225,7 +266,32 @@ class Command(BaseCommand):
                 'notes': 'Bulk fertilizer order for member farms',
             }
         )
-        self.stdout.write(f'  Sales Orders: {so1}')
+        # EU export SO — EUDR compliance required
+        so2, _ = SalesOrder.objects.get_or_create(
+            order_number='AKE-SO-2026-002', company=ake,
+            defaults={
+                'customer_name': 'Nexira SAS',
+                'customer_email': 'procurement@nexira.eu',
+                'customer_phone': '+33 1 4000 0001',
+                'status': 'confirmed',
+                'is_eu_export': True,
+                'notes': 'EU soybean export — EUDR due diligence statement required before dispatch.',
+            }
+        )
+        self.stdout.write(f'  Sales Orders: {so1}, {so2}')
+
+        # Batch — EUDR traceability chain: Farm → Batch → EU Sales Order
+        if not Batch.objects.filter(company=ake, sales_order=so2).exists():
+            batch = Batch(
+                company=ake,
+                sales_order=so2,
+                commodity='Soy',
+                quantity_kg=12500.000,
+                notes='Plateau State soy — Shendam and Langtang LGAs. Pre-export DDS pending.',
+            )
+            batch.save()
+            batch.farms.set([farm1])
+            self.stdout.write(f'  Batch: {batch.batch_number}  ·  12,500 kg  ·  1 farm')
 
         # ── TENANT 2: Agro Foods Nigeria Ltd ────────────────────
         agro, _ = Company.objects.get_or_create(
