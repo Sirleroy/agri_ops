@@ -256,7 +256,7 @@ def farm_registry_csv(company):
     for farm in farms:
         writer.writerow([
             farm.name,
-            farm.farmer.name if farm.farmer else '—',
+            farm.farmer.full_name if farm.farmer else '—',
             farm.supplier.name if farm.supplier else '—',
             farm.commodity,
             farm.area_hectares or '—',
@@ -321,7 +321,7 @@ def farm_registry_pdf(company):
         for farm in farms:
             data.append([
                 farm.name,
-                farm.farmer.name if farm.farmer else "—",
+                farm.farmer.full_name if farm.farmer else "—",
                 farm.supplier.name if farm.supplier else "—",
                 farm.commodity,
                 str(farm.area_hectares) if farm.area_hectares else "—",
