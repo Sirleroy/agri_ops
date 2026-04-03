@@ -367,7 +367,7 @@ class FarmImportView(StaffRequiredMixin, View):
                 repaired = shape.buffer(0)
                 if repaired.is_valid and repaired.area > 0:
                     from shapely.geometry import mapping
-                    geometry = dict(mapping(repaired))
+                    geometry = strip_z_coordinates(dict(mapping(repaired)))
                 else:
                     errors.append({'row': row, 'name': name,
                                    'reason': 'Polygon is self-intersecting and could not be repaired automatically.'})

@@ -193,11 +193,15 @@ def _validate_geojson_polygon(value):
 
 # ── Z-coordinate stripping (SW Maps exports [lon, lat, elevation]) ───────────
 
-def strip_z_coordinates(geometry):
+def strip_z_coordinates(geometry, precision=6):
     """
-    Remove the elevation (Z) value from GeoJSON polygon coordinates.
-    SW Maps exports 3D coordinates [lon, lat, elevation] — strip to [lon, lat]
-    for clean storage and compatibility with Shapely/validators.
+    Normalise GeoJSON polygon coordinates:
+      1. Strip elevation (Z) — SW Maps exports [lon, lat, elevation]
+      2. Round to `precision` decimal places (default 6 ≈ 11cm accuracy)
+
+    6 d.p. is more than sufficient for farm boundary work and prevents
+    coordinate bloat from Shapely buffer(0) repairs (which can produce
+    15–16 d.p. floats from floating-point arithmetic).
     """
     if not geometry:
         return geometry
@@ -206,13 +210,13 @@ def strip_z_coordinates(geometry):
     if not coords:
         return geometry
 
-    def _strip_ring(ring):
-        return [[c[0], c[1]] for c in ring]
+    def _clean_ring(ring):
+        return [[round(c[0], precision), round(c[1], precision)] for c in ring]
 
     if geo_type == 'Polygon':
-        clean = [_strip_ring(ring) for ring in coords]
+        clean = [_clean_ring(ring) for ring in coords]
     elif geo_type == 'MultiPolygon':
-        clean = [[_strip_ring(ring) for ring in polygon] for polygon in coords]
+        clean = [[_clean_ring(ring) for ring in polygon] for polygon in coords]
     else:
         return geometry
 
