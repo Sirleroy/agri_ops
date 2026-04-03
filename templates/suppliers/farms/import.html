@@ -88,7 +88,7 @@
   <div class="bg-card border border-border rounded-xl p-6">
     <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Import Summary</p>
 
-    <div class="grid grid-cols-4 gap-3 mb-6">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
       <div class="bg-slate-500/10 border border-slate-500/20 rounded-lg p-4 text-center">
         <p class="text-2xl font-bold text-slate-300 font-mono">{{ result.total }}</p>
         <p class="text-xs text-slate-500 font-mono mt-1">Total features</p>
@@ -114,10 +114,10 @@
     {% endif %}
 
     {% if result.blocked > 0 or result.errors > 0 %}
-    <div class="flex items-center justify-between py-3 px-4 bg-surface border border-border rounded-lg mb-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3 px-4 bg-surface border border-border rounded-lg mb-4">
       <p class="text-sm text-slate-400">{{ result.blocked|add:result.errors }} row{{ result.blocked|add:result.errors|pluralize }} could not be imported.</p>
       <a href="{% url 'suppliers:farm_import_errors' %}?session_key={{ result.session_key }}"
-        class="inline-flex items-center gap-2 text-orange-400 border border-orange-500/30 hover:border-orange-400 text-xs font-mono px-3 py-1.5 rounded-lg transition-colors">
+        class="inline-flex items-center gap-2 text-orange-400 border border-orange-500/30 hover:border-orange-400 text-xs font-mono px-3 py-1.5 rounded-lg transition-colors self-start sm:self-auto">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
         Download Problem Rows
       </a>
@@ -135,7 +135,7 @@
     {% if result.error_detail %}
     <div class="mt-6">
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Validation Errors</p>
-      <div class="bg-surface border border-border rounded-lg overflow-hidden">
+      <div class="bg-surface border border-border rounded-lg overflow-x-auto">
         <table class="w-full text-xs font-mono">
           <thead>
             <tr class="border-b border-border">
@@ -162,7 +162,7 @@
     {% if result.blocked_detail %}
     <div class="mt-4">
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Overlap Blocked</p>
-      <div class="bg-surface border border-border rounded-lg overflow-hidden">
+      <div class="bg-surface border border-border rounded-lg overflow-x-auto">
         <table class="w-full text-xs font-mono">
           <thead>
             <tr class="border-b border-border">
