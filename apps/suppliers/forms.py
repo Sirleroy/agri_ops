@@ -191,6 +191,34 @@ def _validate_geojson_polygon(value):
     return value
 
 
+# ── Z-coordinate stripping (SW Maps exports [lon, lat, elevation]) ───────────
+
+def strip_z_coordinates(geometry):
+    """
+    Remove the elevation (Z) value from GeoJSON polygon coordinates.
+    SW Maps exports 3D coordinates [lon, lat, elevation] — strip to [lon, lat]
+    for clean storage and compatibility with Shapely/validators.
+    """
+    if not geometry:
+        return geometry
+    geo_type = geometry.get('type')
+    coords   = geometry.get('coordinates')
+    if not coords:
+        return geometry
+
+    def _strip_ring(ring):
+        return [[c[0], c[1]] for c in ring]
+
+    if geo_type == 'Polygon':
+        clean = [_strip_ring(ring) for ring in coords]
+    elif geo_type == 'MultiPolygon':
+        clean = [[_strip_ring(ring) for ring in polygon] for polygon in coords]
+    else:
+        return geometry
+
+    return {**geometry, 'coordinates': clean}
+
+
 # ── Spatial overlap detection (Layer 4) ──────────────────────────────────────
 
 def _geojson_to_shape(geojson):

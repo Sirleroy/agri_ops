@@ -25,6 +25,8 @@ urlpatterns = [
     # Farms
     path('farms/', views.FarmListView.as_view(), name='farm_list'),
     path('farms/export/', views.FarmExportView.as_view(), name='farm_export'),
+    path('farms/import/', views.FarmImportView.as_view(), name='farm_import'),
+    path('farms/import/errors/', views.FarmImportErrorsView.as_view(), name='farm_import_errors'),
     path('farms/new/', views.FarmCreateView.as_view(), name='farm_create'),
     path('farms/<int:pk>/', views.FarmDetailView.as_view(), name='farm_detail'),
     path('farms/<int:pk>/edit/', views.FarmUpdateView.as_view(), name='farm_update'),

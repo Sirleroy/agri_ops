@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% block title %}Import Farm Polygons — AgriOps{% endblock %}
+{% block page_title %}Import Farm Polygons{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl space-y-6">
+
+  <div class="flex items-center justify-between">
+    <a href="{% url 'suppliers:farm_list' %}" class="text-sm text-slate-500 hover:text-slate-100 transition-colors font-mono">← Farms</a>
+  </div>
+
+  <!-- Instructions -->
+  <div class="bg-card border border-border rounded-xl p-6">
+    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">How to Import</p>
+    <ol class="space-y-2 text-sm text-slate-400 list-decimal list-inside">
+      <li>Export farm boundaries from <span class="font-mono text-slate-300">SW Maps</span> as a GeoJSON FeatureCollection.</li>
+      <li>Select the supplier and confirm the default commodity below.</li>
+      <li>Upload the file — each polygon is validated before saving.</li>
+      <li>Review the import summary. Download the problems file if any rows were blocked.</li>
+    </ol>
+    <div class="mt-4 pt-4 border-t border-border">
+      <p class="text-xs font-mono text-slate-500 mb-2">SW MAPS FIELD NAMES RECOGNISED</p>
+      <div class="flex flex-wrap gap-2">
+        {% for tag in "NAME,First Name,Last Name,Village,LGA,Phone Number,Commodity,Area_Hectares,AREA,REMARKS"|split:"," %}
+        <span class="px-2 py-0.5 rounded text-xs font-mono bg-surface border border-border text-slate-400">{{ tag }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload form -->
+  <div class="bg-card border border-border rounded-xl p-6">
+    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Upload File</p>
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      {% if form_error %}
+        <div class="mb-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20">
+          <p class="text-sm text-red-400 font-mono">{{ form_error }}</p>
+        </div>
+      {% endif %}
+
+      <div class="grid grid-cols-2 gap-4 mb-4">
+
+        <div class="col-span-2 sm:col-span-1">
+          <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">Supplier *</label>
+          <select name="supplier"
+            class="w-full bg-surface border border-border rounded-lg px-4 py-3 text-sm text-slate-100 outline-none focus:border-green transition-colors">
+            <option value="">— Select supplier —</option>
+            {% for s in suppliers %}
+            <option value="{{ s.pk }}">{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-span-2 sm:col-span-1">
+          <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">Default Commodity</label>
+          <input type="text" name="default_commodity" placeholder="e.g. Soy (used if not in file)"
+            class="w-full bg-surface border border-border rounded-lg px-4 py-3 text-sm text-slate-100 outline-none placeholder-slate-600 focus:border-green transition-colors">
+        </div>
+
+        <div class="col-span-2">
+          <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">GeoJSON File *</label>
+          <input type="file" name="geojson_file" accept=".geojson,.json"
+            class="w-full bg-surface border border-border rounded-lg px-4 py-3 text-sm text-slate-300 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:bg-green/10 file:text-green file:text-xs file:font-mono file:cursor-pointer outline-none">
+        </div>
+
+      </div>
+
+      <button type="submit"
+        class="bg-green hover:bg-green-dim text-bg font-bold text-sm px-6 py-2.5 rounded-lg transition-colors">
+        Upload and Validate
+      </button>
+    </form>
+  </div>
+
+  <!-- Results -->
+  {% if result %}
+  <div class="bg-card border border-border rounded-xl p-6">
+    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Import Summary</p>
+
+    <div class="grid grid-cols-4 gap-3 mb-6">
+      <div class="bg-slate-500/10 border border-slate-500/20 rounded-lg p-4 text-center">
+        <p class="text-2xl font-bold text-slate-300 font-mono">{{ result.total }}</p>
+        <p class="text-xs text-slate-500 font-mono mt-1">Total features</p>
+      </div>
+      <div class="bg-green/10 border border-green/20 rounded-lg p-4 text-center">
+        <p class="text-2xl font-bold text-green font-mono">{{ result.created }}</p>
+        <p class="text-xs text-slate-400 font-mono mt-1">Created</p>
+      </div>
+      <div class="bg-slate-500/10 border border-slate-500/20 rounded-lg p-4 text-center">
+        <p class="text-2xl font-bold text-slate-400 font-mono">{{ result.duplicates }}</p>
+        <p class="text-xs text-slate-400 font-mono mt-1">Duplicates skipped</p>
+      </div>
+      <div class="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4 text-center">
+        <p class="text-2xl font-bold text-orange-400 font-mono">{{ result.blocked }}</p>
+        <p class="text-xs text-slate-400 font-mono mt-1">Overlap blocked</p>
+      </div>
+    </div>
+
+    {% if result.errors > 0 %}
+    <div class="mb-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20">
+      <p class="text-sm text-red-400 font-mono">{{ result.errors }} polygon{{ result.errors|pluralize }} failed structure or geometry validation.</p>
+    </div>
+    {% endif %}
+
+    {% if result.blocked > 0 or result.errors > 0 %}
+    <div class="flex items-center justify-between py-3 px-4 bg-surface border border-border rounded-lg mb-4">
+      <p class="text-sm text-slate-400">{{ result.blocked|add:result.errors }} row{{ result.blocked|add:result.errors|pluralize }} could not be imported.</p>
+      <a href="{% url 'suppliers:farm_import_errors' %}?session_key={{ result.session_key }}"
+        class="inline-flex items-center gap-2 text-orange-400 border border-orange-500/30 hover:border-orange-400 text-xs font-mono px-3 py-1.5 rounded-lg transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        Download Problem Rows
+      </a>
+    </div>
+    {% endif %}
+
+    {% if result.created > 0 %}
+    <a href="{% url 'suppliers:farm_list' %}"
+      class="inline-flex items-center gap-2 bg-green hover:bg-green-dim text-bg text-sm font-bold px-4 py-2 rounded-lg transition-colors">
+      View Farm Registry
+    </a>
+    {% endif %}
+
+    <!-- Error detail -->
+    {% if result.error_detail %}
+    <div class="mt-6">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Validation Errors</p>
+      <div class="bg-surface border border-border rounded-lg overflow-hidden">
+        <table class="w-full text-xs font-mono">
+          <thead>
+            <tr class="border-b border-border">
+              <th class="text-left px-4 py-2 text-slate-500">Row</th>
+              <th class="text-left px-4 py-2 text-slate-500">Farm Name</th>
+              <th class="text-left px-4 py-2 text-slate-500">Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for err in result.error_detail %}
+            <tr class="border-b border-border/50">
+              <td class="px-4 py-2 text-slate-500">{{ err.row }}</td>
+              <td class="px-4 py-2 text-slate-300">{{ err.name }}</td>
+              <td class="px-4 py-2 text-red-400">{{ err.reason }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Blocked detail -->
+    {% if result.blocked_detail %}
+    <div class="mt-4">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Overlap Blocked</p>
+      <div class="bg-surface border border-border rounded-lg overflow-hidden">
+        <table class="w-full text-xs font-mono">
+          <thead>
+            <tr class="border-b border-border">
+              <th class="text-left px-4 py-2 text-slate-500">Row</th>
+              <th class="text-left px-4 py-2 text-slate-500">Farm Name</th>
+              <th class="text-left px-4 py-2 text-slate-500">Conflict</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in result.blocked_detail %}
+            <tr class="border-b border-border/50">
+              <td class="px-4 py-2 text-slate-500">{{ b.row }}</td>
+              <td class="px-4 py-2 text-slate-300">{{ b.name }}</td>
+              <td class="px-4 py-2 text-orange-400">{{ b.reason }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

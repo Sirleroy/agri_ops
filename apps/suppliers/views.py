@@ -254,6 +254,203 @@ class FarmerImportView(StaffRequiredMixin, View):
         return render(request, self.template_name, {'result': result})
 
 
+class FarmImportView(StaffRequiredMixin, View):
+    template_name = 'suppliers/farms/import.html'
+
+    def _get_context(self, request):
+        return {
+            'suppliers': Supplier.objects.filter(
+                company=request.user.company, is_active=True
+            )
+        }
+
+    def get(self, request):
+        return render(request, self.template_name, self._get_context(request))
+
+    def post(self, request):
+        import json
+        from django import forms as django_forms
+        from django.db import transaction
+        from .models import Farm, Farmer
+        from .forms import _validate_geojson_polygon, _find_overlapping_farm, _geojson_to_shape, strip_z_coordinates
+
+        company     = request.user.company
+        supplier_id = request.POST.get('supplier')
+        default_commodity = request.POST.get('default_commodity', '').strip()
+
+        ctx = self._get_context(request)
+
+        if not supplier_id:
+            ctx['form_error'] = 'Please select a supplier.'
+            return render(request, self.template_name, ctx)
+
+        supplier = Supplier.objects.filter(pk=supplier_id, company=company).first()
+        if not supplier:
+            ctx['form_error'] = 'Invalid supplier.'
+            return render(request, self.template_name, ctx)
+
+        geojson_file = request.FILES.get('geojson_file')
+        if not geojson_file:
+            ctx['form_error'] = 'Please select a GeoJSON file.'
+            return render(request, self.template_name, ctx)
+
+        try:
+            data = json.loads(geojson_file.read().decode('utf-8'))
+        except Exception as e:
+            ctx['form_error'] = f'Could not read file: {e}'
+            return render(request, self.template_name, ctx)
+
+        if data.get('type') != 'FeatureCollection':
+            ctx['form_error'] = 'File must be a GeoJSON FeatureCollection.'
+            return render(request, self.template_name, ctx)
+
+        features = data.get('features') or []
+        if not features:
+            ctx['form_error'] = 'FeatureCollection contains no features.'
+            return render(request, self.template_name, ctx)
+
+        to_create    = []
+        duplicates   = []
+        blocked      = []
+        errors       = []
+
+        for i, feature in enumerate(features):
+            row = i + 1
+            # Strip whitespace from all property keys (handles SW Maps "Phone Number " etc.)
+            raw_props = feature.get('properties') or {}
+            props = {k.strip(): v for k, v in raw_props.items()}
+            geometry  = feature.get('geometry')
+
+            # ── Extract fields ────────────────────────────────────
+            name = (
+                props.get('NAME') or props.get('name') or
+                props.get('farm_name') or props.get('Farm Name') or
+                f"Farm {row}"
+            ).strip()
+
+            first_name   = (props.get('First Name') or props.get('first_name') or '').strip()
+            last_name    = (props.get('Last Name')  or props.get('last_name')  or '').strip()
+            farmer_label = f"{first_name} {last_name}".strip()
+            village      = (props.get('Village') or props.get('village') or '').strip()
+            lga          = (props.get('LGA')     or props.get('lga')     or '').strip()
+            phone_raw    = props.get('Phone Number') or props.get('phone') or ''
+            phone        = '' if str(phone_raw).strip() in ('', '0', '0.0', 'None') else str(phone_raw).strip()
+            commodity    = (props.get('Commodity') or props.get('commodity') or default_commodity or 'Unknown').strip()
+            state_region = (props.get('State') or props.get('state_region') or props.get('Region') or '').strip()
+
+            # Area: prefer Area_Hectares > 0, else convert AREA (sq m) ÷ 10,000
+            area = None
+            try:
+                ha_raw = props.get('Area_Hectares') or props.get('area_ha')
+                sm_raw = props.get('AREA') or props.get('area')
+                if ha_raw and float(ha_raw) > 0:
+                    area = round(float(ha_raw), 4)
+                elif sm_raw and float(sm_raw) > 0:
+                    area = round(float(sm_raw) / 10000, 4)
+            except (ValueError, TypeError):
+                pass
+
+            # ── Layer 0: strip Z coordinates ─────────────────────
+            if geometry:
+                geometry = strip_z_coordinates(geometry)
+
+            # ── Layer 1: GeoJSON structure ────────────────────────
+            try:
+                _validate_geojson_polygon(geometry)
+            except django_forms.ValidationError as e:
+                errors.append({'row': row, 'name': name, 'reason': e.messages[0]})
+                continue
+
+            # ── Layer 2: Shapely validity + auto-repair ───────────
+            shape = _geojson_to_shape(geometry)
+            if shape is not None and not shape.is_valid:
+                repaired = shape.buffer(0)
+                if repaired.is_valid and repaired.area > 0:
+                    from shapely.geometry import mapping
+                    geometry = dict(mapping(repaired))
+                else:
+                    errors.append({'row': row, 'name': name,
+                                   'reason': 'Polygon is self-intersecting and could not be repaired automatically.'})
+                    continue
+
+            # ── Layer 3: duplicate name + supplier ────────────────
+            if Farm.objects.filter(company=company, supplier=supplier, name__iexact=name).exists():
+                duplicates.append({'row': row, 'name': name})
+                continue
+
+            # ── Layer 4: spatial overlap ──────────────────────────
+            overlapping = _find_overlapping_farm(geometry, company)
+            if overlapping:
+                blocked.append({'row': row, 'name': name,
+                                'reason': f"Overlaps with existing farm '{overlapping.name}' ({overlapping.supplier.name})"})
+                continue
+
+            # ── Farmer lookup (link if exists, text fallback if not) ──
+            linked_farmer = None
+            if first_name and village and lga:
+                linked_farmer = Farmer.objects.filter(
+                    company=company,
+                    first_name__iexact=first_name,
+                    last_name__iexact=last_name,
+                    village__iexact=village,
+                    lga__iexact=lga,
+                ).first()
+
+            to_create.append(Farm(
+                company=company,
+                supplier=supplier,
+                name=name,
+                farmer=linked_farmer,
+                farmer_name=farmer_label,
+                geolocation=geometry,
+                area_hectares=area,
+                country='Nigeria',
+                state_region=state_region,
+                commodity=commodity,
+                deforestation_risk_status='standard',
+                is_eudr_verified=False,
+            ))
+
+        # ── Bulk create ───────────────────────────────────────────
+        created_count = 0
+        with transaction.atomic():
+            for j in range(0, len(to_create), 50):
+                batch = to_create[j:j + 50]
+                Farm.objects.bulk_create(batch)
+                created_count += len(batch)
+
+        # Store problem rows in session for download
+        session_key = 'farm_import_problems'
+        request.session[session_key] = errors + blocked
+
+        ctx['result'] = {
+            'total':          len(features),
+            'created':        created_count,
+            'duplicates':     len(duplicates),
+            'blocked':        len(blocked),
+            'errors':         len(errors),
+            'session_key':    session_key,
+            'error_detail':   errors,
+            'blocked_detail': blocked,
+        }
+        return render(request, self.template_name, ctx)
+
+
+class FarmImportErrorsView(StaffRequiredMixin, View):
+    """Download problem rows from a previous farm import as JSON."""
+    def get(self, request):
+        import json
+        from django.http import HttpResponse
+        session_key  = request.GET.get('session_key', 'farm_import_problems')
+        problem_rows = request.session.get(session_key, [])
+        response = HttpResponse(
+            json.dumps(problem_rows, indent=2),
+            content_type='application/json'
+        )
+        response['Content-Disposition'] = 'attachment; filename="AgriOps_Farm_Import_Problems.json"'
+        return response
+
+
 class FarmExportView(StaffRequiredMixin, View):
     def get(self, request):
         from .exports import farm_registry_csv, farm_registry_pdf
