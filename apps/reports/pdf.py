@@ -335,19 +335,29 @@ def generate_compliance_report(company, user, filters=None):
     ))
     story.append(Spacer(1, 3*mm))
     if batch_qs.exists():
-        batch_data = [["Batch Number", "Commodity", "Qty (kg)", "Linked Farms", "Sales Order", "Status"]]
+        batch_data = [["Batch Number", "Commodity", "HS Code", "Qty (kg)", "Linked Farms", "Sales Order", "Status"]]
         for b in batch_qs[:30]:
             farm_names = ", ".join(f.name for f in b.farms.all()) or "—"
             so_ref = b.sales_order.order_number if b.sales_order else "—"
+            hs_codes = []
+            if b.sales_order:
+                hs_codes = list(
+                    b.sales_order.items
+                    .exclude(product__hs_code='')
+                    .values_list('product__hs_code', flat=True)
+                    .distinct()
+                )
+            hs_display = ", ".join(hs_codes) if hs_codes else "—"
             batch_data.append([
                 b.batch_number,
                 b.commodity,
+                hs_display,
                 str(b.quantity_kg) if b.quantity_kg else "—",
                 farm_names,
                 so_ref,
                 "LOCKED" if b.is_locked else "Open",
             ])
-        b_t = Table(batch_data, colWidths=[38*mm, 22*mm, 18*mm, 42*mm, 28*mm, 18*mm])
+        b_t = Table(batch_data, colWidths=[35*mm, 20*mm, 22*mm, 16*mm, 38*mm, 25*mm, 16*mm])
         b_t.setStyle(TableStyle([
             ("BACKGROUND", (0,0), (-1,0), DARK),
             ("TEXTCOLOR", (0,0), (-1,0), WHITE),
