@@ -13,7 +13,8 @@ router.register('purchase-orders', views.PurchaseOrderViewSet, basename='purchas
 router.register('sales-orders',    views.SalesOrderViewSet,    basename='salesorder')
 
 urlpatterns = [
-    path('token/',         TokenObtainPairView.as_view(),  name='token_obtain'),
-    path('token/refresh/', TokenRefreshView.as_view(),     name='token_refresh'),
+    path('token/',         TokenObtainPairView.as_view(),        name='token_obtain'),
+    path('token/refresh/', TokenRefreshView.as_view(),           name='token_refresh'),
+    path('farms/import/',  views.FarmGeoJSONImportView.as_view(), name='farm_geojson_import'),
     path('',               include(router.urls)),
 ]

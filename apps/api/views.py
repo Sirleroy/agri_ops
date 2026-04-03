@@ -1,6 +1,10 @@
+import json
+
 from rest_framework import viewsets
 from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser, JSONParser
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.suppliers.models import Supplier, Farm
 from apps.products.models import Product
@@ -86,3 +90,56 @@ class PurchaseOrderViewSet(TenantScopedViewSet):
 class SalesOrderViewSet(TenantScopedViewSet):
     queryset           = SalesOrder.objects.all()
     serializer_class   = SalesOrderSerializer
+
+
+class FarmGeoJSONImportView(APIView):
+    """
+    POST /api/v1/farms/import/
+
+    Accepts a SW Maps GeoJSON FeatureCollection and runs the full 4-layer
+    validation pipeline. Designed for mobile share-to-URL workflows.
+
+    Auth: Bearer JWT token
+    Body: multipart/form-data  — geojson_file (file), supplier_id (int), default_commodity (str, optional)
+       OR application/json     — {"type":"FeatureCollection","features":[...]} with supplier_id + default_commodity as query params
+
+    Returns: {total, created, duplicates, blocked, errors, error_detail, blocked_detail}
+    """
+    permission_classes = [IsTenantMember]
+    parser_classes     = [MultiPartParser, JSONParser]
+
+    def post(self, request):
+        from apps.suppliers.views import run_farm_geojson_import
+
+        company           = request.user.company
+        supplier_id       = request.data.get('supplier_id') or request.query_params.get('supplier_id')
+        default_commodity = (request.data.get('default_commodity') or request.query_params.get('default_commodity', '')).strip()
+
+        if not supplier_id:
+            return Response({'error': 'supplier_id is required.'}, status=400)
+
+        supplier = Supplier.objects.filter(pk=supplier_id, company=company).first()
+        if not supplier:
+            return Response({'error': 'Invalid supplier_id.'}, status=400)
+
+        geojson_file = request.FILES.get('geojson_file')
+        if geojson_file:
+            try:
+                data = json.loads(geojson_file.read().decode('utf-8'))
+            except Exception as e:
+                return Response({'error': f'Could not read file: {e}'}, status=400)
+        elif isinstance(request.data, dict) and request.data.get('type') == 'FeatureCollection':
+            data = request.data
+        else:
+            return Response({'error': 'Provide a geojson_file (multipart) or a raw GeoJSON FeatureCollection body.'}, status=400)
+
+        if data.get('type') != 'FeatureCollection':
+            return Response({'error': 'Must be a GeoJSON FeatureCollection.'}, status=400)
+
+        features = data.get('features') or []
+        if not features:
+            return Response({'error': 'FeatureCollection contains no features.'}, status=400)
+
+        result = run_farm_geojson_import(company, supplier, features, default_commodity)
+        status_code = 201 if result['created'] > 0 else 200
+        return Response(result, status=status_code)
