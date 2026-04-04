@@ -178,6 +178,38 @@ class Farm(models.Model):
         return 'compliant'
 
 
+class FarmImportLog(models.Model):
+    company       = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='farm_import_logs')
+    uploaded_by   = models.ForeignKey(
+                      'users.CustomUser', on_delete=models.SET_NULL,
+                      null=True, blank=True, related_name='farm_import_logs'
+                    )
+    supplier      = models.ForeignKey(
+                      Supplier, on_delete=models.SET_NULL,
+                      null=True, blank=True, related_name='farm_import_logs'
+                    )
+    filename      = models.CharField(max_length=255, blank=True)
+    dry_run       = models.BooleanField(default=False)
+    total         = models.PositiveIntegerField(default=0)
+    created       = models.PositiveIntegerField(default=0)
+    would_create  = models.PositiveIntegerField(default=0)
+    duplicates    = models.PositiveIntegerField(default=0)
+    blocked       = models.PositiveIntegerField(default=0)
+    errors        = models.PositiveIntegerField(default=0)
+    warning_count = models.PositiveIntegerField(default=0)
+    error_detail   = models.JSONField(default=list)
+    blocked_detail = models.JSONField(default=list)
+    warning_detail = models.JSONField(default=list)
+    created_at    = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        label = 'DRY RUN' if self.dry_run else f'{self.created} created'
+        return f"{self.created_at:%Y-%m-%d %H:%M} — {self.supplier} — {label}"
+
+
 class FarmCertification(models.Model):
     CERT_TYPE_CHOICES = [
         ('organic_eu',          'Organic EU (2018/848)'),

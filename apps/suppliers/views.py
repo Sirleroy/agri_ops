@@ -254,11 +254,12 @@ class FarmerImportView(StaffRequiredMixin, View):
         return render(request, self.template_name, {'result': result})
 
 
-def run_farm_geojson_import(company, supplier, features, default_commodity=''):
+def run_farm_geojson_import(company, supplier, features, default_commodity='', dry_run=False):
     """
     Core GeoJSON import pipeline — called by both the web view and the API endpoint.
-    Runs all 4 validation layers and bulk-creates passing farms.
-    Returns a result dict: {total, created, duplicates, blocked, errors, error_detail, blocked_detail}
+    Runs all validation layers and bulk-creates passing farms (unless dry_run=True).
+    Returns a result dict: {total, created, duplicates, blocked, errors, error_detail,
+                            blocked_detail, warnings, dry_run}
     """
     import json
     from django import forms as django_forms
@@ -271,6 +272,7 @@ def run_farm_geojson_import(company, supplier, features, default_commodity=''):
     duplicates = []
     blocked    = []
     errors     = []
+    warnings   = []
 
     for i, feature in enumerate(features):
         row = i + 1
@@ -334,6 +336,19 @@ def run_farm_geojson_import(company, supplier, features, default_commodity=''):
                             'reason': f"Overlaps with existing farm '{overlapping.name}' ({overlapping.supplier.name})"})
             continue
 
+        # Completeness warnings — non-blocking but flagged for the operator
+        row_warnings = []
+        if not farmer_label:
+            row_warnings.append("No farmer name found — check 'First Name' and 'Last Name' columns.")
+        if not lga:
+            row_warnings.append("LGA missing — add an 'LGA' column or fill it in after import.")
+        if commodity == 'Unknown':
+            row_warnings.append("Commodity not in file — set a Default Commodity above, or add a 'Commodity' column.")
+        if area and area > 200:
+            row_warnings.append(f"Declared area ({area} ha) is unusually large — verify this is correct.")
+        if row_warnings:
+            warnings.append({'row': row, 'name': name, 'issues': row_warnings})
+
         linked_farmer = None
         if first_name and village and lga:
             linked_farmer = Farmer.objects.filter(
@@ -360,20 +375,24 @@ def run_farm_geojson_import(company, supplier, features, default_commodity=''):
         ))
 
     created_count = 0
-    with transaction.atomic():
-        for j in range(0, len(to_create), 50):
-            batch = to_create[j:j + 50]
-            Farm.objects.bulk_create(batch)
-            created_count += len(batch)
+    if not dry_run:
+        with transaction.atomic():
+            for j in range(0, len(to_create), 50):
+                batch = to_create[j:j + 50]
+                Farm.objects.bulk_create(batch)
+                created_count += len(batch)
 
     return {
         'total':          len(features),
-        'created':        created_count,
+        'created':        created_count if not dry_run else 0,
+        'would_create':   len(to_create),
         'duplicates':     len(duplicates),
         'blocked':        len(blocked),
         'errors':         len(errors),
         'error_detail':   errors,
         'blocked_detail': blocked,
+        'warnings':       warnings,
+        'dry_run':        dry_run,
     }
 
 
@@ -381,10 +400,14 @@ class FarmImportView(StaffRequiredMixin, View):
     template_name = 'suppliers/farms/import.html'
 
     def _get_context(self, request):
+        from .models import FarmImportLog
         return {
             'suppliers': Supplier.objects.filter(
                 company=request.user.company, is_active=True
-            )
+            ),
+            'recent_imports': FarmImportLog.objects.filter(
+                company=request.user.company
+            ).select_related('uploaded_by', 'supplier')[:5],
         }
 
     def get(self, request):
@@ -426,7 +449,27 @@ class FarmImportView(StaffRequiredMixin, View):
             ctx['form_error'] = 'FeatureCollection contains no features.'
             return render(request, self.template_name, ctx)
 
-        result = run_farm_geojson_import(company, supplier, features, default_commodity)
+        dry_run = 'dry_run' in request.POST
+        result = run_farm_geojson_import(company, supplier, features, default_commodity, dry_run=dry_run)
+
+        from .models import FarmImportLog
+        FarmImportLog.objects.create(
+            company=company,
+            uploaded_by=request.user,
+            supplier=supplier,
+            filename=geojson_file.name,
+            dry_run=dry_run,
+            total=result['total'],
+            created=result['created'],
+            would_create=result['would_create'],
+            duplicates=result['duplicates'],
+            blocked=result['blocked'],
+            errors=result['errors'],
+            warning_count=len(result['warnings']),
+            error_detail=result['error_detail'],
+            blocked_detail=result['blocked_detail'],
+            warning_detail=result['warnings'],
+        )
 
         session_key = 'farm_import_problems'
         request.session[session_key] = result['error_detail'] + result['blocked_detail']
@@ -434,6 +477,17 @@ class FarmImportView(StaffRequiredMixin, View):
 
         ctx['result'] = result
         return render(request, self.template_name, ctx)
+
+
+class FarmImportHistoryView(StaffRequiredMixin, View):
+    template_name = 'suppliers/farms/import_history.html'
+
+    def get(self, request):
+        from .models import FarmImportLog
+        logs = FarmImportLog.objects.filter(
+            company=request.user.company
+        ).select_related('uploaded_by', 'supplier')
+        return render(request, self.template_name, {'logs': logs})
 
 
 class FarmImportErrorsView(StaffRequiredMixin, View):

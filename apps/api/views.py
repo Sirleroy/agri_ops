@@ -141,5 +141,25 @@ class FarmGeoJSONImportView(APIView):
             return Response({'error': 'FeatureCollection contains no features.'}, status=400)
 
         result = run_farm_geojson_import(company, supplier, features, default_commodity)
+
+        from apps.suppliers.models import FarmImportLog
+        FarmImportLog.objects.create(
+            company=company,
+            uploaded_by=request.user,
+            supplier=supplier,
+            filename=getattr(geojson_file, 'name', 'api-upload'),
+            dry_run=False,
+            total=result['total'],
+            created=result['created'],
+            would_create=result['would_create'],
+            duplicates=result['duplicates'],
+            blocked=result['blocked'],
+            errors=result['errors'],
+            warning_count=len(result['warnings']),
+            error_detail=result['error_detail'],
+            blocked_detail=result['blocked_detail'],
+            warning_detail=result['warnings'],
+        )
+
         status_code = 201 if result['created'] > 0 else 200
         return Response(result, status=status_code)

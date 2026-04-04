@@ -9,14 +9,145 @@
     <a href="{% url 'suppliers:farm_list' %}" class="text-sm text-slate-500 hover:text-slate-100 transition-colors font-mono">← Farms</a>
   </div>
 
+  <!-- Results — rendered FIRST so mobile users see them without scrolling -->
+  {% if result %}
+  <div class="bg-card border border-border rounded-xl p-6">
+
+    {% if result.dry_run %}
+    <div class="mb-5 px-4 py-3 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-start gap-3">
+      <svg class="w-4 h-4 text-blue-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <p class="text-sm text-blue-300">Dry run — nothing was saved. Review the results below, then upload again without "Validate only" to commit.</p>
+    </div>
+    {% endif %}
+
+    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">
+      {% if result.dry_run %}Validation Preview{% else %}Import Summary{% endif %}
+    </p>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div class="bg-slate-500/10 border border-slate-500/20 rounded-lg p-4 text-center">
+        <p class="text-2xl font-bold text-slate-300 font-mono">{{ result.total }}</p>
+        <p class="text-xs text-slate-500 font-mono mt-1">Total</p>
+      </div>
+      <div class="bg-green/10 border border-green/20 rounded-lg p-4 text-center">
+        {% if result.dry_run %}
+        <p class="text-2xl font-bold text-green font-mono">{{ result.would_create }}</p>
+        <p class="text-xs text-slate-400 font-mono mt-1">Would create</p>
+        {% else %}
+        <p class="text-2xl font-bold text-green font-mono">{{ result.created }}</p>
+        <p class="text-xs text-slate-400 font-mono mt-1">Created</p>
+        {% endif %}
+      </div>
+      <div class="bg-slate-500/10 border border-slate-500/20 rounded-lg p-4 text-center">
+        <p class="text-2xl font-bold text-slate-400 font-mono">{{ result.duplicates }}</p>
+        <p class="text-xs text-slate-400 font-mono mt-1">Duplicates</p>
+      </div>
+      <div class="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4 text-center">
+        <p class="text-2xl font-bold text-orange-400 font-mono">{{ result.blocked }}</p>
+        <p class="text-xs text-slate-400 font-mono mt-1">Overlap blocked</p>
+      </div>
+    </div>
+
+    {% if result.errors > 0 %}
+    <div class="mb-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20">
+      <p class="text-sm text-red-400 font-mono">{{ result.errors }} polygon{{ result.errors|pluralize }} failed validation and cannot be imported.</p>
+    </div>
+    {% endif %}
+
+    {% if result.warnings %}
+    <div class="mb-4 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+      <p class="text-sm font-mono text-amber-400 mb-1">{{ result.warnings|length }} row{{ result.warnings|length|pluralize }} imported with incomplete data — fill these in after.</p>
+      <ul class="mt-2 space-y-1">
+        {% for w in result.warnings %}
+        <li class="text-xs text-amber-300/80 font-mono">Row {{ w.row }} — {{ w.name }}: {{ w.issues|join:", " }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% if result.blocked > 0 or result.errors > 0 %}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3 px-4 bg-surface border border-border rounded-lg mb-4">
+      <p class="text-sm text-slate-400">{{ result.blocked|add:result.errors }} row{{ result.blocked|add:result.errors|pluralize }} could not be imported.</p>
+      <a href="{% url 'suppliers:farm_import_errors' %}?session_key={{ result.session_key }}"
+        class="inline-flex items-center gap-2 text-orange-400 border border-orange-500/30 hover:border-orange-400 text-xs font-mono px-3 py-1.5 rounded-lg transition-colors self-start sm:self-auto">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        Download Problem Rows
+      </a>
+    </div>
+    {% endif %}
+
+    {% if result.created > 0 %}
+    <a href="{% url 'suppliers:farm_list' %}"
+      class="inline-flex items-center gap-2 bg-green hover:bg-green-dim text-bg text-sm font-bold px-4 py-2 rounded-lg transition-colors">
+      View Farm Registry
+    </a>
+    {% endif %}
+
+    <!-- Error detail -->
+    {% if result.error_detail %}
+    <div class="mt-6">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Validation Errors</p>
+      <div class="bg-surface border border-border rounded-lg overflow-x-auto">
+        <table class="w-full text-xs font-mono">
+          <thead>
+            <tr class="border-b border-border">
+              <th class="text-left px-4 py-2 text-slate-500 whitespace-nowrap">Row</th>
+              <th class="text-left px-4 py-2 text-slate-500 whitespace-nowrap">Farm Name</th>
+              <th class="text-left px-4 py-2 text-slate-500">What went wrong</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for err in result.error_detail %}
+            <tr class="border-b border-border/50">
+              <td class="px-4 py-2 text-slate-500">{{ err.row }}</td>
+              <td class="px-4 py-2 text-slate-300 whitespace-nowrap">{{ err.name }}</td>
+              <td class="px-4 py-2 text-red-400">{{ err.reason }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Blocked detail -->
+    {% if result.blocked_detail %}
+    <div class="mt-4">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Overlap Blocked</p>
+      <div class="bg-surface border border-border rounded-lg overflow-x-auto">
+        <table class="w-full text-xs font-mono">
+          <thead>
+            <tr class="border-b border-border">
+              <th class="text-left px-4 py-2 text-slate-500 whitespace-nowrap">Row</th>
+              <th class="text-left px-4 py-2 text-slate-500 whitespace-nowrap">Farm Name</th>
+              <th class="text-left px-4 py-2 text-slate-500">Conflict</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in result.blocked_detail %}
+            <tr class="border-b border-border/50">
+              <td class="px-4 py-2 text-slate-500">{{ b.row }}</td>
+              <td class="px-4 py-2 text-slate-300 whitespace-nowrap">{{ b.name }}</td>
+              <td class="px-4 py-2 text-orange-400">{{ b.reason }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+  {% endif %}
+
   <!-- Instructions -->
   <div class="bg-card border border-border rounded-xl p-6">
     <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">How to Import</p>
     <ol class="space-y-2 text-sm text-slate-400 list-decimal list-inside">
       <li>Export farm boundaries from <span class="font-mono text-slate-300">SW Maps</span> as a GeoJSON FeatureCollection.</li>
       <li>Select the supplier and confirm the default commodity below.</li>
-      <li>Upload the file — each polygon is validated before saving.</li>
-      <li>Review the import summary. Download the problems file if any rows were blocked.</li>
+      <li>Use <span class="font-mono text-slate-300">Validate only</span> first — check results before saving.</li>
+      <li>Upload again without "Validate only" to commit the farms.</li>
     </ol>
     <div class="mt-4 pt-4 border-t border-border">
       <p class="text-xs font-mono text-slate-500 mb-2">SW MAPS FIELD NAMES RECOGNISED</p>
@@ -76,115 +207,63 @@
 
       </div>
 
-      <button type="submit"
-        class="bg-green hover:bg-green-dim text-bg font-bold text-sm px-6 py-2.5 rounded-lg transition-colors">
-        Upload and Validate
-      </button>
+      <div class="flex flex-wrap items-center gap-4">
+        <button type="submit"
+          class="bg-green hover:bg-green-dim text-bg font-bold text-sm px-6 py-2.5 rounded-lg transition-colors">
+          Upload and Validate
+        </button>
+        <label class="flex items-center gap-2 cursor-pointer select-none">
+          <input type="checkbox" name="dry_run"
+            class="w-4 h-4 rounded border-border bg-surface accent-green">
+          <span class="text-xs font-mono text-slate-400">Validate only — don't save yet</span>
+        </label>
+      </div>
     </form>
   </div>
 
-  <!-- Results -->
-  {% if result %}
+  <!-- Recent import history -->
+  {% if recent_imports %}
   <div class="bg-card border border-border rounded-xl p-6">
-    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Import Summary</p>
-
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-      <div class="bg-slate-500/10 border border-slate-500/20 rounded-lg p-4 text-center">
-        <p class="text-2xl font-bold text-slate-300 font-mono">{{ result.total }}</p>
-        <p class="text-xs text-slate-500 font-mono mt-1">Total features</p>
-      </div>
-      <div class="bg-green/10 border border-green/20 rounded-lg p-4 text-center">
-        <p class="text-2xl font-bold text-green font-mono">{{ result.created }}</p>
-        <p class="text-xs text-slate-400 font-mono mt-1">Created</p>
-      </div>
-      <div class="bg-slate-500/10 border border-slate-500/20 rounded-lg p-4 text-center">
-        <p class="text-2xl font-bold text-slate-400 font-mono">{{ result.duplicates }}</p>
-        <p class="text-xs text-slate-400 font-mono mt-1">Duplicates skipped</p>
-      </div>
-      <div class="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4 text-center">
-        <p class="text-2xl font-bold text-orange-400 font-mono">{{ result.blocked }}</p>
-        <p class="text-xs text-slate-400 font-mono mt-1">Overlap blocked</p>
-      </div>
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Recent Uploads</p>
+      <a href="{% url 'suppliers:farm_import_history' %}" class="text-xs font-mono text-slate-500 hover:text-slate-300 transition-colors">View all →</a>
     </div>
-
-    {% if result.errors > 0 %}
-    <div class="mb-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20">
-      <p class="text-sm text-red-400 font-mono">{{ result.errors }} polygon{{ result.errors|pluralize }} failed structure or geometry validation.</p>
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs font-mono">
+        <thead>
+          <tr class="border-b border-border">
+            <th class="text-left px-3 py-2 text-slate-500 whitespace-nowrap">When</th>
+            <th class="text-left px-3 py-2 text-slate-500 whitespace-nowrap">By</th>
+            <th class="text-left px-3 py-2 text-slate-500 whitespace-nowrap">Supplier</th>
+            <th class="text-left px-3 py-2 text-slate-500 whitespace-nowrap">Total</th>
+            <th class="text-left px-3 py-2 text-slate-500 whitespace-nowrap">Saved</th>
+            <th class="text-left px-3 py-2 text-slate-500 whitespace-nowrap">Errors</th>
+            <th class="text-left px-3 py-2 text-slate-500 whitespace-nowrap">Warnings</th>
+            <th class="text-left px-3 py-2 text-slate-500"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in recent_imports %}
+          <tr class="border-b border-border/50">
+            <td class="px-3 py-2 text-slate-400 whitespace-nowrap">{{ log.created_at|date:"d M H:i" }}</td>
+            <td class="px-3 py-2 text-slate-300 whitespace-nowrap">{{ log.uploaded_by.get_short_name|default:log.uploaded_by.username }}</td>
+            <td class="px-3 py-2 text-slate-300 whitespace-nowrap">{{ log.supplier.name|default:"—" }}</td>
+            <td class="px-3 py-2 text-slate-400">{{ log.total }}</td>
+            <td class="px-3 py-2 {% if log.dry_run %}text-slate-500{% else %}text-green{% endif %}">
+              {% if log.dry_run %}—{% else %}{{ log.created }}{% endif %}
+            </td>
+            <td class="px-3 py-2 {% if log.errors > 0 %}text-red-400{% else %}text-slate-500{% endif %}">{{ log.errors }}</td>
+            <td class="px-3 py-2 {% if log.warning_count > 0 %}text-amber-400{% else %}text-slate-500{% endif %}">{{ log.warning_count }}</td>
+            <td class="px-3 py-2">
+              {% if log.dry_run %}
+              <span class="px-2 py-0.5 rounded text-xs font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20">DRY RUN</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-    {% endif %}
-
-    {% if result.blocked > 0 or result.errors > 0 %}
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3 px-4 bg-surface border border-border rounded-lg mb-4">
-      <p class="text-sm text-slate-400">{{ result.blocked|add:result.errors }} row{{ result.blocked|add:result.errors|pluralize }} could not be imported.</p>
-      <a href="{% url 'suppliers:farm_import_errors' %}?session_key={{ result.session_key }}"
-        class="inline-flex items-center gap-2 text-orange-400 border border-orange-500/30 hover:border-orange-400 text-xs font-mono px-3 py-1.5 rounded-lg transition-colors self-start sm:self-auto">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-        Download Problem Rows
-      </a>
-    </div>
-    {% endif %}
-
-    {% if result.created > 0 %}
-    <a href="{% url 'suppliers:farm_list' %}"
-      class="inline-flex items-center gap-2 bg-green hover:bg-green-dim text-bg text-sm font-bold px-4 py-2 rounded-lg transition-colors">
-      View Farm Registry
-    </a>
-    {% endif %}
-
-    <!-- Error detail -->
-    {% if result.error_detail %}
-    <div class="mt-6">
-      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Validation Errors</p>
-      <div class="bg-surface border border-border rounded-lg overflow-x-auto">
-        <table class="w-full text-xs font-mono">
-          <thead>
-            <tr class="border-b border-border">
-              <th class="text-left px-4 py-2 text-slate-500">Row</th>
-              <th class="text-left px-4 py-2 text-slate-500">Farm Name</th>
-              <th class="text-left px-4 py-2 text-slate-500">Reason</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for err in result.error_detail %}
-            <tr class="border-b border-border/50">
-              <td class="px-4 py-2 text-slate-500">{{ err.row }}</td>
-              <td class="px-4 py-2 text-slate-300">{{ err.name }}</td>
-              <td class="px-4 py-2 text-red-400">{{ err.reason }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-    {% endif %}
-
-    <!-- Blocked detail -->
-    {% if result.blocked_detail %}
-    <div class="mt-4">
-      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Overlap Blocked</p>
-      <div class="bg-surface border border-border rounded-lg overflow-x-auto">
-        <table class="w-full text-xs font-mono">
-          <thead>
-            <tr class="border-b border-border">
-              <th class="text-left px-4 py-2 text-slate-500">Row</th>
-              <th class="text-left px-4 py-2 text-slate-500">Farm Name</th>
-              <th class="text-left px-4 py-2 text-slate-500">Conflict</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for b in result.blocked_detail %}
-            <tr class="border-b border-border/50">
-              <td class="px-4 py-2 text-slate-500">{{ b.row }}</td>
-              <td class="px-4 py-2 text-slate-300">{{ b.name }}</td>
-              <td class="px-4 py-2 text-orange-400">{{ b.reason }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-    {% endif %}
-
   </div>
   {% endif %}
 

@@ -188,6 +188,20 @@ def _validate_geojson_polygon(value):
                     "GeoJSON uses [longitude, latitude] order — your values may be reversed."
                 )
 
+    # Nigeria bounding box check — catches wrong CRS or swapped lat/lon
+    # Uses centroid of the outer ring to avoid false positives on border farms
+    _NGA_LON_MIN, _NGA_LON_MAX = 2.5, 15.0
+    _NGA_LAT_MIN, _NGA_LAT_MAX = 4.0, 14.2
+    outer = rings[0]
+    avg_lon = sum(c[0] for c in outer) / len(outer)
+    avg_lat = sum(c[1] for c in outer) / len(outer)
+    if not (_NGA_LON_MIN <= avg_lon <= _NGA_LON_MAX and _NGA_LAT_MIN <= avg_lat <= _NGA_LAT_MAX):
+        raise forms.ValidationError(
+            f"This polygon's centre ({avg_lat:.4f}°N, {avg_lon:.4f}°E) falls outside Nigeria. "
+            "Check that your GPS app is set to WGS84 and that coordinates are in "
+            "[longitude, latitude] order — they are often exported reversed."
+        )
+
     return value
 
 
