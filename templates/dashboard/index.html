@@ -33,12 +33,14 @@
     <div class="bg-card border border-border rounded-xl p-5">
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Farms</p>
       <p class="text-3xl font-black text-slate-100">{{ total_farms }}</p>
-      <p class="text-xs text-slate-500 mt-1">Registered plots</p>
+      <p class="text-xs text-slate-500 mt-1">
+        {% if total_area_ha %}{{ total_area_ha|floatformat:0 }} ha mapped{% else %}No area data yet{% endif %}
+      </p>
     </div>
     <div class="bg-card border border-border rounded-xl p-5">
-      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Team Members</p>
-      <p class="text-3xl font-black text-slate-100">{{ total_users }}</p>
-      <p class="text-xs text-slate-500 mt-1">Active users</p>
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Farmers</p>
+      <p class="text-3xl font-black text-slate-100">{{ total_farmers }}</p>
+      <p class="text-xs text-slate-500 mt-1">Registered individuals</p>
     </div>
     <div class="bg-card border border-border rounded-xl p-5">
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Low Stock</p>
@@ -120,6 +122,20 @@
     <!-- Farm Compliance Status -->
     <div class="bg-card border border-border rounded-xl p-5">
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Farm Compliance</p>
+
+      {% if eudr_compliance_rate is not None %}
+      <div class="mb-4">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs font-mono text-slate-500">EUDR verified</span>
+          <span class="text-xs font-mono {% if eudr_compliance_rate >= 80 %}text-green{% elif eudr_compliance_rate >= 50 %}text-yellow-400{% else %}text-red-400{% endif %}">{{ eudr_compliance_rate }}%</span>
+        </div>
+        <div class="w-full bg-surface rounded-full h-1.5">
+          <div class="h-1.5 rounded-full {% if eudr_compliance_rate >= 80 %}bg-green{% elif eudr_compliance_rate >= 50 %}bg-yellow-400{% else %}bg-red-400{% endif %}"
+               style="width: {{ eudr_compliance_rate }}%"></div>
+        </div>
+      </div>
+      {% endif %}
+
       <div class="space-y-3">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
@@ -149,8 +165,32 @@
           </div>
           <span class="text-sm font-bold text-orange-400">{{ farms_expiring_soon }}</span>
         </div>
+        {% if farms_no_polygon > 0 %}
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-slate-600 flex-shrink-0"></span>
+            <span class="text-sm text-slate-400">No polygon</span>
+          </div>
+          <span class="text-sm font-bold text-slate-500">{{ farms_no_polygon }}</span>
+        </div>
+        {% endif %}
       </div>
+
+      {% if last_import %}
       <div class="mt-4 pt-4 border-t border-border">
+        <p class="text-xs font-mono text-slate-600 mb-1">Last upload</p>
+        <p class="text-xs text-slate-400">
+          {{ last_import.created_at|date:"d M H:i" }} by {{ last_import.uploaded_by.get_short_name|default:last_import.uploaded_by.username }}
+          {% if last_import.dry_run %}
+          <span class="text-blue-400">— dry run</span>
+          {% else %}
+          — <span class="text-green">{{ last_import.created }} saved</span>{% if last_import.warning_count > 0 %}, <span class="text-amber-400">{{ last_import.warning_count }} warning{{ last_import.warning_count|pluralize }}</span>{% endif %}
+          {% endif %}
+        </p>
+      </div>
+      {% endif %}
+
+      <div class="mt-4 {% if not last_import %}pt-4 border-t border-border{% endif %}">
         <a href="{% url 'suppliers:farm_list' %}"
            class="text-xs font-mono text-green hover:text-green-dim transition-colors">
           View all farms →

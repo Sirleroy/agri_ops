@@ -18,7 +18,7 @@ from apps.companies.models import Company
 from apps.inventory.models import Inventory
 from apps.sales_orders.models import SalesOrder
 from apps.purchase_orders.models import PurchaseOrder
-from apps.suppliers.models import Supplier
+from apps.suppliers.models import Supplier, Farm, Farmer
 from apps.users.models import CustomUser
 from .models import OpsEventLog
 
@@ -144,26 +144,48 @@ def ops_dashboard(request):
     now = timezone.now()
     thirty_days_ago = now - timedelta(days=30)
 
+    # Active tenants = companies with any audit activity in last 30 days
+    # (more reliable than last_login which is null for users who've never logged in)
+    active_company_ids = (
+        AuditLog.objects
+        .filter(timestamp__gte=thirty_days_ago, company__isnull=False)
+        .values_list('company_id', flat=True)
+        .distinct()
+    )
+
     context = {
-        'total_tenants': Company.objects.count(),
-        'active_tenants': Company.objects.filter(
-            employees__last_login__gte=thirty_days_ago
-        ).distinct().count(),
-        'total_users': CustomUser.objects.filter(is_staff=False).count(),
-        'total_orders': SalesOrder.objects.count(),
+        'total_tenants':  Company.objects.count(),
+        'active_tenants': active_company_ids.count(),
+        'total_users':    CustomUser.objects.filter(is_staff=False).count(),
+        'total_farms':    Farm.objects.count(),
+        'total_farmers':  Farmer.objects.count(),
+        'total_suppliers': Supplier.objects.count(),
+        'total_orders':   SalesOrder.objects.count(),
         'orders_this_month': SalesOrder.objects.filter(created_at__gte=thirty_days_ago).count(),
         'total_inventory': Inventory.objects.count(),
-        'recent_audit': AuditLog.objects.select_related('user').order_by('-timestamp')[:10],
-        'recent_events': OpsEventLog.objects.select_related('user').order_by('-timestamp')[:10],
+        'recent_audit':   AuditLog.objects.select_related('user').order_by('-timestamp')[:10],
+        'recent_events':  OpsEventLog.objects.select_related('user').order_by('-timestamp')[:10],
     }
     return render(request, 'ops_dashboard/dashboard.html', context)
 
 
 @ops_required
 def ops_tenants(request):
+    from django.db.models import OuterRef, Subquery
+
+    last_activity_sq = (
+        AuditLog.objects
+        .filter(company=OuterRef('pk'))
+        .order_by('-timestamp')
+        .values('timestamp')[:1]
+    )
+
     tenants = Company.objects.annotate(
         user_count=Count('employees', distinct=True),
         order_count=Count('sales_orders', distinct=True),
+        farm_count=Count('farms', distinct=True),
+        supplier_count=Count('suppliers', distinct=True),
+        last_activity=Subquery(last_activity_sq),
     ).order_by('-created_at')
     return render(request, 'ops_dashboard/tenants.html', {'tenants': tenants})
 
@@ -177,7 +199,8 @@ def ops_security(request):
     ).order_by('-timestamp')[:20]
     role_changes = AuditLog.objects.filter(
         action='update',
-        model_name='CustomUser'
+        model_name='CustomUser',
+        changes__has_key='system_role',
     ).order_by('-timestamp')[:20]
     return render(request, 'ops_dashboard/security.html', {
         'audit_logs': audit_logs,
@@ -244,5 +267,28 @@ def ops_health(request):
         'status': 'ok',
         'detail': f'{total_ops_users} staff user(s) registered'
     })
+
+    # Sentry
+    try:
+        import sentry_sdk
+        client = sentry_sdk.get_client()
+        dsn = getattr(client, 'dsn', None)
+        if dsn:
+            checks.append({'name': 'Sentry', 'status': 'ok', 'detail': 'DSN configured — error tracking active'})
+        else:
+            checks.append({'name': 'Sentry', 'status': 'warning', 'detail': 'Sentry SDK loaded but no DSN set'})
+    except Exception as e:
+        checks.append({'name': 'Sentry', 'status': 'error', 'detail': str(e)})
+
+    # Email (SendGrid)
+    from django.conf import settings
+    sg_key = getattr(settings, 'SENDGRID_API_KEY', None)
+    email_host = getattr(settings, 'EMAIL_HOST', '')
+    if sg_key:
+        checks.append({'name': 'Email (SendGrid)', 'status': 'ok', 'detail': 'API key configured'})
+    elif email_host and email_host != 'localhost':
+        checks.append({'name': 'Email (SendGrid)', 'status': 'ok', 'detail': f'SMTP configured — {email_host}'})
+    else:
+        checks.append({'name': 'Email (SendGrid)', 'status': 'warning', 'detail': 'No email transport configured — transactional emails will not send'})
 
     return render(request, 'ops_dashboard/health.html', {'checks': checks})

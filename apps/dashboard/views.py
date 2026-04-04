@@ -15,7 +15,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         if not company:
             return context
 
-        from apps.suppliers.models import Supplier, Farm
+        from apps.suppliers.models import Supplier, Farm, Farmer
         from apps.products.models import Product
         from apps.inventory.models import Inventory
         from apps.purchase_orders.models import PurchaseOrder
@@ -28,7 +28,19 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         context['total_suppliers'] = Supplier.objects.filter(company=company).count()
         context['total_products'] = Product.objects.filter(company=company, is_active=True).count()
         context['total_farms'] = Farm.objects.filter(company=company).count()
+        context['total_farmers'] = Farmer.objects.filter(company=company).count()
         context['total_users'] = CustomUser.objects.filter(company=company, is_active=True).count()
+
+        # Total mapped area
+        area_result = Farm.objects.filter(
+            company=company, area_hectares__isnull=False
+        ).aggregate(total=Sum('area_hectares'))
+        context['total_area_ha'] = area_result['total'] or 0
+
+        # Farms missing polygon — registered but not mappable
+        context['farms_no_polygon'] = Farm.objects.filter(
+            company=company, geolocation__isnull=True
+        ).count()
 
         # ── Orders ───────────────────────────────────────────
         context['total_purchase_orders'] = PurchaseOrder.objects.filter(company=company).count()
@@ -132,6 +144,15 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             .filter(company=company)
             .exclude(status__in=['received', 'cancelled'])
             .count()
+        )
+
+        # ── Last farm import ──────────────────────────────────
+        from apps.suppliers.models import FarmImportLog
+        context['last_import'] = (
+            FarmImportLog.objects
+            .filter(company=company)
+            .select_related('uploaded_by', 'supplier')
+            .first()
         )
 
         return context

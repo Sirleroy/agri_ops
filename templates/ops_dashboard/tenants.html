@@ -9,18 +9,33 @@
   <div class="table-wrap">
     <table>
       <thead>
-        <tr><th>Company</th><th>Users</th><th>Orders</th><th>Created</th></tr>
+        <tr>
+          <th>Company</th>
+          <th>Plan</th>
+          <th>Users</th>
+          <th>Farms</th>
+          <th>Suppliers</th>
+          <th>Orders</th>
+          <th>Last Activity</th>
+          <th>Created</th>
+        </tr>
       </thead>
       <tbody>
         {% for t in tenants %}
         <tr>
-          <td>{{ t.name }}</td>
+          <td style="font-weight:500">{{ t.name }}</td>
+          <td style="color:var(--muted); font-size:0.8rem">{{ t.plan_tier|default:"—" }}</td>
           <td>{{ t.user_count }}</td>
+          <td>{{ t.farm_count }}</td>
+          <td>{{ t.supplier_count }}</td>
           <td>{{ t.order_count }}</td>
-          <td>{{ t.created_at|date:"Y-m-d" }}</td>
+          <td style="color:var(--muted); font-size:0.8rem">
+            {% if t.last_activity %}{{ t.last_activity|date:"d M Y" }}{% else %}<span style="color:var(--dim)">No activity</span>{% endif %}
+          </td>
+          <td style="color:var(--dim); font-size:0.8rem">{{ t.created_at|date:"Y-m-d" }}</td>
         </tr>
         {% empty %}
-        <tr><td colspan="4" style="color:var(--dim)">No tenants yet</td></tr>
+        <tr><td colspan="8" style="color:var(--dim)">No tenants yet</td></tr>
         {% endfor %}
       </tbody>
     </table>
