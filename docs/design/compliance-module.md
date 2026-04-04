@@ -1,8 +1,8 @@
 # AgriOps — EUDR Compliance Module
 
-**Version:** 2.0
-**Date:** March 2026
-**Status:** Phase 2 Complete — Farm model, ComplianceDocument, and Farm CRUD UI live
+**Version:** 3.0
+**Date:** April 2026
+**Status:** Phase 4.7 Complete — full import pipeline, upload history, compliance PDF with HS code
 
 ---
 
@@ -175,12 +175,14 @@ Based on the operational process used by the founding company:
 
 1. **Field agent** travels to farm with SW Maps app installed
 2. **Perimeter mapping** — agent walks the farm boundary, SW Maps records GPS track as polygon
-3. **Export** — SW Maps exports GeoJSON file
-4. **Upload** — GeoJSON imported into AgriOps Farm record
-5. **Review** — Compliance officer reviews polygon on map, confirms area
-6. **Classification** — Compliance officer sets `deforestation_risk_status`
-7. **Documentation** — Satellite imagery and farmer declaration uploaded as ComplianceDocuments
-8. **Verification** — `is_eudr_verified` set to True, `verified_date` and `verification_expiry` recorded
+3. **Export** — SW Maps exports GeoJSON FeatureCollection file
+4. **Dry-run upload** — GeoJSON uploaded to AgriOps import page with "Validate only" checked. System runs full validation pipeline and reports what would be created, any errors (bad geometry, wrong coordinates, non-Nigeria bounds), and completeness warnings (missing LGA, farmer name, commodity) — without writing anything
+5. **Review** — field officer or coordinator reviews the dry-run report, fixes issues if needed, re-runs
+6. **Commit upload** — same file uploaded without "Validate only" to write farms to the registry
+7. **History check** — upload appears in `/farms/import/history/` with all counts and per-row detail. Dry-run and commit pair is visible side by side
+8. **Compliance officer review** — reviews polygon on Leaflet map, confirms area, sets `deforestation_risk_status`
+9. **Documentation** — satellite imagery and farmer declaration uploaded as ComplianceDocuments
+10. **Verification** — `is_eudr_verified` set to True, `verified_date` and `verification_expiry` recorded
 
 ---
 
@@ -192,14 +194,18 @@ Based on the operational process used by the founding company:
 | ComplianceDocument model | 2 | ✅ Complete |
 | Farm CRUD UI | 2 | ✅ Complete |
 | EUDR API endpoints | 2 | ✅ Complete |
-| Compliance dashboard widget | 3 | Planned |
-| GeoJSON import from SW Maps | 3 | Planned |
-| Compliance Report (PDF/CSV) | 3 | Planned |
-| Expiry alerting (email) | 3 | Planned |
-| DDS draft generator | 3 | Planned |
-| Farm map visualisation (Leaflet.js) | 4 | Planned |
-| PostGIS polygon migration | 4 | Planned |
-| Full DDS filing workflow | 4 | Planned |
+| Compliance dashboard widget | 3 | ✅ Complete |
+| GeoJSON import from SW Maps | 4 | ✅ Complete |
+| Compliance Report (PDF) | 4 | ✅ Complete |
+| Farm map visualisation (Leaflet.js) | 4 | ✅ Complete |
+| Batch model + quantity_kg + is_locked | 4.5 | ✅ Complete |
+| HS code in compliance PDF | 4.7 | ✅ Complete |
+| GeoJSON import validation pipeline | 4.7 | ✅ Complete |
+| Dry-run upload mode | 4.7 | ✅ Complete |
+| Upload history (FarmImportLog) | 4.7 | ✅ Complete |
+| Expiry alerting (email) | — | Planned |
+| DDS submission to EU IS | — | Planned — trigger: active EU export volume |
+| PostGIS polygon migration | — | Planned — trigger: farm count > 10,000 |
 
 ---
 

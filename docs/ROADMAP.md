@@ -86,6 +86,19 @@ Shipped March 2026. Driven by live contract execution (soy export, Ake Collectiv
 
 ---
 
+## Phase 4.7 — Field Operations Hardening ✅ Complete
+
+Shipped April 2026. Focused on making bulk farm data ingestion reliable and auditable for field officers — the people who do the uploads are typically the least technical in the organisation and the data they capture is the foundation of the EUDR compliance chain.
+
+- **GeoJSON import validation hardening** — Nigeria bounding box check catches wrong CRS and swapped lat/lon; completeness warnings (non-blocking) flag missing farmer name, LGA, or commodity per row; area upper bound flags declared areas > 200 ha as suspicious ✅
+- **Dry-run mode** — full validation pipeline runs without writing to the database. Field officers validate before committing. UI shows "would create" count and all warnings/errors ✅
+- **Upload history** — `FarmImportLog` model records every import attempt (dry-run and real): who uploaded, when, which supplier, filename, all counts, and full error/blocked/warning detail in JSON. Visible on the import page (last 5) and at `/farms/import/history/` (full log, expandable rows) ✅
+- **Mobile upload UX** — import result summary appears above the form so field officers on phones see outcomes without scrolling; stats grids collapse to 2-column on small screens; download bars stack vertically; detail tables scroll horizontally ✅
+- **HS code in compliance PDF** — batch DDS section now includes HS code derived from sales order line item products ✅
+- **Security patch** — `requests` bumped to 2.33.0 ✅
+
+---
+
 ## Phase 5 — Buyer Portal 🔄 Planned
 - buyers.agriops.io — separate authenticated surface for EU buyers
 - Available inventory catalogue per operator
@@ -136,4 +149,4 @@ Trade shows: Biofach, SIAL Paris, Fi Europe.
 
 ---
 
-*Last updated: 28 March 2026*
+*Last updated: 5 April 2026*

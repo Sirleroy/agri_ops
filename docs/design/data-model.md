@@ -1,8 +1,8 @@
 # AgriOps — Data Model Documentation
 
-**Version:** 2.0
-**Date:** 28 March 2026
-**Status:** Current — updated through Phase 4.6
+**Version:** 2.1
+**Date:** 5 April 2026
+**Status:** Current — updated through Phase 4.7
 
 ---
 
@@ -65,13 +65,22 @@ The individual who owns or manages a farm plot. Replaces the free-text `farmer_n
 |---|---|---|
 | id | AutoField | Primary key |
 | company | ForeignKey(Company) | Tenant isolation |
-| name | CharField(255) | Full name |
-| phone | CharField(20) | |
-| village | CharField(100) | Village of residence |
-| lga | CharField(100) | Local Government Area |
-| nin | CharField(20) | National Identification Number |
+| first_name | CharField(150) | |
+| last_name | CharField(150) | blank |
+| gender | CharField | Choices: M, F — blank |
+| phone | CharField(20) | blank |
+| village | CharField(100) | Village of residence — blank |
+| lga | CharField(100) | Local Government Area — blank |
+| nin | CharField(20) | National Identification Number — blank, non-binding |
+| crops | CharField(255) | Comma-separated crop/livestock list |
+| consent_given | BooleanField | Default: False |
+| consent_date | DateField | nullable |
+| bank_name | CharField(150) | blank — parked, no UI until tenant request |
+| account_number | CharField(50) | blank — parked |
 | created_at | DateTimeField | Auto |
 | updated_at | DateTimeField | Auto |
+
+**Computed property:** `full_name` — concatenates first_name + last_name
 
 **Relationship:** One Farmer → Many Farms
 
@@ -150,9 +159,43 @@ The commodity catalogue. Products are linked to a supplier and scoped to a compa
 | category | CharField | Choices defined per commodity types |
 | unit | CharField | Choices: kg, tonne, bag, litre, unit |
 | unit_price | DecimalField | |
+| hs_code | CharField(20) | EU Combined Nomenclature code — required for EUDR DDS |
+| nafdac_registration_number | CharField(50) | NAFDAC reg number for regulated products — blank |
+| eu_novel_food_status | BooleanField | Default: False |
+| eu_novel_food_ref | CharField(100) | EU Novel Food Catalogue reference — blank |
 | is_active | BooleanField | |
 | created_at | DateTimeField | Auto |
 | updated_at | DateTimeField | Auto |
+
+---
+
+## FarmImportLog *(Phase 4.7 addition)*
+
+Audit record of every farm GeoJSON import attempt — dry-run and real. Written by both the web import view and the API endpoint. Gives field officers and managers a traceable history of what was uploaded, by whom, and what the outcome was.
+
+| Field | Type | Notes |
+|---|---|---|
+| id | AutoField | Primary key |
+| company | ForeignKey(Company) | Tenant isolation |
+| uploaded_by | ForeignKey(CustomUser) | nullable — SET_NULL on user delete |
+| supplier | ForeignKey(Supplier) | nullable — SET_NULL on supplier delete |
+| filename | CharField(255) | Original filename from the upload |
+| dry_run | BooleanField | True if "Validate only" was checked |
+| total | PositiveIntegerField | Features in the uploaded file |
+| created | PositiveIntegerField | Farms actually written (0 on dry-run) |
+| would_create | PositiveIntegerField | Farms that passed validation (populated on dry-run) |
+| duplicates | PositiveIntegerField | Skipped — name+supplier match |
+| blocked | PositiveIntegerField | Skipped — polygon overlaps existing farm |
+| errors | PositiveIntegerField | Failed geometry or coordinate validation |
+| warning_count | PositiveIntegerField | Rows with completeness issues (non-blocking) |
+| error_detail | JSONField | Per-row: row, name, reason |
+| blocked_detail | JSONField | Per-row: row, name, reason |
+| warning_detail | JSONField | Per-row: row, name, issues[] |
+| created_at | DateTimeField | Auto |
+
+**UI surfaces:**
+- Import page — last 5 entries shown as "Recent Uploads" table
+- `/suppliers/farms/import/history/` — full paginated log with expandable detail rows
 
 ---
 
