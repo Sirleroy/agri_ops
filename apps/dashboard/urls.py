@@ -7,4 +7,5 @@ app_name = 'dashboard'
 urlpatterns = [
     path('', LandingView.as_view(), name='landing'),
     path('dashboard/', views.DashboardView.as_view(), name='index'),
+    path('help/', views.UserManualView.as_view(), name='help'),
 ]

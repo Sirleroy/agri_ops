@@ -4,6 +4,10 @@ from django.utils import timezone
 from datetime import timedelta
 
 
+class UserManualView(LoginRequiredMixin, TemplateView):
+    template_name = 'help/user_manual.html'
+
+
 class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'dashboard/index.html'
 

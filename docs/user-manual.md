@@ -1,13 +1,6 @@
 ---
-layout: default
+layout: manual
 title: AgriOps User Manual
----
-
-# AgriOps User Manual
-
-**Version:** 1.0 · April 2026
-**Audience:** Field officers, coordinators, managers, and administrators
-
 ---
 
 ## What is AgriOps?

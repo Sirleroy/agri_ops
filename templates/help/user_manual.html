@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+{% block title %}User Manual — AgriOps{% endblock %}
+{% block page_title %}User Manual{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Manual content typography */
+  .manual-content h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #1e2d40;
+    scroll-margin-top: 2rem;
+  }
+  .manual-content h2:first-child { margin-top: 0; border-top: none; padding-top: 0; }
+
+  .manual-content h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    scroll-margin-top: 2rem;
+  }
+
+  .manual-content p { margin-bottom: 0.875rem; color: #94a3b8; line-height: 1.7; font-size: 0.875rem; }
+  .manual-content strong { color: #f1f5f9; font-weight: 600; }
+  .manual-content a { color: #22c55e; text-decoration: none; }
+  .manual-content a:hover { text-decoration: underline; }
+
+  .manual-content ol, .manual-content ul {
+    margin: 0.5rem 0 0.875rem 1.25rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    line-height: 1.7;
+  }
+  .manual-content ol { list-style: decimal; }
+  .manual-content ul { list-style: disc; }
+  .manual-content li { margin-bottom: 0.25rem; }
+  .manual-content li strong { color: #f1f5f9; }
+
+  .manual-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.8125rem;
+    border: 1px solid #1e2d40;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .manual-content thead { background: #111827; }
+  .manual-content th {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.7rem;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #64748b;
+    border-bottom: 1px solid #1e2d40;
+  }
+  .manual-content td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid rgba(30,45,64,0.6);
+    color: #94a3b8;
+    vertical-align: top;
+  }
+  .manual-content tbody tr:last-child td { border-bottom: none; }
+  .manual-content tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+  .manual-content blockquote {
+    margin: 1rem 0;
+    padding: 0.875rem 1rem;
+    background: rgba(245,158,11,0.06);
+    border: 1px solid rgba(245,158,11,0.2);
+    border-left: 3px solid #f59e0b;
+    border-radius: 0 8px 8px 0;
+    font-size: 0.8125rem;
+    color: #94a3b8;
+    line-height: 1.6;
+  }
+
+  /* ToC */
+  .toc-link {
+    display: block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 5px;
+    font-size: 0.75rem;
+    color: #64748b;
+    text-decoration: none;
+    line-height: 1.4;
+    transition: color 0.15s, background 0.15s;
+  }
+  .toc-link:hover { color: #94a3b8; background: rgba(255,255,255,0.03); }
+  .toc-link.active { color: #22c55e; }
+  .toc-sub { padding-left: 0.5rem; }
+  .toc-sub .toc-link { font-size: 0.7rem; color: #475569; }
+  .toc-sub .toc-link:hover { color: #64748b; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex gap-6 items-start">
+
+  <!-- ── Main manual content ── -->
+  <div class="flex-1 min-w-0">
+
+    <!-- Page intro -->
+    <div class="mb-8 pb-6 border-b border-border">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="px-2.5 py-1 rounded-full text-xs font-mono bg-green/10 border border-green/20 text-green">Version 1.0 · April 2026</span>
+        <a href="https://docs.agriops.io/user-manual" target="_blank" rel="noopener"
+           class="px-2.5 py-1 rounded-full text-xs font-mono bg-card border border-border text-slate-400 hover:text-green transition-colors flex items-center gap-1">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          docs.agriops.io
+        </a>
+      </div>
+      <p class="text-sm text-slate-500">For field officers, coordinators, managers, and administrators.</p>
+    </div>
+
+    <div class="manual-content">
+
+      <!-- What is AgriOps -->
+      <h2 id="what-is-agriops">What is AgriOps?</h2>
+      <p>AgriOps is a supply chain management platform for agricultural companies. It helps you track everything from farm-level GPS mapping through to export compliance — suppliers, farmers, farms, stock, purchase orders, sales orders, and EUDR traceability certificates.</p>
+
+      <!-- Roles -->
+      <h2 id="roles-and-access">Roles and Access</h2>
+      <p>Every user has one of four roles. Your role controls what you can see and do.</p>
+      <table>
+        <thead><tr><th>Role</th><th>What you can do</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Viewer</strong></td><td>Read-only. See all records, download reports. Cannot create or edit anything.</td></tr>
+          <tr><td><strong>Staff</strong></td><td>Create and edit records. Cannot delete. Cannot manage users.</td></tr>
+          <tr><td><strong>Manager</strong></td><td>Create, edit, and delete records. Cannot manage company settings or users.</td></tr>
+          <tr><td><strong>Org Admin</strong></td><td>Full access including user management, company settings, and all reports.</td></tr>
+        </tbody>
+      </table>
+      <p>Your role is shown on your profile page. Contact your Org Admin if you need a different level of access.</p>
+
+      <!-- Login -->
+      <h2 id="logging-in">Logging In</h2>
+      <ol>
+        <li>Go to <a href="https://app.agriops.io" target="_blank" rel="noopener">app.agriops.io</a></li>
+        <li>Enter your username and password</li>
+        <li>After 5 failed attempts your account is locked for 1 hour — contact your admin if locked out</li>
+        <li>Your session expires after 8 hours and you will be asked to log in again</li>
+      </ol>
+
+      <!-- Dashboard -->
+      <h2 id="the-dashboard">The Dashboard</h2>
+      <p>The dashboard is your home screen. It gives you a live summary of your company's supply chain.</p>
+      <ul>
+        <li><strong>Top row</strong> — Suppliers, Products, Purchase Orders, Sales Orders</li>
+        <li><strong>Farms card</strong> — total registered plots and total mapped hectares</li>
+        <li><strong>Farmers</strong> — registered individual farmer records</li>
+        <li><strong>Low Stock</strong> — inventory items below their alert threshold (amber if any)</li>
+        <li><strong>Verification Expiring</strong> — farms whose EUDR verification lapses within 30 days</li>
+      </ul>
+      <p><strong>Business Intelligence strip</strong> rotates through: top buyer, top supplier, farm compliance rate, top product, open sales, active procurement.</p>
+      <p><strong>Farm Compliance panel</strong> shows verified / pending / high risk / expiring farm counts with a progress bar, and the last bulk upload attempt.</p>
+      <p><strong>Bottom panels:</strong> upcoming PO deliveries (7 days), farms with verification expiring (30 days), low stock items.</p>
+      <p><strong>Compliance Report</strong> — download a full PDF traceability report directly from the dashboard, with optional date filtering.</p>
+
+      <!-- Suppliers -->
+      <h2 id="suppliers">Suppliers</h2>
+      <p>Suppliers are the cooperatives, aggregators, or trading entities you buy from. Each farm belongs to a supplier.</p>
+      <ol>
+        <li>Go to <strong>Suppliers</strong> in the left sidebar</li>
+        <li>Click <strong>New Supplier</strong></li>
+        <li>Fill in name, category (e.g. Cooperative), contact details, country</li>
+        <li>Click <strong>Save</strong></li>
+      </ol>
+      <p><strong>Supplier categories:</strong> Cooperative · Processor · Distributor · Exporter · Seeds · Fertilizer · Equipment · Other</p>
+
+      <!-- Farmers -->
+      <h2 id="farmers">Farmers</h2>
+      <p>Farmers are the individual people who own or manage farm plots. Building a farmer registry before importing farms gives you cleaner data.</p>
+      <ol>
+        <li>Go to <strong>Suppliers → Farmers</strong></li>
+        <li>Click <strong>New Farmer</strong></li>
+        <li>Fill in first name, last name, phone, village, LGA, and crops</li>
+        <li>NIN (National Identification Number) is optional but useful for deduplication</li>
+        <li>Tick <strong>Consent given</strong> and record the consent date</li>
+      </ol>
+      <p><strong>Bulk import:</strong> Download the CSV Template, fill it in (one row per farmer), upload and review the summary. Any rows with errors are listed — download the error file, fix the rows, and re-upload.</p>
+
+      <!-- Farms -->
+      <h2 id="farms">Farms</h2>
+      <p>Farms are the GPS-mapped plots of land where commodities are grown. They are the core EUDR compliance unit.</p>
+
+      <h3 id="adding-a-single-farm">Adding a single farm</h3>
+      <ol>
+        <li>Go to <strong>Suppliers → Farms</strong></li>
+        <li>Click <strong>New Farm</strong></li>
+        <li>Select the supplier (cooperative) this farm belongs to</li>
+        <li>Link a farmer if already registered, or enter a name manually</li>
+        <li>Enter the commodity, country, state, and area in hectares</li>
+        <li>Paste the GeoJSON polygon from SW Maps into the Geolocation field</li>
+        <li>Set the deforestation risk status (Standard is the default)</li>
+        <li>Click <strong>Save</strong></li>
+      </ol>
+
+      <h3 id="bulk-import-from-sw-maps">Bulk import from SW Maps</h3>
+      <p>This is the recommended workflow for field mapping exercises.</p>
+      <p><strong>Step 1 — Validate first (dry run)</strong></p>
+      <ol>
+        <li>Go to <strong>Suppliers → Farms → Import</strong></li>
+        <li>Select the supplier and set a default commodity</li>
+        <li>Choose your GeoJSON file exported from SW Maps</li>
+        <li>Tick <strong>Validate only — don't save yet</strong></li>
+        <li>Click <strong>Upload and Validate</strong></li>
+      </ol>
+      <p>Review the results: <strong style="color:#22c55e">Green (Would create)</strong> · <strong style="color:#ef4444">Red (Errors)</strong> · <strong style="color:#f59e0b">Orange (Overlap blocked)</strong> · <strong style="color:#d97706">Amber (Warnings)</strong> — polygons that will import but are missing data.</p>
+      <p><strong>Step 2 — Commit:</strong> Upload the same file again with Validate only unticked. Farms are saved.</p>
+
+      <p><strong>Common validation errors:</strong></p>
+      <table>
+        <thead><tr><th>Error</th><th>What it means</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td>Falls outside Nigeria</td><td>Coordinates wrong — likely swapped lat/lon</td><td>Re-export from SW Maps with WGS84 setting</td></tr>
+          <tr><td>Ring is not closed</td><td>Polygon boundary doesn't close back on itself</td><td>Re-export the boundary from SW Maps</td></tr>
+          <tr><td>Only N points</td><td>Too few GPS points to make a valid polygon</td><td>Remap the farm — walk the full boundary</td></tr>
+          <tr><td>Overlaps existing farm</td><td>This plot's boundary crosses an existing farm</td><td>Review both farms — adjust if a mapping error</td></tr>
+        </tbody>
+      </table>
+
+      <p>Every import attempt is saved. See the <strong>Recent Uploads</strong> table at the bottom of the import page, or click <strong>View all →</strong> for the full history with expandable error detail.</p>
+
+      <h3 id="eudr-verification">EUDR verification</h3>
+      <p>After a farm is registered, a compliance officer must verify it:</p>
+      <ol>
+        <li>Open the farm record and review the polygon on the map</li>
+        <li>Set <strong>Deforestation Risk Status</strong> — Low, Standard, or High</li>
+        <li>Set <strong>Land Cleared After Cutoff</strong> — must be No (cleared before 31 Dec 2020) for EUDR eligibility</li>
+        <li>Upload supporting documents under <strong>Compliance Documents</strong></li>
+        <li>Tick <strong>EUDR Verified</strong>, enter the verified date and expiry date</li>
+      </ol>
+      <p>Farm compliance statuses: <strong style="color:#22c55e">Compliant</strong> · <strong style="color:#94a3b8">Pending</strong> · <strong style="color:#f59e0b">Expired</strong> · <strong style="color:#ef4444">High Risk</strong> · <strong>Disqualified</strong></p>
+
+      <!-- Products -->
+      <h2 id="products">Products</h2>
+      <p>Products are the commodities you trade (Soy, Maize, Cocoa, etc.) and inputs you buy.</p>
+      <ol>
+        <li>Go to <strong>Products</strong> → <strong>New Product</strong></li>
+        <li>Enter the name, category, unit (kg / tonne / bag), and unit price</li>
+        <li>Add the <strong>HS code</strong> if this product will be exported to the EU — required for EUDR due diligence statements</li>
+        <li>Click <strong>Save</strong></li>
+      </ol>
+
+      <!-- Inventory -->
+      <h2 id="inventory">Inventory</h2>
+      <p>Inventory records track stock levels per product at a warehouse location. <strong>Stock is updated automatically</strong> when a Purchase Order is marked as Received.</p>
+      <ul>
+        <li>Go to <strong>Inventory</strong> — items shown in amber are at or below their low-stock threshold</li>
+        <li>Click any item to see lot number, moisture content, quality grade, and origin</li>
+        <li>Open an inventory record and set the <strong>Low Stock Threshold</strong> field to enable alerts</li>
+      </ul>
+
+      <!-- Purchase Orders -->
+      <h2 id="purchase-orders">Purchase Orders</h2>
+      <ol>
+        <li>Go to <strong>Purchase Orders → New Purchase Order</strong></li>
+        <li>Select the supplier</li>
+        <li>Add line items — product, quantity, and unit price</li>
+        <li>Set an expected delivery date</li>
+        <li>Save as <strong>Draft</strong>, then move to <strong>Approved → Ordered</strong> as the order progresses</li>
+      </ol>
+      <p><strong>Marking as Received:</strong> Open the PO → click <strong>Mark as Received</strong>. Stock is automatically added to Inventory for each line item.</p>
+
+      <!-- Sales Orders -->
+      <h2 id="sales-orders">Sales Orders</h2>
+      <ol>
+        <li>Go to <strong>Sales Orders → New Sales Order</strong></li>
+        <li>Enter the customer name and contact details</li>
+        <li>Tick <strong>EU Export</strong> if this shipment is going to an EU buyer — this activates the EUDR compliance section</li>
+        <li>Add line items — product and quantity</li>
+        <li>Save</li>
+      </ol>
+      <p><strong>Order statuses:</strong> Pending → Confirmed → Dispatched → Completed</p>
+
+      <h3 id="linking-farms-for-eudr-traceability">Linking farms for EUDR traceability</h3>
+      <p>If this is an EU export, you must link the farms that supplied the commodity:</p>
+      <ol>
+        <li>Open the sales order detail page</li>
+        <li>Scroll to <strong>Farm Traceability</strong></li>
+        <li>Select the farms that supplied the goods in this shipment</li>
+        <li>Click <strong>Save Linked Farms</strong> — a Batch record is created automatically with a unique batch number and QR code</li>
+        <li>Share the batch number with your EU buyer for traceability verification</li>
+      </ol>
+      <p><strong>Batch locking:</strong> Once a batch is dispatched, click <strong>Lock Batch</strong> on the batch detail page. Locked batches cannot be edited or deleted — required for EUDR 5-year record retention.</p>
+
+      <!-- EUDR Report -->
+      <h2 id="eudr-compliance-report">EUDR Compliance Report</h2>
+      <p>The compliance report is a full PDF traceability document covering your operator details, supplier network, all farms with GPS and verification status, purchase orders, batch traceability, sales orders, and a due diligence declaration.</p>
+      <ol>
+        <li>From the Dashboard, click <strong>Full Report</strong> under Compliance Report</li>
+        <li>Or go to <strong>Reports</strong> in the sidebar</li>
+        <li>Filter by sales order, buyer name, or date range for a specific shipment report</li>
+        <li>Click <strong>Generate PDF</strong></li>
+      </ol>
+      <blockquote>
+        <strong>Note on EU IS submission:</strong> The AgriOps compliance PDF contains all the data fields required for an EU EUDR Information System Due Diligence Statement. For current export volumes, this PDF can be used as the basis for manual submission via the EU IS web portal.
+      </blockquote>
+
+      <!-- Users -->
+      <h2 id="users-and-team-management">Users and Team Management</h2>
+      <p><em>Org Admin only</em></p>
+      <ol>
+        <li>Go to <strong>Users</strong> in the sidebar</li>
+        <li>Click <strong>Invite User</strong> to add a team member</li>
+        <li>Set their role — see the Roles table above</li>
+        <li>Users receive a welcome email with login instructions</li>
+      </ol>
+      <p>To change a user's role, open their profile and update the <strong>System Role</strong> field.</p>
+
+      <!-- Company Settings -->
+      <h2 id="company-settings">Company Settings</h2>
+      <p><em>Org Admin only</em></p>
+      <p>Go to <strong>Company</strong> in the sidebar to update: company name, address, country, contact email and phone, and NEPC registration number (for Nigerian export compliance).</p>
+
+      <!-- Workflows -->
+      <h2 id="common-workflows">Common Workflows</h2>
+
+      <h3>End-to-end: farm to EUDR report</h3>
+      <ol>
+        <li><strong>Add supplier</strong> → cooperative or aggregator</li>
+        <li><strong>Add farmers</strong> → bulk import via CSV or add individually</li>
+        <li><strong>Map farms</strong> → SW Maps field exercise → dry-run import → commit import</li>
+        <li><strong>Verify farms</strong> → set risk status, upload satellite evidence, mark EUDR verified</li>
+        <li><strong>Create purchase order</strong> → buy the commodity from the supplier → mark Received</li>
+        <li><strong>Create sales order</strong> → EU buyer order → link farms → batch is created</li>
+        <li><strong>Lock batch</strong> → after dispatch</li>
+        <li><strong>Download compliance PDF</strong> → filter by sales order → share with buyer</li>
+      </ol>
+
+      <h3>Field mapping exercise</h3>
+      <ol>
+        <li>Brief field officers on farm naming convention before going out</li>
+        <li>Map all farms in SW Maps — record farmer name, village, LGA, and commodity in SW Maps properties</li>
+        <li>Export as GeoJSON FeatureCollection from SW Maps</li>
+        <li><strong>Dry-run upload first</strong> — review errors and warnings</li>
+        <li>Fix any issues flagged (re-export from SW Maps if geometry errors)</li>
+        <li>Commit upload — confirm farm count in Upload History</li>
+        <li>Fill in missing LGA, farmer links, and other warnings via the farm edit page</li>
+      </ol>
+
+      <!-- Help -->
+      <h2 id="getting-help">Getting Help</h2>
+      <ul>
+        <li><strong>Platform issues or access problems</strong> — contact your Org Admin</li>
+        <li><strong>Bug reports or feature requests</strong> — <a href="https://github.com/Sirleroy/agri_ops/issues" target="_blank" rel="noopener">github.com/Sirleroy/agri_ops/issues</a></li>
+        <li><strong>Full documentation</strong> — <a href="https://docs.agriops.io" target="_blank" rel="noopener">docs.agriops.io</a></li>
+      </ul>
+
+    </div>
+  </div>
+
+  <!-- ── Sticky ToC ── -->
+  <div class="hidden xl:block w-48 flex-shrink-0">
+    <div class="sticky top-6 bg-card border border-border rounded-xl p-4">
+      <p class="text-xs font-mono text-slate-600 uppercase tracking-widest mb-3">On this page</p>
+      <nav id="toc" class="space-y-0.5">
+        <a href="#what-is-agriops" class="toc-link">What is AgriOps?</a>
+        <a href="#roles-and-access" class="toc-link">Roles and Access</a>
+        <a href="#logging-in" class="toc-link">Logging In</a>
+        <a href="#the-dashboard" class="toc-link">The Dashboard</a>
+        <div class="pt-2 pb-1">
+          <p class="text-xs font-mono text-slate-700 uppercase tracking-widest px-2">Modules</p>
+        </div>
+        <a href="#suppliers" class="toc-link">Suppliers</a>
+        <a href="#farmers" class="toc-link">Farmers</a>
+        <a href="#farms" class="toc-link">Farms</a>
+        <div class="toc-sub">
+          <a href="#adding-a-single-farm" class="toc-link">↳ Single Farm</a>
+          <a href="#bulk-import-from-sw-maps" class="toc-link">↳ Bulk Import</a>
+          <a href="#eudr-verification" class="toc-link">↳ EUDR Verification</a>
+        </div>
+        <a href="#products" class="toc-link">Products</a>
+        <a href="#inventory" class="toc-link">Inventory</a>
+        <a href="#purchase-orders" class="toc-link">Purchase Orders</a>
+        <a href="#sales-orders" class="toc-link">Sales Orders</a>
+        <div class="toc-sub">
+          <a href="#linking-farms-for-eudr-traceability" class="toc-link">↳ Farm Traceability</a>
+        </div>
+        <a href="#eudr-compliance-report" class="toc-link">EUDR Report</a>
+        <div class="pt-2 pb-1">
+          <p class="text-xs font-mono text-slate-700 uppercase tracking-widest px-2">Admin</p>
+        </div>
+        <a href="#users-and-team-management" class="toc-link">Users</a>
+        <a href="#company-settings" class="toc-link">Company Settings</a>
+        <div class="pt-2 pb-1">
+          <p class="text-xs font-mono text-slate-700 uppercase tracking-widest px-2">Guides</p>
+        </div>
+        <a href="#common-workflows" class="toc-link">Common Workflows</a>
+        <a href="#getting-help" class="toc-link">Getting Help</a>
+      </nav>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Highlight active ToC link on scroll
+  const tocLinks = document.querySelectorAll('#toc a');
+  const sections = document.querySelectorAll('.manual-content h2, .manual-content h3');
+
+  function updateToc() {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 100) current = '#' + s.id;
+    });
+    tocLinks.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === current);
+    });
+  }
+
+  window.addEventListener('scroll', updateToc, { passive: true });
+  updateToc();
+</script>
+{% endblock %}
