@@ -1,0 +1,195 @@
+{% extends "ops_dashboard/base.html" %}
+{% block title %}{{ company.name }} — AgriOps Ops{% endblock %}
+{% block nav_tenants %}active{% endblock %}
+{% block page_title %}{{ company.name }}{% endblock %}
+
+{% block content %}
+
+<p style="margin-bottom:1.5rem">
+  <a href="/ops/tenants/" style="color:var(--muted); font-size:0.85rem; text-decoration:none;">← Tenants</a>
+</p>
+
+<!-- Company info -->
+<div class="grid-4" style="margin-bottom:1.5rem">
+  <div class="card">
+    <div class="card-title">Plan</div>
+    <div class="card-value" style="font-size:1.4rem">{{ company.plan_tier|default:"—" }}</div>
+    <div class="card-sub">{{ company.country|default:"—" }}</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Users</div>
+    <div class="card-value">{{ users|length }}</div>
+    <div class="card-sub">Team members</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Farms</div>
+    <div class="card-value">{{ farms|length }}</div>
+    <div class="card-sub">
+      {% if farm_area %}{{ farm_area|floatformat:0 }} ha · {% endif %}{{ farms_verified }} verified
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Suppliers</div>
+    <div class="card-value">{{ suppliers|length }}</div>
+    <div class="card-sub">Active trading entities</div>
+  </div>
+</div>
+
+<div class="grid-2">
+
+  <!-- Users -->
+  <div class="card">
+    <div class="section-title">Team ({{ users|length }})</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Username</th><th>Role</th><th>Last Login</th></tr></thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>{{ u.username }}<br><span style="color:var(--dim);font-size:0.75rem">{{ u.get_full_name }}</span></td>
+            <td style="font-size:0.8rem;color:var(--muted)">{{ u.get_system_role_display }}</td>
+            <td style="color:var(--dim);font-size:0.8rem">{{ u.last_login|date:"d M Y H:i"|default:"Never" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" style="color:var(--dim)">No users</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Suppliers -->
+  <div class="card">
+    <div class="section-title">Suppliers ({{ suppliers|length }})</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Name</th><th>Category</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for s in suppliers %}
+          <tr>
+            <td>{{ s.name }}</td>
+            <td style="color:var(--muted);font-size:0.8rem">{{ s.get_category_display }}</td>
+            <td>
+              {% if s.is_active %}
+              <span class="badge-ok">Active</span>
+              {% else %}
+              <span class="badge-error">Inactive</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" style="color:var(--dim)">No suppliers</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Farms -->
+<div class="card" style="margin-bottom:1.5rem">
+  <div class="section-title">Farms ({{ farms|length }})</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Supplier</th><th>Commodity</th><th>Area (ha)</th><th>EUDR</th><th>Risk</th></tr>
+      </thead>
+      <tbody>
+        {% for f in farms %}
+        <tr>
+          <td>{{ f.name }}</td>
+          <td style="color:var(--muted);font-size:0.8rem">{{ f.supplier.name }}</td>
+          <td style="font-size:0.8rem">{{ f.commodity }}</td>
+          <td style="font-size:0.8rem">{{ f.area_hectares|default:"—" }}</td>
+          <td>
+            {% if f.is_eudr_verified %}
+            <span class="badge-ok">Verified</span>
+            {% else %}
+            <span style="color:var(--dim);font-size:0.8rem">Pending</span>
+            {% endif %}
+          </td>
+          <td style="font-size:0.8rem;color:{% if f.deforestation_risk_status == 'high' %}var(--red){% elif f.deforestation_risk_status == 'low' %}#4ade80{% else %}var(--muted){% endif %}">
+            {{ f.get_deforestation_risk_status_display }}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="color:var(--dim)">No farms registered</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="grid-2">
+
+  <!-- Recent Purchase Orders -->
+  <div class="card">
+    <div class="section-title">Recent Purchase Orders</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>PO Number</th><th>Supplier</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>
+          {% for po in recent_pos %}
+          <tr>
+            <td style="font-size:0.8rem;font-family:monospace">{{ po.order_number }}</td>
+            <td style="color:var(--muted);font-size:0.8rem">{{ po.supplier.name|default:"—" }}</td>
+            <td style="font-size:0.8rem">{{ po.get_status_display }}</td>
+            <td style="color:var(--dim);font-size:0.8rem">{{ po.created_at|date:"d M Y" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" style="color:var(--dim)">No purchase orders</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent Sales Orders -->
+  <div class="card">
+    <div class="section-title">Recent Sales Orders</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>SO Number</th><th>Customer</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>
+          {% for so in recent_sos %}
+          <tr>
+            <td style="font-size:0.8rem;font-family:monospace">{{ so.order_number }}</td>
+            <td style="color:var(--muted);font-size:0.8rem">{{ so.customer_name }}</td>
+            <td style="font-size:0.8rem">{{ so.get_status_display }}</td>
+            <td style="color:var(--dim);font-size:0.8rem">{{ so.created_at|date:"d M Y" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" style="color:var(--dim)">No sales orders</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Audit activity -->
+<div class="card">
+  <div class="section-title">Recent Activity (last 20)</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Model</th><th>Object</th></tr></thead>
+      <tbody>
+        {% for log in recent_audit %}
+        <tr>
+          <td style="color:var(--dim);font-size:0.8rem">{{ log.timestamp|date:"d M H:i" }}</td>
+          <td style="font-size:0.8rem">{{ log.user|default:"—" }}</td>
+          <td style="font-size:0.8rem">{{ log.action }}</td>
+          <td style="color:var(--muted);font-size:0.8rem">{{ log.model_name }}</td>
+          <td style="color:var(--dim);font-size:0.8rem">{{ log.object_repr }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="color:var(--dim)">No activity recorded</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

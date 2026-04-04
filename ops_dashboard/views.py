@@ -191,6 +191,54 @@ def ops_tenants(request):
 
 
 @ops_required
+def ops_tenant_detail(request, pk):
+    from django.shortcuts import get_object_or_404
+    from apps.suppliers.models import Farm
+    from django.db.models import Sum
+
+    company = get_object_or_404(Company, pk=pk)
+
+    users = CustomUser.objects.filter(company=company).order_by('system_role', 'username')
+
+    farms = Farm.objects.filter(company=company).select_related('supplier').order_by('name')
+    farm_area = farms.aggregate(total=Sum('area_hectares'))['total'] or 0
+    farms_verified = farms.filter(is_eudr_verified=True).count()
+
+    suppliers = Supplier.objects.filter(company=company).order_by('name')
+
+    recent_pos = (
+        PurchaseOrder.objects
+        .filter(company=company)
+        .select_related('supplier')
+        .order_by('-created_at')[:10]
+    )
+    recent_sos = (
+        SalesOrder.objects
+        .filter(company=company)
+        .order_by('-created_at')[:10]
+    )
+    recent_audit = (
+        AuditLog.objects
+        .filter(company=company)
+        .select_related('user')
+        .order_by('-timestamp')[:20]
+    )
+
+    context = {
+        'company': company,
+        'users': users,
+        'farms': farms,
+        'farm_area': farm_area,
+        'farms_verified': farms_verified,
+        'suppliers': suppliers,
+        'recent_pos': recent_pos,
+        'recent_sos': recent_sos,
+        'recent_audit': recent_audit,
+    }
+    return render(request, 'ops_dashboard/tenant_detail.html', context)
+
+
+@ops_required
 def ops_security(request):
     audit_logs = AuditLog.objects.order_by('-timestamp')[:100]
     ops_events = OpsEventLog.objects.order_by('-timestamp')[:50]

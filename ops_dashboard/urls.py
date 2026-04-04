@@ -8,6 +8,7 @@ urlpatterns = [
     path('ops-access/9f3k/logout/', views.ops_logout, name='ops_logout'),
     path('ops/', views.ops_dashboard, name='ops_dashboard'),
     path('ops/tenants/', views.ops_tenants, name='ops_tenants'),
+    path('ops/tenants/<int:pk>/', views.ops_tenant_detail, name='ops_tenant_detail'),
     path('ops/security/', views.ops_security, name='ops_security'),
     path('ops/metrics/', views.ops_metrics, name='ops_metrics'),
     path('ops/health/', views.ops_health, name='ops_health'),
