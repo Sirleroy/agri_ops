@@ -13,6 +13,14 @@ AgriOps is a secure, multi-tenant SaaS platform for agricultural SMEs and cooper
 
 ---
 
+## User Guide
+
+| Document | Description |
+|---|---|
+| [User Manual](user-manual.md) | Field officers, coordinators, managers — how to use AgriOps end-to-end |
+
+---
+
 ## System Design
 
 | Document | Description |
