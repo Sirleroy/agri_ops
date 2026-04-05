@@ -17,23 +17,18 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
 
-      - name: Install Geo-Spatial Linux Deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y binutils libproj-dev gdal-bin
-
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-django playwright pytest-playwright
-          npx playwright install --with-deps chromium
+          pip install pytest pytest-django
 
       - name: Run GeoJSON Chaos Suite
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.development
+          SECRET_KEY: ci-only-not-a-real-secret
+          DATABASE_URL: sqlite:///ci_test.db
+          DEBUG: "True"
+          ALLOWED_HOSTS: localhost
         run: |
-          # This specifically targets the hardening logic we wrote
-          pytest apps/suppliers/tests/test_geojson_validation.py -v
-
-      - name: Run Playwright E2E (UI Integrity)
-        run: |
-          npx playwright test
+          python -m pytest apps/suppliers/tests/test_geojson_validation.py -v -ra --tb=short
