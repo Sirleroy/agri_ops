@@ -268,6 +268,10 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
     from .models import Farm, Farmer
     from .forms import _validate_geojson_polygon, _find_overlapping_farm, _geojson_to_shape, strip_z_coordinates
 
+    # Accept a FeatureCollection dict as well as a plain list
+    if isinstance(features, dict) and features.get('type') == 'FeatureCollection':
+        features = features.get('features') or []
+
     to_create  = []
     duplicates = []
     blocked    = []
@@ -440,11 +444,14 @@ class FarmImportView(StaffRequiredMixin, View):
             ctx['form_error'] = f'Could not read file: {e}'
             return render(request, self.template_name, ctx)
 
-        if data.get('type') != 'FeatureCollection':
+        if isinstance(data, list):
+            features = data
+        elif isinstance(data, dict) and data.get('type') == 'FeatureCollection':
+            features = data.get('features') or []
+        else:
             ctx['form_error'] = 'File must be a GeoJSON FeatureCollection.'
             return render(request, self.template_name, ctx)
 
-        features = data.get('features') or []
         if not features:
             ctx['form_error'] = 'FeatureCollection contains no features.'
             return render(request, self.template_name, ctx)

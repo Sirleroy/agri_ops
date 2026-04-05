@@ -220,8 +220,13 @@ def _validate_geojson_polygon(value):
             )
     except forms.ValidationError:
         raise
+    except ImportError:
+        pass  # Shapely not installed — skip check silently
     except Exception:
-        pass  # Shapely unavailable or unexpected input — skip silently
+        raise forms.ValidationError(
+            "This polygon could not be processed — the geometry may be degenerate or malformed. "
+            "Re-export from SW Maps and try again."
+        )
 
     return value
 

@@ -133,10 +133,13 @@ class FarmGeoJSONImportView(APIView):
         else:
             return Response({'error': 'Provide a geojson_file (multipart) or a raw GeoJSON FeatureCollection body.'}, status=400)
 
-        if data.get('type') != 'FeatureCollection':
-            return Response({'error': 'Must be a GeoJSON FeatureCollection.'}, status=400)
+        if isinstance(data, list):
+            features = data
+        elif isinstance(data, dict) and data.get('type') == 'FeatureCollection':
+            features = data.get('features') or []
+        else:
+            return Response({'error': 'Must be a GeoJSON FeatureCollection or feature list.'}, status=400)
 
-        features = data.get('features') or []
         if not features:
             return Response({'error': 'FeatureCollection contains no features.'}, status=400)
 

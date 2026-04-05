@@ -351,7 +351,7 @@ def generate_compliance_report(company, user, filters=None):
             batch_data.append([
                 b.batch_number,
                 b.commodity,
-                hs_display,
+                Paragraph(hs_display, st["small"]),
                 str(b.quantity_kg) if b.quantity_kg else "—",
                 farm_names,
                 so_ref,
