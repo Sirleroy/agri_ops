@@ -99,6 +99,19 @@ Shipped April 2026. Focused on making bulk farm data ingestion reliable and audi
 
 ---
 
+## Phase 4.8 — CI Hardening & Geospatial Integrity ✅ Complete
+
+Shipped April 2026. Focused on making the geospatial validation pipeline structurally testable and regression-proof — a prerequisite for formal compliance assurance claims.
+
+- **GeoJSON validation test suite** — 15 automated tests covering every known failure mode from real field GPS exports: self-intersecting polygons, coordinate bombs, swapped lat/lon, unclosed rings, degenerate rings, wrong geometry type, Feature wrapper edge cases, MultiPolygon support ✅
+- **GitHub Actions CI pipeline** — automated test run on every push and on every pull request targeting `main`. A regression in geospatial data quality cannot reach production undetected ✅
+- **Branch protection rule** — `main` branch requires `audit_and_chaos` status check to pass before any merge is permitted ✅
+- **Repository made private** ✅
+
+**Why this matters for compliance:** The EUDR compliance chain is anchored to the farm polygon. If a bad polygon enters the database — corrupt area calculation, wrong centroid, self-intersecting boundary — every downstream record (deforestation risk status, DDS net weight, compliance certificate) is silently wrong. Automated CI on the validator closes that risk at the infrastructure level.
+
+---
+
 ## Phase 5 — Buyer Portal 🔄 Planned
 - buyers.agriops.io — separate authenticated surface for EU buyers
 - Available inventory catalogue per operator
