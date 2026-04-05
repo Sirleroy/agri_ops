@@ -3,6 +3,8 @@ name: AgriOps Hardened Audit (Shadow)
 on:
   push:
     branches: [ feature/hardened-ci ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   audit_and_chaos:
