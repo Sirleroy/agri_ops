@@ -176,7 +176,13 @@ def _validate_geojson_polygon(value):
                 raise forms.ValidationError(
                     f"Coordinate {coord_idx} in ring {ring_idx} is malformed (expected [lon, lat])."
                 )
-            lon, lat = coord[0], coord[1]
+            try:
+                lon, lat = float(coord[0]), float(coord[1])
+            except (ValueError, TypeError):
+                raise forms.ValidationError(
+                    f"Coordinate {coord_idx} in ring {ring_idx} contains malformed values. "
+                    "Ensure GPS data is in standard decimal format (e.g. 7.4951), not scientific notation."
+                )
             if not (-180 <= lon <= 180):
                 raise forms.ValidationError(
                     f"Longitude {lon} at coordinate {coord_idx} is out of range. "
@@ -193,14 +199,29 @@ def _validate_geojson_polygon(value):
     _NGA_LON_MIN, _NGA_LON_MAX = 2.5, 15.0
     _NGA_LAT_MIN, _NGA_LAT_MAX = 4.0, 14.2
     outer = rings[0]
-    avg_lon = sum(c[0] for c in outer) / len(outer)
-    avg_lat = sum(c[1] for c in outer) / len(outer)
+    avg_lon = sum(float(c[0]) for c in outer) / len(outer)
+    avg_lat = sum(float(c[1]) for c in outer) / len(outer)
     if not (_NGA_LON_MIN <= avg_lon <= _NGA_LON_MAX and _NGA_LAT_MIN <= avg_lat <= _NGA_LAT_MAX):
         raise forms.ValidationError(
             f"This polygon's centre ({avg_lat:.4f}°N, {avg_lon:.4f}°E) falls outside Nigeria. "
             "Check that your GPS app is set to WGS84 and that coordinates are in "
             "[longitude, latitude] order — they are often exported reversed."
         )
+
+    # Self-intersection check — catches figure-8 / crossed-boundary polygons
+    # that pass structural checks but produce corrupt area calculations downstream
+    try:
+        from shapely.geometry import shape as shapely_shape
+        poly = shapely_shape({'type': geo_type, 'coordinates': coordinates})
+        if not poly.is_valid:
+            raise forms.ValidationError(
+                "This polygon's boundary crosses itself (self-intersecting geometry). "
+                "Re-map the farm — the GPS track may have looped back across itself."
+            )
+    except forms.ValidationError:
+        raise
+    except Exception:
+        pass  # Shapely unavailable or unexpected input — skip silently
 
     return value
 
