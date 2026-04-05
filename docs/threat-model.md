@@ -157,6 +157,7 @@ The compliance module introduces additional threats specific to regulatory data:
 |---|---|---|
 | False verification | User marks unverified farm as EUDR verified | `verified_by` and `verified_date` required. Audit logged. Manager+ permission only. |
 | Geolocation spoofing | Farm polygon submitted does not match actual farm location | Satellite imagery cross-check (manual, Phase 3). SW Maps GPS accuracy field stored. |
+| Corrupt geospatial data at import | Self-intersecting polygon, coordinate bomb, swapped lat/lon, or degenerate ring enters the database and silently corrupts area calculations and risk status downstream | 15-point GeoJSON validation suite runs in CI on every deployment. Validator catches all known failure modes before data reaches the database. ✅ Phase 4.8 |
 | Document forgery | Fraudulent compliance documents uploaded | Document hash stored on upload. Out-of-scope for platform to validate content — operator responsibility. |
 | Verification expiry ignored | Expired farm verification used in active orders | Compliance dashboard alerts on expiring verifications. Future: block order creation for expired farms. |
 | Supply chain data sold to competitors | Internal user exfiltrates supplier + farm data | Audit log. DLP not in scope at current phase. Access reviews by OrgAdmin. |
@@ -202,7 +203,7 @@ The compliance module introduces additional threats specific to regulatory data:
 
 ### Phase 5
 - Internal penetration test — documented findings and remediations
-- Dependency vulnerability scanning (Dependabot / Safety)
+- Dependency vulnerability scanning (Safety / pip-audit — repository is private, GitHub Advanced Security not active)
 - NDPR compliance review
 - GDPR readiness assessment
 
