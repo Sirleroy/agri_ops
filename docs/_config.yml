@@ -1,4 +1,4 @@
-theme: jekyll-theme-cayman
+remote_theme: jekyll-theme-cayman
 title: AgriOps Documentation
 description: Agricultural Supply Chain Intelligence — Technical Reference
 url: https://docs.agriops.io
@@ -10,6 +10,7 @@ header_pages:
   - ROADMAP.md
 
 plugins:
+  - jekyll-remote-theme
   - jekyll-relative-links
 
 relative_links:
