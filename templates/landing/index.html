@@ -5,6 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AgriOps — Supply Chain Intelligence for Agricultural Exporters</title>
   <meta name="description" content="AgriOps turns your daily supply chain activity into a verified intelligence record — GPS-mapped farms, real-time procurement and sales visibility, and compliance reports ready for any buyer who asks.">
+
+  <!-- Open Graph / Social sharing -->
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://agriops.io/">
+  <meta property="og:title"       content="AgriOps — Supply Chain Intelligence for Agricultural Exporters">
+  <meta property="og:description" content="GPS-mapped farms, real-time supply chain visibility, and EUDR compliance reports ready for any buyer who asks.">
+  <meta property="og:site_name"   content="AgriOps">
+  <meta name="twitter:card"       content="summary_large_image">
+  <meta name="twitter:title"      content="AgriOps — Supply Chain Intelligence">
+  <meta name="twitter:description" content="GPS-mapped farms, real-time supply chain visibility, and EUDR compliance reports ready for any buyer who asks.">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2322c55e'/><text x='50%25' y='50%25' dominant-baseline='central' text-anchor='middle' font-family='Arial,sans-serif' font-weight='800' font-size='18' fill='%23080d14'>A</text></svg>">
+
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -241,9 +255,10 @@
       </div>
       <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#f1f5f9;">AgriOps</span>
     </div>
-    <div style="display:flex;align-items:center;gap:12px;">
-      <span class="live-dot"></span>
-      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);letter-spacing:0.1em;">LIVE AT APP.AGRIOPS.IO</span>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <span class="live-dot" style="display:none;" id="nav-live-dot"></span>
+      <span id="nav-live-text" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);letter-spacing:0.1em;display:none;">LIVE</span>
+      <a href="https://docs.agriops.io" style="font-family:'Syne',sans-serif;font-size:13px;color:#64748b;text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='var(--green)'" onmouseout="this.style.color='#64748b'">Docs</a>
       {% if user.is_authenticated %}
         <a href="/dashboard/" class="btn-primary" style="padding:8px 18px;font-size:13px;">Dashboard</a>
       {% else %}
@@ -451,6 +466,50 @@
 
 
 <!-- ═══════════════════════════════════════════════════════
+     HOW IT WORKS
+════════════════════════════════════════════════════════ -->
+<section style="padding:100px 24px;">
+  <div style="max-width:1200px;margin:0 auto;">
+    <div class="reveal" style="text-align:center;margin-bottom:60px;">
+      <span class="tag">How It Works</span>
+      <div class="section-divider" style="margin:16px auto 24px;"></div>
+      <h2 style="font-family:'Syne',sans-serif;font-weight:700;font-size:clamp(28px,4vw,44px);color:#f8fafc;">
+        From farm to compliance report in three steps
+      </h2>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;position:relative;">
+
+      <div class="reveal delay-1" style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;position:relative;">
+        <div style="width:40px;height:40px;background:rgba(34,197,94,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+          <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--green);">1</span>
+        </div>
+        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:17px;color:#f1f5f9;margin-bottom:10px;">Map your farms</h3>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;">Walk the farm boundary with SW Maps, export GeoJSON, upload to AgriOps. Every farm gets GPS coordinates, a farmer record, and a verified status — ready to attach to any batch.</p>
+      </div>
+
+      <div class="reveal delay-2" style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;position:relative;">
+        <div style="width:40px;height:40px;background:rgba(34,197,94,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+          <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--green);">2</span>
+        </div>
+        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:17px;color:#f1f5f9;margin-bottom:10px;">Track procurement and sales</h3>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;">Log purchase orders from suppliers, receive stock into inventory, fulfil sales orders. Every transaction links back to the farms it came from — the traceability chain builds itself.</p>
+      </div>
+
+      <div class="reveal delay-3" style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;position:relative;">
+        <div style="width:40px;height:40px;background:rgba(34,197,94,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+          <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--green);">3</span>
+        </div>
+        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:17px;color:#f1f5f9;margin-bottom:10px;">Generate the compliance report</h3>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;">When a buyer asks for proof, generate a PDF compliance certificate scoped to their order — farm coordinates, deforestation risk status, due diligence declaration. Ready in seconds.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
      PLATFORM FEATURES
      CHANGE: Outcome-focused copy, removed API/JWT/multi-tenant
      from hero-level positioning. Features support the journeys.
@@ -539,6 +598,7 @@
         Your supply chain generates data every day.<br>
         <span style="color:var(--green);">Here's what it's telling you.</span>
       </h2>
+      <p style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#475569;letter-spacing:0.15em;margin-top:-8px;margin-bottom:12px;">SAMPLE DATA — ILLUSTRATIVE</p>
       <p style="font-size:16px;color:#94a3b8;line-height:1.8;max-width:600px;">
         AgriOps doesn't just store records — it reads them. As your team logs
         purchases, shipments, and farm activity, the platform surfaces what matters:
@@ -769,7 +829,7 @@
         {% csrf_token %}
         <div>
           <label style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#64748b;letter-spacing:0.15em;display:block;margin-bottom:8px;">FULL NAME</label>
-          <input type="text" name="name" placeholder="Ada Okafor" required>
+          <input type="text" name="name" placeholder="Your name" required>
         </div>
         <div>
           <label style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#64748b;letter-spacing:0.15em;display:block;margin-bottom:8px;">EMAIL ADDRESS</label>
@@ -820,6 +880,9 @@
       {% endif %}
       <a href="https://docs.agriops.io" style="font-size:13px;color:#64748b;text-decoration:none;">Docs</a>
       <a href="https://api.agriops.io/api/v1/" style="font-size:13px;color:#64748b;text-decoration:none;">API</a>
+      <a href="/legal/privacy/" style="font-size:13px;color:#64748b;text-decoration:none;">Privacy</a>
+      <a href="/legal/terms/" style="font-size:13px;color:#64748b;text-decoration:none;">Terms</a>
+      <a href="/legal/cookies/" style="font-size:13px;color:#64748b;text-decoration:none;">Cookies</a>
     </div>
     <p style="font-size:12px;color:#334155;font-family:'JetBrains Mono',monospace;">
       © 2026 AgriOps · Agricultural Supply Chain Intelligence
@@ -829,6 +892,15 @@
 
 
 <script>
+  // Show live dot + text on desktop only
+  function updateNavLive() {
+    const show = window.innerWidth >= 640;
+    document.getElementById('nav-live-dot').style.display = show ? 'inline-block' : 'none';
+    document.getElementById('nav-live-text').style.display = show ? 'inline' : 'none';
+  }
+  updateNavLive();
+  window.addEventListener('resize', updateNavLive);
+
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(e => {
       if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
