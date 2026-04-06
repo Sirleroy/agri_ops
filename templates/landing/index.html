@@ -769,7 +769,7 @@
         {% csrf_token %}
         <div>
           <label style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#64748b;letter-spacing:0.15em;display:block;margin-bottom:8px;">FULL NAME</label>
-          <input type="text" name="name" placeholder="Ezinna Ohah" required>
+          <input type="text" name="name" placeholder="Ada Okafor" required>
         </div>
         <div>
           <label style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#64748b;letter-spacing:0.15em;display:block;margin-bottom:8px;">EMAIL ADDRESS</label>
@@ -778,6 +778,18 @@
         <div>
           <label style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#64748b;letter-spacing:0.15em;display:block;margin-bottom:8px;">ORGANISATION</label>
           <input type="text" name="company" placeholder="Your cooperative or company">
+        </div>
+        <div>
+          <label style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#64748b;letter-spacing:0.15em;display:block;margin-bottom:8px;">PRIMARY COMMODITY</label>
+          <select name="commodity" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;color:#e2e8f0;font-family:'Lora',serif;font-size:14px;padding:12px 16px;width:100%;outline:none;transition:border-color 0.2s;appearance:none;cursor:pointer;">
+            <option value="" style="color:#475569;">Select a commodity</option>
+            <option value="cocoa">Cocoa</option>
+            <option value="coffee">Coffee</option>
+            <option value="soy">Soy</option>
+            <option value="palm_oil">Palm Oil</option>
+            <option value="multiple">Multiple commodities</option>
+            <option value="other">Other</option>
+          </select>
         </div>
         <button type="submit" class="btn-primary" style="width:100%;text-align:center;padding:14px;">
           Request Early Access →

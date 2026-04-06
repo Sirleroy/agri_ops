@@ -9,9 +9,19 @@ class AccessRequest(models.Model):
         ('rejected', 'Rejected'),
     ]
 
+    COMMODITY_CHOICES = [
+        ('cocoa',      'Cocoa'),
+        ('coffee',     'Coffee'),
+        ('soy',        'Soy'),
+        ('palm_oil',   'Palm Oil'),
+        ('multiple',   'Multiple commodities'),
+        ('other',      'Other'),
+    ]
+
     name        = models.CharField(max_length=255)
     email       = models.EmailField(unique=True)
     company     = models.CharField(max_length=255, blank=True)
+    commodity   = models.CharField(max_length=20, choices=COMMODITY_CHOICES, blank=True)
     status      = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at  = models.DateTimeField(auto_now_add=True)
     approved_at = models.DateTimeField(null=True, blank=True)

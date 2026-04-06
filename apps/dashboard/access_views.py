@@ -25,9 +25,10 @@ class RequestAccessView(View):
             return JsonResponse({'error': 'Too many requests. Please try again later.'}, status=429)
         cache.set(cache_key, attempts + 1, timeout=3600)
 
-        name    = request.POST.get('name', '').strip()
-        email   = request.POST.get('email', '').strip()
-        company = request.POST.get('company', '').strip()
+        name      = request.POST.get('name', '').strip()
+        email     = request.POST.get('email', '').strip()
+        company   = request.POST.get('company', '').strip()
+        commodity = request.POST.get('commodity', '').strip()
 
         # ── Validate ──────────────────────────────────────────
         if not name or not email:
@@ -42,6 +43,7 @@ class RequestAccessView(View):
             name=name,
             email=email,
             company=company,
+            commodity=commodity,
             status='pending'
         )
 
@@ -97,7 +99,7 @@ class RequestAccessView(View):
             _send_welcome_email(user, set_password_url, company_obj)
 
             # ── Notify founder ────────────────────────────────
-            _notify_founder(name, email, company_name, username)
+            _notify_founder(name, email, company_name, username, commodity)
 
             return JsonResponse({
                 'success': True,
@@ -158,17 +160,19 @@ def _send_welcome_email(user, set_password_url, company):
     msg.send(fail_silently=True)
 
 
-def _notify_founder(name, email, company, username):
+def _notify_founder(name, email, company, username, commodity=''):
     from django.core.mail import EmailMultiAlternatives
     founder_email = getattr(settings, 'FOUNDER_EMAIL', '')
     if not founder_email:
         return
+    commodity_label = commodity.replace('_', ' ').title() if commodity else 'Not specified'
     subject = f"[AgriOps] New user onboarded — {name}"
     body_text = (
         f"New user auto-approved on AgriOps.\n\n"
         f"Name: {name}\n"
         f"Email: {email}\n"
         f"Company: {company}\n"
+        f"Commodity: {commodity_label}\n"
         f"Username: {username}\n\n"
         f"View access requests: https://app.agriops.io/admin/dashboard/accessrequest/\n"
     )
