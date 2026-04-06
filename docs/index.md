@@ -63,6 +63,7 @@ AgriOps is a secure, multi-tenant SaaS platform for agricultural SMEs and cooper
 | Document | Description |
 |---|---|
 | [Threat Model](threat-model.md) | STRIDE threat analysis and mitigations |
+| [Security Testing Log](security-testing.md) | Red team exercises, findings, and resolutions |
 
 ---
 
