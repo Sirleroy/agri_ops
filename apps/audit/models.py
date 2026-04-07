@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from apps.companies.managers import TenantManager
 
 
 class AuditLog(models.Model):
@@ -28,6 +29,8 @@ class AuditLog(models.Model):
     changes     = models.JSONField(null=True, blank=True)
     ip_address  = models.GenericIPAddressField(null=True, blank=True)
     timestamp   = models.DateTimeField(auto_now_add=True)
+
+    objects = TenantManager()
 
     class Meta:
         ordering = ['-timestamp']

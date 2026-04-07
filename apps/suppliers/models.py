@@ -2,6 +2,7 @@ import datetime
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from apps.companies.models import Company
+from apps.companies.managers import TenantManager
 
 
 # Commodities covered by EU Deforestation Regulation (EU) 2023/1115
@@ -34,6 +35,8 @@ class Farmer(models.Model):
 
     class Meta:
         ordering = ['last_name', 'first_name']
+
+    objects = TenantManager()
 
     @property
     def full_name(self):
@@ -75,6 +78,8 @@ class Supplier(models.Model):
     )
     created_at     = models.DateTimeField(auto_now_add=True)
     updated_at     = models.DateTimeField(auto_now=True)
+
+    objects = TenantManager()
 
     class Meta:
         ordering = ['name']
@@ -178,6 +183,8 @@ class Farm(models.Model):
 
     created_at     = models.DateTimeField(auto_now_add=True)
     updated_at     = models.DateTimeField(auto_now=True)
+
+    objects = TenantManager()
 
     class Meta:
         ordering = ['name']

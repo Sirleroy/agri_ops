@@ -1,5 +1,6 @@
 from django.db import models
 from apps.companies.models import Company
+from apps.companies.managers import TenantManager
 from apps.products.models import Product
 from django.conf import settings
 
@@ -52,6 +53,8 @@ class SalesOrder(models.Model):
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = TenantManager()
 
     class Meta:
         ordering = ['-created_at']

@@ -1,5 +1,6 @@
 from django.db import models
 from apps.companies.models import Company
+from apps.companies.managers import TenantManager
 from apps.suppliers.models import Supplier
 
 
@@ -73,6 +74,8 @@ class Product(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = TenantManager()
 
     class Meta:
         ordering = ['name']

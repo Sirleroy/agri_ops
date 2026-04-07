@@ -1,5 +1,6 @@
 from django.db import models
 from apps.companies.models import Company
+from apps.companies.managers import TenantManager
 from apps.products.models import Product
 
 
@@ -42,6 +43,8 @@ class Inventory(models.Model):
 
     last_updated    = models.DateTimeField(auto_now=True)
     created_at      = models.DateTimeField(auto_now_add=True)
+
+    objects = TenantManager()
 
     class Meta:
         verbose_name_plural = 'Inventories'
