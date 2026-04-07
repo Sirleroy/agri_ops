@@ -74,6 +74,67 @@
         {% endif %}
       </div>
 
+      <!-- Section: Field Verification (edit mode only — FVF data entered after import) -->
+      {% if form.instance.pk %}
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4 pt-4 border-t border-border">Field Verification Form</p>
+      <p class="text-xs text-slate-600 font-mono mb-4">Transcribe answers from the signed paper FVF. The original signed form is the legal record.</p>
+      <div class="grid grid-cols-2 gap-4 mb-6">
+
+        <div>
+          <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">Land Acquisition</label>
+          <div class="[&>select]:w-full [&>select]:bg-surface [&>select]:border [&>select]:border-border [&>select]:rounded-lg [&>select]:px-4 [&>select]:py-3 [&>select]:text-sm [&>select]:text-slate-100 [&>select]:outline-none">
+            {{ form.fvf_land_acquisition }}
+          </div>
+          {% if form.fvf_land_acquisition.errors %}<p class="mt-1 text-xs font-mono text-red-400">{{ form.fvf_land_acquisition.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">Land Tenure</label>
+          <div class="[&>select]:w-full [&>select]:bg-surface [&>select]:border [&>select]:border-border [&>select]:rounded-lg [&>select]:px-4 [&>select]:py-3 [&>select]:text-sm [&>select]:text-slate-100 [&>select]:outline-none">
+            {{ form.fvf_land_tenure }}
+          </div>
+          {% if form.fvf_land_tenure.errors %}<p class="mt-1 text-xs font-mono text-red-400">{{ form.fvf_land_tenure.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">Years Farming This Plot</label>
+          <div class="[&>input]:w-full [&>input]:bg-surface [&>input]:border [&>input]:border-border [&>input]:rounded-lg [&>input]:px-4 [&>input]:py-3 [&>input]:text-sm [&>input]:text-slate-100 [&>input]:outline-none [&>input]:placeholder-slate-600">
+            {{ form.fvf_years_farming }}
+          </div>
+          {% if form.fvf_years_farming.errors %}<p class="mt-1 text-xs font-mono text-red-400">{{ form.fvf_years_farming.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div class="flex flex-col justify-end gap-3 pb-1">
+          <label class="flex items-center gap-3 cursor-pointer">
+            {{ form.fvf_untouched_forest }}
+            <span class="text-sm text-slate-300">Untouched forest on property</span>
+          </label>
+          <label class="flex items-center gap-3 cursor-pointer">
+            {{ form.fvf_expansion_intent }}
+            <span class="text-sm text-slate-300">Would cut trees to expand <span class="text-xs text-amber-400 font-mono">(risk flag)</span></span>
+          </label>
+        </div>
+
+        <div class="col-span-2 border-t border-border pt-4 mt-2">
+          <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-3">Consent Record</p>
+          <div class="flex flex-col sm:flex-row sm:items-end gap-4">
+            <label class="flex items-center gap-3 cursor-pointer">
+              {{ form.fvf_consent_given }}
+              <span class="text-sm text-slate-300">Farmer signed FVF consent — paper on file</span>
+            </label>
+            <div class="sm:ml-auto">
+              <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">Consent Date</label>
+              <div class="[&>input]:bg-surface [&>input]:border [&>input]:border-border [&>input]:rounded-lg [&>input]:px-4 [&>input]:py-3 [&>input]:text-sm [&>input]:text-slate-100 [&>input]:outline-none">
+                {{ form.fvf_consent_date }}
+              </div>
+              {% if form.fvf_consent_date.errors %}<p class="mt-1 text-xs font-mono text-red-400">{{ form.fvf_consent_date.errors.0 }}</p>{% endif %}
+            </div>
+          </div>
+        </div>
+
+      </div>
+      {% endif %}
+
       <div class="flex gap-3 pt-4 border-t border-border">
         <button type="submit"
           class="flex-1 bg-green hover:bg-green-dim text-bg font-bold text-sm py-3 rounded-lg transition-colors">

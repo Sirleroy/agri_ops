@@ -419,6 +419,9 @@ class FarmUpdateForm(FarmForm):
     class Meta(FarmForm.Meta):
         fields = FarmForm.Meta.fields + [
             'is_eudr_verified', 'verified_by', 'verified_date', 'verification_expiry',
+            'fvf_land_acquisition', 'fvf_land_tenure', 'fvf_years_farming',
+            'fvf_untouched_forest', 'fvf_expansion_intent',
+            'fvf_consent_given', 'fvf_consent_date',
         ]
 
     def __init__(self, *args, **kwargs):

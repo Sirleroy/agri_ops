@@ -137,6 +137,45 @@ class Farm(models.Model):
     verified_date     = models.DateField(null=True, blank=True)
     verification_expiry = models.DateField(null=True, blank=True)
 
+    # Field Verification Form (FVF) — answers transcribed from signed paper form
+    FVF_ACQUISITION_CHOICES = [
+        ('inherited', 'Inherited'),
+        ('bought',    'Bought from neighbour'),
+        ('granted',   'Granted by local leader'),
+    ]
+    FVF_TENURE_CHOICES = [
+        ('title_deed',       'Title Deed'),
+        ('village_consent',  'Village Consent'),
+    ]
+    fvf_land_acquisition = models.CharField(
+        max_length=20, choices=FVF_ACQUISITION_CHOICES, blank=True,
+        help_text="How did the farmer acquire this land?"
+    )
+    fvf_land_tenure = models.CharField(
+        max_length=20, choices=FVF_TENURE_CHOICES, blank=True,
+        help_text="Does the farmer hold a title deed or village consent?"
+    )
+    fvf_years_farming = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        help_text="How many years has the farmer been planting on this plot?"
+    )
+    fvf_untouched_forest = models.BooleanField(
+        null=True, blank=True,
+        help_text="Is there any untouched forest remaining on this property?"
+    )
+    fvf_expansion_intent = models.BooleanField(
+        null=True, blank=True,
+        help_text="To expand, would the farmer cut trees? (forward deforestation risk)"
+    )
+    fvf_consent_given = models.BooleanField(
+        default=False,
+        help_text="Farmer has signed the FVF consent block. Paper form is on file."
+    )
+    fvf_consent_date = models.DateField(
+        null=True, blank=True,
+        help_text="Date the farmer signed the FVF consent (ties digital record to paper)."
+    )
+
     created_at     = models.DateTimeField(auto_now_add=True)
     updated_at     = models.DateTimeField(auto_now=True)
 

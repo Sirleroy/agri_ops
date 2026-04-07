@@ -112,6 +112,52 @@
     </dl>
   </div>
 
+  <!-- Field Verification card -->
+  <div class="bg-card border border-border rounded-xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Field Verification (FVF)</p>
+      {% if farm.fvf_consent_given %}
+        <span class="px-3 py-1 rounded-full text-xs font-mono bg-green/10 text-green border border-green/20">Consent on file · {{ farm.fvf_consent_date|default:"date not recorded" }}</span>
+      {% else %}
+        <span class="px-3 py-1 rounded-full text-xs font-mono bg-amber-500/10 text-amber-400 border border-amber-500/20">FVF not yet recorded</span>
+      {% endif %}
+    </div>
+
+    {% if farm.fvf_land_acquisition or farm.fvf_land_tenure or farm.fvf_years_farming is not None %}
+    <dl class="grid grid-cols-2 gap-4 text-sm mb-4">
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Land Acquisition</dt>
+        <dd class="text-slate-100">{{ farm.get_fvf_land_acquisition_display|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Land Tenure</dt>
+        <dd class="text-slate-100">{{ farm.get_fvf_land_tenure_display|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Years Farming This Plot</dt>
+        <dd class="text-slate-100">{% if farm.fvf_years_farming is not None %}{{ farm.fvf_years_farming }} yr{{ farm.fvf_years_farming|pluralize }}{% else %}—{% endif %}</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-500 font-mono mb-1">Untouched Forest on Property</dt>
+        <dd>{% if farm.fvf_untouched_forest is None %}<span class="text-slate-500">—</span>
+            {% elif farm.fvf_untouched_forest %}<span class="text-amber-400 font-mono text-xs">Yes</span>
+            {% else %}<span class="text-slate-400 font-mono text-xs">No</span>{% endif %}</dd>
+      </div>
+    </dl>
+    <div class="pt-3 border-t border-border flex items-center gap-2">
+      <dt class="text-xs text-slate-500 font-mono">Expansion Intent (would cut trees)</dt>
+      <dd>{% if farm.fvf_expansion_intent is None %}<span class="text-slate-500 text-xs font-mono">—</span>
+          {% elif farm.fvf_expansion_intent %}
+            <span class="px-2 py-0.5 rounded text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20">Yes — forward risk flag</span>
+          {% else %}
+            <span class="px-2 py-0.5 rounded text-xs font-mono bg-green/10 text-green border border-green/20">No</span>
+          {% endif %}</dd>
+    </div>
+    {% else %}
+    <p class="text-sm text-slate-500">No FVF data entered yet. Edit this farm to transcribe answers from the signed paper form.</p>
+    {% endif %}
+  </div>
+
   <!-- Map card -->
   {% if farm.geolocation %}
   <div class="bg-card border border-border rounded-xl overflow-hidden">
