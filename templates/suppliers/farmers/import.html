@@ -9,51 +9,7 @@
     <a href="{% url 'suppliers:farmer_list' %}" class="text-sm text-slate-500 hover:text-slate-100 transition-colors font-mono">← Farmers</a>
   </div>
 
-  <!-- Instructions card -->
-  <div class="bg-card border border-border rounded-xl p-6">
-    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">How to Import</p>
-    <ol class="space-y-2 text-sm text-slate-400 list-decimal list-inside">
-      <li>Download the CSV template below.</li>
-      <li>Fill it in using Excel or Google Sheets — one row per farmer.</li>
-      <li>Upload the completed file and review the import summary.</li>
-      <li>Download the errors file (if any) and fix those rows before re-uploading.</li>
-    </ol>
-    <div class="mt-4 pt-4 border-t border-border">
-      <a href="{% url 'suppliers:farmer_import_template' %}"
-        class="inline-flex items-center gap-2 bg-card border border-border hover:border-slate-500 text-slate-300 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-        <svg class="w-4 h-4 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-        Download CSV Template
-      </a>
-    </div>
-  </div>
-
-  <!-- Upload card -->
-  <div class="bg-card border border-border rounded-xl p-6">
-    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Upload File</p>
-
-    <form method="post" enctype="multipart/form-data">
-      {% csrf_token %}
-
-      {% if form_error %}
-        <div class="mb-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20">
-          <p class="text-sm text-red-400 font-mono">{{ form_error }}</p>
-        </div>
-      {% endif %}
-
-      <div class="mb-4">
-        <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">CSV File *</label>
-        <input type="file" name="csv_file" accept=".csv"
-          class="w-full bg-surface border border-border rounded-lg px-4 py-3 text-sm text-slate-300 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:bg-green/10 file:text-green file:text-xs file:font-mono file:cursor-pointer outline-none">
-      </div>
-
-      <button type="submit"
-        class="bg-green hover:bg-green-dim text-bg font-bold text-sm px-6 py-2.5 rounded-lg transition-colors">
-        Upload and Import
-      </button>
-    </form>
-  </div>
-
-  <!-- Results card (shown after import) -->
+  <!-- Results card — rendered FIRST so mobile users see them without scrolling -->
   {% if result %}
   <div class="bg-card border border-border rounded-xl p-6">
     <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Import Summary</p>
@@ -123,6 +79,51 @@
 
   </div>
   {% endif %}
+
+  <!-- Instructions card -->
+  <div class="bg-card border border-border rounded-xl p-6">
+    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">How to Import</p>
+    <ol class="space-y-2 text-sm text-slate-400 list-decimal list-inside">
+      <li>Download the CSV template below.</li>
+      <li>Fill it in using Excel or Google Sheets — one row per farmer.</li>
+      <li>Upload the completed file and review the import summary.</li>
+      <li>Download the errors file (if any) and fix those rows before re-uploading.</li>
+    </ol>
+    <div class="mt-4 pt-4 border-t border-border">
+      <a href="{% url 'suppliers:farmer_import_template' %}"
+        class="inline-flex items-center gap-2 bg-card border border-border hover:border-slate-500 text-slate-300 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+        <svg class="w-4 h-4 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        Download CSV Template
+      </a>
+    </div>
+  </div>
+
+  <!-- Upload card -->
+  <div class="bg-card border border-border rounded-xl p-6">
+    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Upload File</p>
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      {% if form_error %}
+        <div class="mb-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20">
+          <p class="text-sm text-red-400 font-mono">{{ form_error }}</p>
+        </div>
+      {% endif %}
+
+      <div class="mb-4">
+        <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">CSV File *</label>
+        <input type="file" name="csv_file" accept=".csv"
+          class="w-full bg-surface border border-border rounded-lg px-4 py-3 text-sm text-slate-300 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:bg-green/10 file:text-green file:text-xs file:font-mono file:cursor-pointer outline-none">
+      </div>
+
+      <button type="submit"
+        class="bg-green hover:bg-green-dim text-bg font-bold text-sm px-6 py-2.5 rounded-lg transition-colors">
+        Upload and Import
+      </button>
+    </form>
+  </div>
+
 
 </div>
 {% endblock %}

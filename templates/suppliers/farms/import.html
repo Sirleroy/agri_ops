@@ -228,7 +228,32 @@
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Recent Uploads</p>
       <a href="{% url 'suppliers:farm_import_history' %}" class="text-xs font-mono text-slate-500 hover:text-slate-300 transition-colors">View all →</a>
     </div>
-    <div class="overflow-x-auto">
+
+    <!-- Mobile cards (hidden on sm+) -->
+    <div class="space-y-3 sm:hidden">
+      {% for log in recent_imports %}
+      <div class="bg-surface border border-border rounded-lg p-3 text-xs font-mono">
+        <div class="flex items-start justify-between gap-2 mb-2">
+          <div>
+            <p class="text-slate-300">{{ log.supplier.name|default:"—" }}</p>
+            <p class="text-slate-500 mt-0.5">{{ log.created_at|date:"d M H:i" }} · {{ log.uploaded_by.get_short_name|default:log.uploaded_by.username }}</p>
+          </div>
+          {% if log.dry_run %}
+          <span class="shrink-0 px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">DRY RUN</span>
+          {% endif %}
+        </div>
+        <div class="flex gap-4 text-slate-500">
+          <span>Total <span class="text-slate-300">{{ log.total }}</span></span>
+          <span>Saved <span class="{% if log.dry_run %}text-slate-500{% else %}text-green{% endif %}">{% if log.dry_run %}—{% else %}{{ log.created }}{% endif %}</span></span>
+          <span>Errors <span class="{% if log.errors > 0 %}text-red-400{% else %}text-slate-500{% endif %}">{{ log.errors }}</span></span>
+          <span>Warn <span class="{% if log.warning_count > 0 %}text-amber-400{% else %}text-slate-500{% endif %}">{{ log.warning_count }}</span></span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Desktop table (hidden on mobile) -->
+    <div class="hidden sm:block overflow-x-auto">
       <table class="w-full text-xs font-mono">
         <thead>
           <tr class="border-b border-border">
