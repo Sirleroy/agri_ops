@@ -254,6 +254,56 @@ class FarmerImportView(StaffRequiredMixin, View):
         return render(request, self.template_name, {'result': result})
 
 
+def _sw_maps_csv_to_features(csv_text):
+    """
+    Convert a SW Maps CSV export to a list of GeoJSON Feature dicts.
+    SW Maps exports polygon geometry as WKT in a 'geometry' column.
+    Returns (features, error_message) — error_message is None on success.
+    """
+    import csv as _csv
+    import io
+    reader = _csv.DictReader(io.StringIO(csv_text))
+    rows = list(reader)
+    if not rows:
+        return [], "CSV file is empty."
+
+    headers = reader.fieldnames or []
+    geom_col = next(
+        (c for c in ('geometry', 'Geometry', 'GEOMETRY', 'wkt', 'WKT', 'geom', 'GEOM')
+         if c in headers),
+        None,
+    )
+    if not geom_col:
+        return [], (
+            "No geometry column found in CSV. "
+            "SW Maps should export a 'geometry' column containing the polygon boundary as WKT. "
+            "Try exporting as GeoJSON instead — File → Export → GeoJSON."
+        )
+
+    try:
+        from shapely import wkt as shapely_wkt
+        from shapely.geometry import mapping as shapely_mapping
+    except ImportError:
+        return [], "Shapely is required to read WKT geometry from CSV files."
+
+    features = []
+    for row in rows:
+        wkt_str = (row.get(geom_col) or '').strip()
+        if not wkt_str:
+            continue
+        try:
+            geometry = dict(shapely_mapping(shapely_wkt.loads(wkt_str)))
+        except Exception:
+            geometry = None
+        features.append({
+            'type': 'Feature',
+            'geometry': geometry,
+            'properties': {k: v for k, v in row.items() if k != geom_col},
+        })
+
+    return features, None
+
+
 def run_farm_geojson_import(company, supplier, features, default_commodity='', dry_run=False):
     """
     Core GeoJSON import pipeline — called by both the web view and the API endpoint.
@@ -435,25 +485,42 @@ class FarmImportView(StaffRequiredMixin, View):
 
         geojson_file = request.FILES.get('geojson_file')
         if not geojson_file:
-            ctx['form_error'] = 'Please select a GeoJSON file.'
+            ctx['form_error'] = 'Please select a file.'
             return render(request, self.template_name, ctx)
 
-        try:
-            data = json.loads(geojson_file.read().decode('utf-8'))
-        except Exception as e:
-            ctx['form_error'] = f'Could not read file: {e}'
-            return render(request, self.template_name, ctx)
+        fname = geojson_file.name.lower()
 
-        if isinstance(data, list):
-            features = data
-        elif isinstance(data, dict) and data.get('type') == 'FeatureCollection':
-            features = data.get('features') or []
+        if fname.endswith('.csv'):
+            try:
+                csv_text = geojson_file.read().decode('utf-8-sig')
+            except Exception as e:
+                ctx['form_error'] = f'Could not read file: {e}'
+                return render(request, self.template_name, ctx)
+            features, csv_err = _sw_maps_csv_to_features(csv_text)
+            if csv_err:
+                ctx['form_error'] = csv_err
+                return render(request, self.template_name, ctx)
+
+        elif fname.endswith(('.geojson', '.json')):
+            try:
+                data = json.loads(geojson_file.read().decode('utf-8'))
+            except Exception as e:
+                ctx['form_error'] = f'Could not read file: {e}'
+                return render(request, self.template_name, ctx)
+            if isinstance(data, list):
+                features = data
+            elif isinstance(data, dict) and data.get('type') == 'FeatureCollection':
+                features = data.get('features') or []
+            else:
+                ctx['form_error'] = 'File must be a GeoJSON FeatureCollection.'
+                return render(request, self.template_name, ctx)
+
         else:
-            ctx['form_error'] = 'File must be a GeoJSON FeatureCollection.'
+            ctx['form_error'] = 'File must be a GeoJSON (.geojson, .json) or SW Maps CSV (.csv) export.'
             return render(request, self.template_name, ctx)
 
         if not features:
-            ctx['form_error'] = 'FeatureCollection contains no features.'
+            ctx['form_error'] = 'File contains no features — check the export settings in SW Maps.'
             return render(request, self.template_name, ctx)
 
         dry_run = 'dry_run' in request.POST

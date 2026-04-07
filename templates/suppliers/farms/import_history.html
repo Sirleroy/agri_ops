@@ -30,65 +30,87 @@
             <th class="text-left px-3 py-2 text-slate-500"></th>
           </tr>
         </thead>
-        <tbody>
-          {% for log in logs %}
-          <tr class="border-b border-border/50 hover:bg-surface/50 transition-colors" x-data="{ open: false }">
-            <td class="px-3 py-2 text-slate-400 whitespace-nowrap">{{ log.created_at|date:"d M Y H:i" }}</td>
-            <td class="px-3 py-2 text-slate-300 whitespace-nowrap">{{ log.uploaded_by.get_short_name|default:log.uploaded_by.username }}</td>
-            <td class="px-3 py-2 text-slate-300 whitespace-nowrap">{{ log.supplier.name|default:"—" }}</td>
-            <td class="px-3 py-2 text-slate-500 whitespace-nowrap">{{ log.filename|default:"—" }}</td>
-            <td class="px-3 py-2 text-slate-400">{{ log.total }}</td>
-            <td class="px-3 py-2 {% if log.dry_run %}text-slate-500{% elif log.created > 0 %}text-green{% else %}text-slate-500{% endif %}">
+        {% for log in logs %}
+        <tbody x-data="{ open: false }">
+          <tr class="border-b border-border/50 hover:bg-surface/40 transition-colors cursor-default">
+            <td class="px-3 py-2.5 text-slate-400 whitespace-nowrap">{{ log.created_at|date:"d M Y H:i" }}</td>
+            <td class="px-3 py-2.5 text-slate-300 whitespace-nowrap">{{ log.uploaded_by.get_short_name|default:log.uploaded_by.username }}</td>
+            <td class="px-3 py-2.5 text-slate-300 whitespace-nowrap">{{ log.supplier.name|default:"—" }}</td>
+            <td class="px-3 py-2.5 text-slate-500 whitespace-nowrap max-w-[160px] truncate" :title="'{{ log.filename|default:""|escapejs }}'">{{ log.filename|default:"—" }}</td>
+            <td class="px-3 py-2.5 text-slate-400">{{ log.total }}</td>
+            <td class="px-3 py-2.5 {% if log.dry_run %}text-slate-500{% elif log.created > 0 %}text-green{% else %}text-slate-500{% endif %}">
               {% if log.dry_run %}{{ log.would_create }} (preview){% else %}{{ log.created }}{% endif %}
             </td>
-            <td class="px-3 py-2 text-slate-500">{{ log.duplicates }}</td>
-            <td class="px-3 py-2 {% if log.blocked > 0 %}text-orange-400{% else %}text-slate-500{% endif %}">{{ log.blocked }}</td>
-            <td class="px-3 py-2 {% if log.errors > 0 %}text-red-400{% else %}text-slate-500{% endif %}">{{ log.errors }}</td>
-            <td class="px-3 py-2 {% if log.warning_count > 0 %}text-amber-400{% else %}text-slate-500{% endif %}">{{ log.warning_count }}</td>
-            <td class="px-3 py-2 flex items-center gap-2">
-              {% if log.dry_run %}
-              <span class="px-2 py-0.5 rounded text-xs font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20">DRY RUN</span>
-              {% endif %}
-              {% if log.error_detail or log.blocked_detail or log.warning_detail %}
-              <button @click="open = !open" class="text-slate-500 hover:text-slate-300 transition-colors">
-                <svg class="w-3.5 h-3.5" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-              </button>
-              {% endif %}
+            <td class="px-3 py-2.5 text-slate-500">{{ log.duplicates }}</td>
+            <td class="px-3 py-2.5 {% if log.blocked > 0 %}text-orange-400{% else %}text-slate-500{% endif %}">{{ log.blocked }}</td>
+            <td class="px-3 py-2.5 {% if log.errors > 0 %}text-red-400{% else %}text-slate-500{% endif %}">{{ log.errors }}</td>
+            <td class="px-3 py-2.5 {% if log.warning_count > 0 %}text-amber-400{% else %}text-slate-500{% endif %}">{{ log.warning_count }}</td>
+            <td class="px-3 py-2.5">
+              <div class="flex items-center justify-end gap-2">
+                {% if log.dry_run %}
+                <span class="px-2 py-0.5 rounded text-xs font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20">DRY RUN</span>
+                {% endif %}
+                {% if log.error_detail or log.blocked_detail or log.warning_detail %}
+                <button @click="open = !open"
+                  class="flex items-center gap-1 text-xs font-mono text-slate-500 hover:text-slate-200 transition-colors px-2 py-1 rounded border border-transparent hover:border-border">
+                  <span x-text="open ? 'Hide' : 'Details'">Details</span>
+                  <svg class="w-3 h-3 transition-transform duration-150" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                {% endif %}
+              </div>
             </td>
           </tr>
           {% if log.error_detail or log.blocked_detail or log.warning_detail %}
-          <tr x-show="open" x-cloak class="bg-surface/50">
-            <td colspan="11" class="px-4 py-4">
-              <div class="space-y-4">
+          <tr x-show="open" x-cloak>
+            <td colspan="11" class="px-0 pb-3">
+              <div class="mx-3 rounded-lg border border-border bg-surface/60 divide-y divide-border/50">
 
                 {% if log.error_detail %}
-                <div>
-                  <p class="text-xs font-mono text-red-400 uppercase tracking-widest mb-2">Errors</p>
-                  <ul class="space-y-1">
+                <div class="px-4 py-3">
+                  <p class="text-xs font-mono text-red-400 uppercase tracking-widest mb-2">
+                    {{ log.error_detail|length }} Error{{ log.error_detail|length|pluralize }}
+                  </p>
+                  <ul class="space-y-1.5">
                     {% for err in log.error_detail %}
-                    <li class="text-xs text-slate-400 font-mono">Row {{ err.row }} — <span class="text-slate-300">{{ err.name }}</span>: <span class="text-red-400">{{ err.reason }}</span></li>
+                    <li class="text-xs font-mono flex gap-2">
+                      <span class="text-slate-600 shrink-0">Row {{ err.row }}</span>
+                      <span class="text-slate-300">{{ err.name }}</span>
+                      <span class="text-red-400">{{ err.reason }}</span>
+                    </li>
                     {% endfor %}
                   </ul>
                 </div>
                 {% endif %}
 
                 {% if log.blocked_detail %}
-                <div>
-                  <p class="text-xs font-mono text-orange-400 uppercase tracking-widest mb-2">Overlap Blocked</p>
-                  <ul class="space-y-1">
+                <div class="px-4 py-3">
+                  <p class="text-xs font-mono text-orange-400 uppercase tracking-widest mb-2">
+                    {{ log.blocked_detail|length }} Overlap Blocked
+                  </p>
+                  <ul class="space-y-1.5">
                     {% for b in log.blocked_detail %}
-                    <li class="text-xs text-slate-400 font-mono">Row {{ b.row }} — <span class="text-slate-300">{{ b.name }}</span>: <span class="text-orange-400">{{ b.reason }}</span></li>
+                    <li class="text-xs font-mono flex gap-2">
+                      <span class="text-slate-600 shrink-0">Row {{ b.row }}</span>
+                      <span class="text-slate-300">{{ b.name }}</span>
+                      <span class="text-orange-400">{{ b.reason }}</span>
+                    </li>
                     {% endfor %}
                   </ul>
                 </div>
                 {% endif %}
 
                 {% if log.warning_detail %}
-                <div>
-                  <p class="text-xs font-mono text-amber-400 uppercase tracking-widest mb-2">Warnings</p>
-                  <ul class="space-y-1">
+                <div class="px-4 py-3">
+                  <p class="text-xs font-mono text-amber-400 uppercase tracking-widest mb-2">
+                    {{ log.warning_detail|length }} Warning{{ log.warning_detail|length|pluralize }}
+                  </p>
+                  <ul class="space-y-1.5">
                     {% for w in log.warning_detail %}
-                    <li class="text-xs text-slate-400 font-mono">Row {{ w.row }} — <span class="text-slate-300">{{ w.name }}</span>: {{ w.issues|join:", " }}</li>
+                    <li class="text-xs font-mono flex gap-2">
+                      <span class="text-slate-600 shrink-0">Row {{ w.row }}</span>
+                      <span class="text-slate-300">{{ w.name }}</span>
+                      <span class="text-amber-300/80">{{ w.issues|join:", " }}</span>
+                    </li>
                     {% endfor %}
                   </ul>
                 </div>
@@ -98,8 +120,8 @@
             </td>
           </tr>
           {% endif %}
-          {% endfor %}
         </tbody>
+        {% endfor %}
       </table>
     </div>
 
