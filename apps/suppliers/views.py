@@ -581,11 +581,13 @@ class FarmImportErrorsView(StaffRequiredMixin, View):
 
 class FarmExportView(StaffRequiredMixin, View):
     def get(self, request):
-        from .exports import farm_registry_csv, farm_registry_pdf
+        from .exports import farm_registry_csv, farm_registry_pdf, farm_registry_geojson
         fmt = request.GET.get('format', 'csv')
         company = request.user.company
         if fmt == 'pdf':
             return farm_registry_pdf(company)
+        if fmt == 'geojson':
+            return farm_registry_geojson(company)
         return farm_registry_csv(company)
 
 

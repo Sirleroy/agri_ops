@@ -358,3 +358,80 @@ def farm_registry_pdf(company):
         f'attachment; filename="AgriOps_Farm_Registry_{date.today()}.pdf"'
     )
     return response
+
+
+def farm_registry_geojson(company):
+    """
+    Returns an HttpResponse with all company farms as a GeoJSON FeatureCollection.
+    Each farm with a polygon becomes a Feature; farms without geolocation are
+    included as null-geometry features so the attribute data is not lost.
+    """
+    import json
+    from .models import Farm
+
+    farms = Farm.objects.for_company(company).select_related(
+        'supplier', 'farmer'
+    ).order_by('name')
+
+    STATUS_LABELS = {
+        'compliant': 'Verified',
+        'expired': 'Expired',
+        'high_risk': 'High Risk',
+        'disqualified': 'Disqualified',
+        'pending': 'Pending',
+    }
+
+    FVF_ACQUISITION_LABELS = dict(Farm.FVF_ACQUISITION_CHOICES)
+    FVF_TENURE_LABELS = dict(Farm.FVF_TENURE_CHOICES)
+
+    features = []
+    for farm in farms:
+        features.append({
+            'type': 'Feature',
+            'geometry': farm.geolocation,  # None if not yet mapped — valid GeoJSON
+            'properties': {
+                # Identity
+                'name':            farm.name,
+                'farmer':          farm.farmer.full_name if farm.farmer else farm.farmer_name or None,
+                'supplier':        farm.supplier.name if farm.supplier else None,
+                'commodity':       farm.commodity,
+                'area_hectares':   float(farm.area_hectares) if farm.area_hectares else None,
+                'country':         farm.country,
+                'state_region':    farm.state_region or None,
+                # EUDR compliance
+                'compliance_status':            STATUS_LABELS.get(farm.compliance_status, 'Pending'),
+                'deforestation_risk':           farm.get_deforestation_risk_status_display(),
+                'land_cleared_after_cutoff':    farm.land_cleared_after_cutoff,
+                'deforestation_reference_date': farm.deforestation_reference_date.isoformat() if farm.deforestation_reference_date else None,
+                'harvest_year':                 farm.harvest_year,
+                'is_eudr_verified':             farm.is_eudr_verified,
+                'verified_date':                farm.verified_date.isoformat() if farm.verified_date else None,
+                'verification_expiry':          farm.verification_expiry.isoformat() if farm.verification_expiry else None,
+                'mapping_date':                 farm.mapping_date.isoformat() if farm.mapping_date else None,
+                # Field Verification Form (FVF)
+                'fvf_land_acquisition':  FVF_ACQUISITION_LABELS.get(farm.fvf_land_acquisition) if farm.fvf_land_acquisition else None,
+                'fvf_land_tenure':       FVF_TENURE_LABELS.get(farm.fvf_land_tenure) if farm.fvf_land_tenure else None,
+                'fvf_years_farming':     farm.fvf_years_farming,
+                'fvf_untouched_forest':  farm.fvf_untouched_forest,
+                'fvf_expansion_intent':  farm.fvf_expansion_intent,
+                'fvf_consent_given':     farm.fvf_consent_given,
+                'fvf_consent_date':      farm.fvf_consent_date.isoformat() if farm.fvf_consent_date else None,
+                # Internal
+                'agriops_id': farm.pk,
+            },
+        })
+
+    collection = {
+        'type': 'FeatureCollection',
+        'name': f'{company.name} — Farm Registry',
+        'features': features,
+    }
+
+    response = HttpResponse(
+        json.dumps(collection, indent=2),
+        content_type='application/geo+json',
+    )
+    response['Content-Disposition'] = (
+        f'attachment; filename="AgriOps_Farm_Registry_{date.today()}.geojson"'
+    )
+    return response
