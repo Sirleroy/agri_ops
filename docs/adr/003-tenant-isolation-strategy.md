@@ -68,13 +68,38 @@ All tenants share the same tables. Every model has a `ForeignKey` to `Company` (
 ```
 Company (Tenant Root)
     ├── CustomUser      ForeignKey(Company)
+    ├── Farmer          ForeignKey(Company)  ← Phase 4.6
     ├── Supplier        ForeignKey(Company)
+    │     └── Farm      ForeignKey(Company)  ← Phase 2
     ├── Product         ForeignKey(Company)
     ├── Inventory       ForeignKey(Company)
     ├── PurchaseOrder   ForeignKey(Company)
     ├── SalesOrder      ForeignKey(Company)
-    └── Farm            ForeignKey(Company)  ← Phase 2
+    ├── Batch           ForeignKey(Company)  ← Phase 4
+    └── AuditLog        ForeignKey(Company)  ← Phase 2
 ```
+
+### TenantManager *(Phase 4.9 addition)*
+
+All core models now carry `objects = TenantManager()` — a custom Django manager that adds a `for_company(company)` shortcut:
+
+```python
+# apps/companies/managers.py
+class TenantManager(models.Manager):
+    def for_company(self, company):
+        return self.get_queryset().filter(company=company)
+```
+
+Usage:
+```python
+Farm.objects.for_company(request.user.company)
+Farmer.objects.for_company(company).select_related('company')
+```
+
+This is an **additive convention layer** — it does not replace view-layer filtering (Rules 1–4 above remain mandatory). It provides:
+- A named, documented pattern future developers can follow at the model layer
+- A path to centralising any future pre-filtering logic (e.g. `is_active=True`) in one place
+- Defence-in-depth against view-layer filtering being accidentally omitted
 
 ---
 
@@ -120,9 +145,9 @@ The following tests are mandatory before Phase 2 exit:
 
 ---
 
-## Phase 4 Upgrade Path
+## Phase 5 Upgrade Path
 
-In Phase 4, PostgreSQL Row-Level Security (RLS) will be added as a second layer of isolation — enforced at the database level independently of application code. This provides defence-in-depth: even if application-layer filtering is bypassed, the database itself refuses to return cross-tenant records.
+In Phase 5, PostgreSQL Row-Level Security (RLS) will be added as a third layer of isolation — enforced at the database level independently of application code. This provides defence-in-depth: even if application-layer filtering is bypassed, the database itself refuses to return cross-tenant records.
 
 The shared schema approach chosen here is fully compatible with RLS — no schema changes required for the upgrade.
 

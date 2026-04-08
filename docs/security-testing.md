@@ -75,3 +75,61 @@ All 5 payloads are rejected by the production validator. The red team exercise c
 ---
 
 *Next scheduled review: before Phase 5 (Buyer Portal) — new attack surface introduced by public-facing batch traceability endpoints.*
+
+---
+
+## RT-002 — Security Posture Audit (Phase 4.9)
+**Date:** 8 April 2026
+**Method:** Static analysis of full codebase — views, models, ops dashboard, API layer, settings
+**Tester:** AI-assisted (Claude Code)
+
+---
+
+### Findings
+
+| ID | Severity | Location | Finding | Status |
+|---|---|---|---|---|
+| SA-01 | Medium | `apps/suppliers/views.py:114,573` | `session_key` read from GET param without validation — arbitrary session key enumeration possible | **Fixed** |
+| SA-02 | Low | `ops_dashboard/views.py:72,111` | `/ops-access/9f3k/` path hardcoded in `@login_required` decorators — maintenance risk | **Fixed** |
+| SA-03 | *(false positive)* | `.env` in git | Agent flagged `.env` in repository | False positive — `.env` is in `.gitignore`, never committed |
+| SA-04 | *(false positive)* | `config/settings/development.py` | `DEBUG=True` reported as production risk | False positive — `production.py` explicitly sets `DEBUG=False`. Development-only setting. |
+| SA-05 | *(false positive)* | `apps/reports/pdf.py` | N+1 query on `b.farms.all()` in PDF generator | False positive — PDF generator calls `prefetch_related('farms')` before the loop; `.all()` hits the prefetch cache. |
+
+---
+
+### SA-01 — Session Key Whitelist
+
+**Finding:** Both import error download views (`FarmerImportErrorsView`, `FarmImportErrorsView`) accepted a `session_key` GET parameter and used it directly to read from `request.session`. An authenticated user could enumerate arbitrary session keys.
+
+**Fix applied:**
+```python
+# Before
+session_key = request.GET.get('session_key', 'farmer_import_errors')
+error_rows = request.session.get(session_key, [])
+
+# After
+session_key = 'farmer_import_errors'
+error_rows = request.session.get(session_key, [])
+```
+
+Both views now use hardcoded constants. Template links still include `?session_key=` (backward-compatible) but the parameter is ignored.
+
+---
+
+### SA-02 — Ops URL Constant
+
+**Finding:** `@login_required(login_url='/ops-access/9f3k/')` appeared twice in `ops_dashboard/views.py`. The URL was already defined as `settings.OPS_LOGIN_URL` in `config/settings/base.py` but the decorators were not using it.
+
+**Fix applied:** Both decorators now reference `settings.OPS_LOGIN_URL`. Single source of truth for the ops login path.
+
+---
+
+### Summary
+
+Two genuine findings, both low-effort, both fixed in the same session. Three false positives driven by incomplete replicas or incorrect assumptions about configuration. No production risk outstanding from this audit.
+
+**CI coverage:** Session key fix is tested by the existing import flow integration; ops URL change is a constant reference with no logic to test.
+
+---
+
+*Next scheduled review: before Phase 5 (Buyer Portal) — public-facing batch traceability endpoints introduce a new unauthenticated attack surface.*

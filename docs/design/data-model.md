@@ -1,8 +1,8 @@
 # AgriOps — Data Model Documentation
 
-**Version:** 2.1
-**Date:** 5 April 2026
-**Status:** Current — updated through Phase 4.7
+**Version:** 2.2
+**Date:** 8 April 2026
+**Status:** Current — updated through Phase 4.9
 
 ---
 
@@ -61,6 +61,8 @@ See ADR 002 for role architecture rationale.
 
 The individual who owns or manages a farm plot. Replaces the free-text `farmer_name` field that previously lived on Farm. One farmer can be linked to multiple farms.
 
+**Manager:** `objects = TenantManager()` — use `Farmer.objects.for_company(company)` for tenant-scoped queries.
+
 | Field | Type | Notes |
 |---|---|---|
 | id | AutoField | Primary key |
@@ -90,6 +92,8 @@ The individual who owns or manages a farm plot. Replaces the free-text `farmer_n
 
 The commercial trading entity. May aggregate produce from multiple farms.
 
+**Manager:** `objects = TenantManager()` — use `Supplier.objects.for_company(company)` for tenant-scoped queries.
+
 | Field | Type | Notes |
 |---|---|---|
 | id | AutoField | Primary key |
@@ -110,9 +114,11 @@ The commercial trading entity. May aggregate produce from multiple farms.
 
 ---
 
-## Farm *(Phase 2 addition — extended Phase 4.5 + 4.6)*
+## Farm *(Phase 2 addition — extended Phase 4.5 + 4.6 + 4.9)*
 
 The physical plot of land. The EUDR compliance unit. Linked to Supplier (the aggregator/trader), Farmer (the individual), and Company (tenant).
+
+**Manager:** `objects = TenantManager()` — use `Farm.objects.for_company(company)` for tenant-scoped queries.
 
 | Field | Type | Notes |
 |---|---|---|
@@ -139,6 +145,20 @@ The physical plot of land. The EUDR compliance unit. Linked to Supplier (the agg
 | created_at | DateTimeField | Auto |
 | updated_at | DateTimeField | Auto |
 
+**Field Verification Form (FVF) fields** *(Phase 4.9 addition — digitalises the paper consent + land-use form collected during GPS mapping exercise)*
+
+| Field | Type | Notes |
+|---|---|---|
+| fvf_land_acquisition | CharField | Choices: inherited, bought, granted — blank |
+| fvf_land_tenure | CharField | Choices: title_deed, village_consent — blank |
+| fvf_years_farming | PositiveSmallIntegerField | nullable |
+| fvf_untouched_forest | BooleanField | nullable. True = primary forest present on farm |
+| fvf_expansion_intent | BooleanField | nullable. True = forward risk flag (shown in red on detail page) |
+| fvf_consent_given | BooleanField | Default: False. Farmer consented to GPS mapping and data collection |
+| fvf_consent_date | DateField | nullable |
+
+> The paper FVF (farmer + village head signatures) is the legal record. AgriOps holds the searchable digital copy.
+
 **Computed properties:** `is_eudr_commodity`, `is_disqualified`, `is_verification_current`, `compliance_status`
 
 See ADR 005 for farm model separation rationale.
@@ -148,6 +168,8 @@ See ADR 005 for farm model separation rationale.
 ## Product
 
 The commodity catalogue. Products are linked to a supplier and scoped to a company.
+
+**Manager:** `objects = TenantManager()` — use `Product.objects.for_company(company)`.
 
 | Field | Type | Notes |
 |---|---|---|
@@ -203,6 +225,8 @@ Audit record of every farm GeoJSON import attempt — dry-run and real. Written 
 
 Stock levels per product. Includes low-stock threshold alerting. Auto-updated when a PO is marked as Received.
 
+**Manager:** `objects = TenantManager()`.
+
 | Field | Type | Notes |
 |---|---|---|
 | id | AutoField | Primary key |
@@ -228,6 +252,8 @@ Stock levels per product. Includes low-stock threshold alerting. Auto-updated wh
 ## PurchaseOrder
 
 Procurement record. Created when buying from a supplier.
+
+**Manager:** `objects = TenantManager()`.
 
 | Field | Type | Notes |
 |---|---|---|
@@ -262,6 +288,8 @@ Line items for a Purchase Order.
 
 Customer order record. Created when selling to a buyer.
 
+**Manager:** `objects = TenantManager()`.
+
 | Field | Type | Notes |
 |---|---|---|
 | id | AutoField | Primary key |
@@ -294,7 +322,9 @@ Line items for a Sales Order.
 
 ## Batch *(Phase 4 addition)*
 
-Links a SalesOrder to a set of Farms for EUDR traceability. Auto-generates a unique batch number. The core of the compliance chain.
+Links a SalesOrder to a set of Farms for EUDR traceability.
+
+**Manager:** `objects = TenantManager()`. Auto-generates a unique batch number. The core of the compliance chain.
 
 | Field | Type | Notes |
 |---|---|---|

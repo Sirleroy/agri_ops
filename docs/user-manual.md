@@ -89,10 +89,12 @@ Farmers are the individual people who own or manage farm plots. Building a farme
 5. Tick **Consent given** and record the consent date if you have verbal or written consent
 
 **Bulk import:**
-1. Download the **CSV Template** from the import page
-2. Fill it in — one row per farmer
+1. Download the **CSV Template** from the import page, or export directly from SW Maps if farmer data was collected there
+2. Fill it in — one row per farmer (SW Maps exports are accepted as-is — column names are recognised automatically)
 3. Upload and review the summary
 4. Any rows with errors are listed — download the error file, fix the rows, and re-upload
+
+**SW Maps column names recognised:** First Name · Last Name · Phone Number · Village · LGA · Commodity · NIN
 
 ---
 
@@ -115,11 +117,13 @@ Farms are the GPS-mapped plots of land where commodities are grown. They are the
 
 This is the recommended workflow for field mapping exercises.
 
+**Accepted file formats:** GeoJSON (`.geojson` / `.json`) exported from SW Maps, or SW Maps CSV export (`.csv`). Both are handled transparently — no conversion needed.
+
 **Step 1 — Validate first (dry run)**
 1. Go to **Suppliers → Farms → Import**
 2. Select the supplier
 3. Set a default commodity (used for any polygon that doesn't have a Commodity column)
-4. Choose your GeoJSON file exported from SW Maps
+4. Choose your GeoJSON or SW Maps CSV file
 5. Tick **Validate only — don't save yet**
 6. Click **Upload and Validate**
 
@@ -145,6 +149,31 @@ Review the results:
 
 **Upload history**
 Every import attempt is saved. See the **Recent Uploads** table at the bottom of the import page, or click **View all →** for the full history with expandable error detail.
+
+### Exporting farm data
+
+Use the **Export** button on the farm list page to download:
+
+- **CSV** — flat spreadsheet with all farm fields (EUDR status, FVF data, compliance dates)
+- **PDF** — printable farm registry with colour-coded compliance status
+- **GeoJSON** — all farm polygons as a FeatureCollection (import into QGIS, SW Maps, or any GIS tool). Includes all EUDR and FVF fields as feature properties. Farms without a mapped polygon export with `"geometry": null` — valid GeoJSON that will not render on a map but preserves the record.
+
+### Field Verification Form (FVF)
+
+The FVF is completed during the farm mapping exercise — field officers fill in the paper form with the farmer and return it. Once back at base, the data is entered into AgriOps via the farm edit page.
+
+The FVF section appears on the **Edit Farm** page (not the create page — enter FVF data after the farm is imported):
+
+| Field | What to record |
+|---|---|
+| **Land Acquisition** | How the farmer acquired the land — Inherited, Bought from neighbour, Granted by local leader |
+| **Land Tenure** | Documentation basis — Title Deed or Village Consent |
+| **Years Farming** | How many years the farmer has been working this plot |
+| **Untouched Forest Present** | Is there any primary forest remaining on the farm? (Yes = risk flag) |
+| **Expansion Intent** | Does the farmer plan to expand? (Yes = forward risk flag — shown in red on the farm record) |
+| **Consent Given + Date** | Record that the farmer gave informed consent for GPS mapping and data collection |
+
+> The paper form is the legal record (it carries the farmer's and village head's signatures). AgriOps holds the searchable digital copy.
 
 ### EUDR verification
 
@@ -297,12 +326,13 @@ Go to **Company** in the sidebar to update:
 ### Field mapping exercise
 
 1. Brief field officers on farm naming convention before going out
-2. Map all farms in SW Maps, record farmer name, village, LGA, and commodity in SW Maps properties
-3. Export as GeoJSON FeatureCollection from SW Maps
-4. **Dry-run upload** first — review errors and warnings
-5. Fix any issues flagged (re-export from SW Maps if geometry errors)
-6. Commit upload — confirm farm count in Upload History
-7. Fill in missing LGA, farmer links, and other warnings via the farm edit page
+2. Field officer fills the **Field Verification Form (FVF)** with each farmer on-site (paper copy stays with farmer; officer retains a copy)
+3. Map all farms in SW Maps, record farmer name, village, LGA, and commodity in SW Maps properties
+4. Export from SW Maps — GeoJSON FeatureCollection or CSV (both formats accepted by the importer)
+5. **Dry-run upload** first — review errors and warnings
+6. Fix any issues flagged (re-export from SW Maps if geometry errors)
+7. Commit upload — confirm farm count in Upload History
+8. Fill in missing LGA, farmer links, and FVF data via the farm edit page
 
 ---
 
@@ -314,4 +344,4 @@ Go to **Company** in the sidebar to update:
 
 ---
 
-*AgriOps · [app.agriops.io](https://app.agriops.io) · Version 1.0 · April 2026*
+*AgriOps · [app.agriops.io](https://app.agriops.io) · Version 1.1 · April 2026*

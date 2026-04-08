@@ -112,6 +112,21 @@ Shipped April 2026. Focused on making the geospatial validation pipeline structu
 
 ---
 
+## Phase 4.9 — Field Operations + Security Hardening ✅ Complete
+
+Shipped April 2026. Focused on field officer usability, digital audit trail for paper workflows, and eliminating two security findings from a formal posture audit.
+
+- **SW Maps CSV farm import** — farm importer now accepts SW Maps CSV export (`.csv`) alongside GeoJSON. WKT geometry column converted transparently. Field teams no longer need to select a different export format ✅
+- **SW Maps column aliases on farmer import** — farmer CSV importer recognises SW Maps header names (First Name, Last Name, Phone Number, Village, LGA, Commodity, NIN) directly. No reformatting required before upload ✅
+- **Field Verification Form (FVF) digital integration** — 7 FVF fields added to Farm model: land acquisition method, tenure type, years farming, untouched forest flag, expansion intent (forward risk flag), and consent record. Appear on Farm edit page. Paper form remains the legal record. ✅
+- **FVF on farm detail page** — dedicated FVF card shows completion status; expansion intent renders as a red risk pill; consent date shown with green badge ✅
+- **TenantManager — model-layer isolation convention** — `TenantManager` added to all core models (`Farmer`, `Supplier`, `Farm`, `Product`, `Inventory`, `PurchaseOrder`, `SalesOrder`, `Batch`, `AuditLog`). Provides `Model.objects.for_company(company)` as a named, documented pattern enforcing tenant scope at the queryset level. Additive — existing view-layer filtering unchanged. ✅
+- **GeoJSON export — farm registry with polygons** — Export dropdown on farm list now includes GeoJSON FeatureCollection. All farm polygons exported with full EUDR and FVF properties. Farms without a mapped polygon export with `geometry: null`. Importable into QGIS, SW Maps, and any GIS tool. ✅
+- **Security fix — session key whitelist** — `FarmerImportErrorsView` and `FarmImportErrorsView` no longer accept `session_key` from GET params. Keys are now hardcoded constants, closing arbitrary session key enumeration via query string. ✅
+- **Security fix — ops URL constant** — `/ops-access/9f3k/` path removed from `@login_required` decorator literals. Both decorators now reference `settings.OPS_LOGIN_URL` (already defined in `base.py`). ✅
+
+---
+
 ## Phase 5 — Buyer Portal 🔄 Planned
 - buyers.agriops.io — separate authenticated surface for EU buyers
 - Available inventory catalogue per operator
@@ -162,4 +177,4 @@ Trade shows: Biofach, SIAL Paris, Fi Europe.
 
 ---
 
-*Last updated: 5 April 2026*
+*Last updated: 8 April 2026*
