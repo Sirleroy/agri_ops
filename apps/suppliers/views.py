@@ -111,7 +111,7 @@ class FarmerImportErrorsView(StaffRequiredMixin, View):
     def get(self, request):
         import csv
         from django.http import HttpResponse
-        session_key = request.GET.get('session_key', 'farmer_import_errors')
+        session_key = 'farmer_import_errors'
         error_rows = request.session.get(session_key, [])
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="AgriOps_Farmer_Import_Errors.csv"'
@@ -570,7 +570,7 @@ class FarmImportErrorsView(StaffRequiredMixin, View):
     def get(self, request):
         import json
         from django.http import HttpResponse
-        session_key  = request.GET.get('session_key', 'farm_import_problems')
+        session_key  = 'farm_import_problems'
         problem_rows = request.session.get(session_key, [])
         response = HttpResponse(
             json.dumps(problem_rows, indent=2),

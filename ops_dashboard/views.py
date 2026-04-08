@@ -13,6 +13,8 @@ from django.db.models.functions import TruncDate
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from django_otp import devices_for_user
 
+from django.conf import settings
+
 from apps.audit.models import AuditLog
 from apps.companies.models import Company
 from apps.inventory.models import Inventory
@@ -69,7 +71,7 @@ def ops_login(request):
     return render(request, 'ops_dashboard/login.html', {'error': error})
 
 
-@login_required(login_url='/ops-access/9f3k/')
+@login_required(login_url=settings.OPS_LOGIN_URL)
 def ops_otp_setup(request):
     if not request.user.is_staff:
         return redirect('ops_login')
@@ -108,7 +110,7 @@ def ops_otp_setup(request):
     return render(request, 'ops_dashboard/otp_setup.html', {'qr_svg': qr_svg})
 
 
-@login_required(login_url='/ops-access/9f3k/')
+@login_required(login_url=settings.OPS_LOGIN_URL)
 def ops_otp_verify(request):
     if not request.user.is_staff:
         return redirect('ops_login')
