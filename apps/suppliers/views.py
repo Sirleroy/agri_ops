@@ -172,14 +172,15 @@ class FarmerImportView(StaffRequiredMixin, View):
 
         for row in reader:
             row_num += 1
-            first_name = (row.get('first_name') or '').strip()
-            last_name  = (row.get('last_name') or '').strip()
-            gender     = (row.get('gender') or '').strip().upper()
-            phone      = (row.get('phone') or '').strip()
-            village    = (row.get('village') or '').strip()
-            lga        = (row.get('lga') or '').strip()
-            nin        = (row.get('nin') or '').strip()
-            crops      = (row.get('crops') or '').strip()
+            # Accept both AgriOps template column names and SW Maps export column names
+            first_name  = (row.get('first_name')   or row.get('First Name')    or '').strip()
+            last_name   = (row.get('last_name')    or row.get('Last Name')     or '').strip()
+            gender      = (row.get('gender')       or row.get('Gender')        or '').strip().upper()
+            phone       = (row.get('phone')        or row.get('Phone Number')  or '').strip()
+            village     = (row.get('village')      or row.get('Village')       or '').strip()
+            lga         = (row.get('lga')          or row.get('LGA')           or '').strip()
+            nin         = (row.get('nin')          or row.get('NIN')           or '').strip()
+            crops       = (row.get('crops')        or row.get('Commodity')     or '').strip()
             consent_raw = (row.get('consent_date') or '').strip()
 
             if not first_name:
