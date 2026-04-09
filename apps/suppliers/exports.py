@@ -360,6 +360,8 @@ def farm_registry_geojson(queryset, company):
     """
     import json
 
+    from .models import Farm
+
     farms = queryset.select_related('supplier', 'farmer').order_by('name')
 
     STATUS_LABELS = {
