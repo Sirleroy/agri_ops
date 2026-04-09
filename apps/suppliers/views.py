@@ -317,7 +317,7 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
     from django.db import transaction
     from shapely.geometry import mapping
     from .models import Farm, Farmer
-    from .forms import _validate_geojson_polygon, _find_overlapping_farm, _geojson_to_shape, strip_z_coordinates
+    from .forms import _validate_geojson_polygon, _find_overlapping_farm, _geojson_to_shape, normalize_sw_maps_geometry
 
     # Accept a FeatureCollection dict as well as a plain list
     if isinstance(features, dict) and features.get('type') == 'FeatureCollection':
@@ -363,7 +363,7 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
             pass
 
         if geometry:
-            geometry = strip_z_coordinates(geometry)
+            geometry = normalize_sw_maps_geometry(geometry)
 
         try:
             _validate_geojson_polygon(geometry)
@@ -375,7 +375,7 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
         if shape is not None and not shape.is_valid:
             repaired = shape.buffer(0)
             if repaired.is_valid and repaired.area > 0:
-                geometry = strip_z_coordinates(dict(mapping(repaired)))
+                geometry = normalize_sw_maps_geometry(dict(mapping(repaired)))
             else:
                 errors.append({'row': row, 'name': name,
                                'reason': 'Polygon is self-intersecting and could not be repaired automatically.'})
@@ -491,6 +491,63 @@ class FarmImportView(StaffRequiredMixin, View):
 
         fname = geojson_file.name.lower()
 
+        # ── ZIP: unzip in memory and merge all GeoJSON files inside ──────────
+        if fname.endswith('.zip'):
+            import zipfile
+            import io
+            try:
+                zf = zipfile.ZipFile(io.BytesIO(geojson_file.read()))
+            except zipfile.BadZipFile:
+                ctx['form_error'] = 'The ZIP file is corrupted or not a valid ZIP archive.'
+                return render(request, self.template_name, ctx)
+
+            geojson_names = [
+                n for n in zf.namelist()
+                if n.lower().endswith(('.geojson', '.json'))
+                and not n.startswith('__MACOSX')  # skip macOS metadata folders
+            ]
+            if not geojson_names:
+                ctx['form_error'] = (
+                    'No GeoJSON file found inside the ZIP. '
+                    'Export from SW Maps as GeoJSON and try again.'
+                )
+                return render(request, self.template_name, ctx)
+
+            # Merge features from every GeoJSON file in the ZIP
+            merged_features = []
+            read_errors = []
+            for inner_name in geojson_names:
+                try:
+                    data = json.loads(zf.read(inner_name).decode('utf-8'))
+                    if isinstance(data, dict) and data.get('type') == 'FeatureCollection':
+                        merged_features.extend(data.get('features') or [])
+                    elif isinstance(data, list):
+                        merged_features.extend(data)
+                    # else: silently skip non-feature files (e.g. style.json)
+                except Exception as e:
+                    read_errors.append(f'{inner_name}: {e}')
+
+            if read_errors and not merged_features:
+                ctx['form_error'] = 'Could not read any GeoJSON from the ZIP: ' + '; '.join(read_errors)
+                return render(request, self.template_name, ctx)
+
+            if not merged_features:
+                ctx['form_error'] = 'The GeoJSON files inside the ZIP contain no features.'
+                return render(request, self.template_name, ctx)
+
+            zip_label = (
+                geojson_names[0] if len(geojson_names) == 1
+                else f"{len(geojson_names)} files merged"
+            )
+            geojson_file = type('_F', (), {
+                'name': f"{geojson_file.name} → {zip_label}",
+            })()
+            # Skip the CSV/GeoJSON parsing branches — features are already ready
+            fname = '.geojson'  # sentinel: fall into the geojson branch
+            _zip_features = merged_features  # stash for the branch below
+        else:
+            _zip_features = None
+
         if fname.endswith('.csv'):
             try:
                 csv_text = geojson_file.read().decode('utf-8-sig')
@@ -503,21 +560,24 @@ class FarmImportView(StaffRequiredMixin, View):
                 return render(request, self.template_name, ctx)
 
         elif fname.endswith(('.geojson', '.json')):
-            try:
-                data = json.loads(geojson_file.read().decode('utf-8'))
-            except Exception as e:
-                ctx['form_error'] = f'Could not read file: {e}'
-                return render(request, self.template_name, ctx)
-            if isinstance(data, list):
-                features = data
-            elif isinstance(data, dict) and data.get('type') == 'FeatureCollection':
-                features = data.get('features') or []
+            if _zip_features is not None:
+                features = _zip_features  # already parsed from ZIP
             else:
-                ctx['form_error'] = 'File must be a GeoJSON FeatureCollection.'
-                return render(request, self.template_name, ctx)
+                try:
+                    data = json.loads(geojson_file.read().decode('utf-8'))
+                except Exception as e:
+                    ctx['form_error'] = f'Could not read file: {e}'
+                    return render(request, self.template_name, ctx)
+                if isinstance(data, list):
+                    features = data
+                elif isinstance(data, dict) and data.get('type') == 'FeatureCollection':
+                    features = data.get('features') or []
+                else:
+                    ctx['form_error'] = 'File must be a GeoJSON FeatureCollection.'
+                    return render(request, self.template_name, ctx)
 
         else:
-            ctx['form_error'] = 'File must be a GeoJSON (.geojson, .json) or SW Maps CSV (.csv) export.'
+            ctx['form_error'] = 'File must be a GeoJSON (.geojson, .json), SW Maps CSV (.csv), or ZIP export.'
             return render(request, self.template_name, ctx)
 
         if not features:

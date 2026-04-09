@@ -23,6 +23,7 @@ The geometry is stored as-is in Farm.geolocation.
 import json
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+from apps.suppliers.forms import normalize_sw_maps_geometry
 
 
 class Command(BaseCommand):
@@ -127,7 +128,7 @@ class Command(BaseCommand):
                     'supplier':                  supplier,
                     'name':                      name,
                     'farmer_name':               props.get('farmer_name') or props.get('Farmer Name') or '',
-                    'geolocation':               geometry,
+                    'geolocation':               normalize_sw_maps_geometry(geometry) if geometry else geometry,
                     'area_hectares':             area,
                     'country':                   country,
                     'state_region':              props.get('state_region') or props.get('State') or props.get('Region') or '',

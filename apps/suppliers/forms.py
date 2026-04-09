@@ -231,32 +231,80 @@ def _validate_geojson_polygon(value):
     return value
 
 
-# ── Z-coordinate stripping (SW Maps exports [lon, lat, elevation]) ───────────
+# ── SW Maps geometry normalisation ────────────────────────────────────────────
 
 def strip_z_coordinates(geometry, precision=6):
     """
-    Normalise GeoJSON polygon coordinates:
-      1. Strip elevation (Z) — SW Maps exports [lon, lat, elevation]
-      2. Round to `precision` decimal places (default 6 ≈ 11cm accuracy)
+    Thin wrapper kept for backwards compatibility.
+    Prefer normalize_sw_maps_geometry() for new call sites.
+    """
+    return normalize_sw_maps_geometry(geometry, precision=precision)
 
-    6 d.p. is more than sufficient for farm boundary work and prevents
-    coordinate bloat from Shapely buffer(0) repairs (which can produce
-    15–16 d.p. floats from floating-point arithmetic).
+
+def normalize_sw_maps_geometry(geometry, max_vertices=200, simplify_tolerance=0.00001, precision=6):
+    """
+    Pre-process SW Maps / field GPS GeoJSON before validation.
+    Safe to call on any GeoJSON geometry dict; returns geometry unchanged if
+    the type is not Polygon or MultiPolygon.
+
+    Applied in order per ring:
+      1. Strip elevation (Z) — SW Maps exports [lon, lat, elev]
+      2. Round to `precision` decimal places (6 ≈ 11 cm — more than enough for
+         farm boundary work; also prevents float bloat from Shapely repairs)
+      3. Remove consecutive duplicate vertices — GPS pauses produce long runs of
+         identical coordinates that inflate vertex counts without adding information
+      4. Auto-close the ring if first != last — some apps omit the closing vertex
+      5. Simplify if ring still exceeds max_vertices — uses Ramer–Douglas–Peucker
+         via Shapely with a default tolerance of 0.00001° (≈ 1 m); falls back to
+         the un-simplified ring if Shapely is unavailable or simplification fails
     """
     if not geometry:
         return geometry
+
     geo_type = geometry.get('type')
     coords   = geometry.get('coordinates')
     if not coords:
         return geometry
 
-    def _clean_ring(ring):
-        return [[round(c[0], precision), round(c[1], precision)] for c in ring]
+    def _process_ring(ring):
+        # Step 1+2: strip Z and round
+        pts = [[round(float(c[0]), precision), round(float(c[1]), precision)] for c in ring]
+
+        # Step 3: remove consecutive duplicates
+        deduped = []
+        for pt in pts:
+            if not deduped or pt != deduped[-1]:
+                deduped.append(pt)
+
+        # Step 4: auto-close
+        if deduped and deduped[0] != deduped[-1]:
+            deduped.append(deduped[0])
+
+        # Step 5: simplify if too many vertices
+        if len(deduped) > max_vertices:
+            try:
+                from shapely.geometry import Polygon as _ShapelyPolygon
+                exterior = deduped[:-1]  # Shapely Polygon takes ring without closing repeat
+                simplified = _ShapelyPolygon(exterior).exterior.simplify(
+                    simplify_tolerance, preserve_topology=True
+                )
+                simplified_coords = [
+                    [round(c[0], precision), round(c[1], precision)]
+                    for c in simplified.coords
+                ]
+                # Shapely's .coords on a LinearRing already closes the ring
+                if simplified_coords and simplified_coords[0] != simplified_coords[-1]:
+                    simplified_coords.append(simplified_coords[0])
+                deduped = simplified_coords
+            except Exception:
+                pass  # fall back to deduped-but-unsimplified ring
+
+        return deduped
 
     if geo_type == 'Polygon':
-        clean = [_clean_ring(ring) for ring in coords]
+        clean = [_process_ring(ring) for ring in coords]
     elif geo_type == 'MultiPolygon':
-        clean = [[_clean_ring(ring) for ring in polygon] for polygon in coords]
+        clean = [[_process_ring(ring) for ring in polygon] for polygon in coords]
     else:
         return geometry
 
@@ -343,7 +391,9 @@ class FarmForm(forms.ModelForm):
     # ── Layer 1: GeoJSON structural check ─────────────────────────────────────
 
     def clean_geolocation(self):
-        return _validate_geojson_polygon(self.cleaned_data.get('geolocation'))
+        value = self.cleaned_data.get('geolocation')
+        value = normalize_sw_maps_geometry(value)  # strip Z, dedup, close, simplify
+        return _validate_geojson_polygon(value)
 
     # ── Layer 2: Business rule checks ─────────────────────────────────────────
 
