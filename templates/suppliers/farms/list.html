@@ -16,22 +16,22 @@
         <button @click="exportOpen = !exportOpen" @click.outside="exportOpen = false"
           class="flex items-center gap-2 bg-card border border-border hover:border-slate-500 text-slate-300 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-          Export
+          Export{% if active_filters %} (filtered){% endif %}
           <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
         </button>
         <div x-show="exportOpen" x-transition.opacity
           class="absolute right-0 mt-1 w-40 bg-surface border border-border rounded-lg shadow-xl z-10 overflow-hidden">
-          <a href="{% url 'suppliers:farm_export' %}?format=csv"
+          <a href="{% url 'suppliers:farm_export' %}?format=csv{% if filter_qs %}&{{ filter_qs }}{% endif %}"
             class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 hover:text-slate-100 transition-colors">
             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             Download CSV
           </a>
-          <a href="{% url 'suppliers:farm_export' %}?format=pdf"
+          <a href="{% url 'suppliers:farm_export' %}?format=pdf{% if filter_qs %}&{{ filter_qs }}{% endif %}"
             class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 hover:text-slate-100 transition-colors border-t border-border">
             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
             Download PDF
           </a>
-          <a href="{% url 'suppliers:farm_export' %}?format=geojson"
+          <a href="{% url 'suppliers:farm_export' %}?format=geojson{% if filter_qs %}&{{ filter_qs }}{% endif %}"
             class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 hover:text-slate-100 transition-colors border-t border-border">
             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
             Download GeoJSON
@@ -50,6 +50,47 @@
       </a>
     </div>
   </div>
+
+  <form method="get" class="flex flex-wrap items-end gap-3 bg-card border border-border rounded-xl px-4 py-3">
+    <div class="flex flex-col gap-1 min-w-[160px]">
+      <label class="text-xs font-mono text-slate-500 uppercase tracking-wider">Supplier</label>
+      <select name="supplier"
+        class="bg-bg border border-border rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:border-green outline-none transition-colors">
+        <option value="">All suppliers</option>
+        {% for s in suppliers %}
+        <option value="{{ s.pk }}" {% if active_filters.supplier == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="flex flex-col gap-1 min-w-[130px]">
+      <label class="text-xs font-mono text-slate-500 uppercase tracking-wider">State / Region</label>
+      <input type="text" name="state" value="{{ active_filters.state|default:'' }}"
+        placeholder="e.g. Plateau"
+        class="bg-bg border border-border rounded-lg px-3 py-1.5 text-sm text-slate-200 placeholder-slate-600 focus:border-green outline-none transition-colors">
+    </div>
+    <div class="flex flex-col gap-1 min-w-[120px]">
+      <label class="text-xs font-mono text-slate-500 uppercase tracking-wider">Commodity</label>
+      <input type="text" name="commodity" value="{{ active_filters.commodity|default:'' }}"
+        placeholder="e.g. Soy"
+        class="bg-bg border border-border rounded-lg px-3 py-1.5 text-sm text-slate-200 placeholder-slate-600 focus:border-green outline-none transition-colors">
+    </div>
+    <div class="flex flex-col gap-1 min-w-[120px]">
+      <label class="text-xs font-mono text-slate-500 uppercase tracking-wider">Risk</label>
+      <select name="risk"
+        class="bg-bg border border-border rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:border-green outline-none transition-colors">
+        <option value="">All risk levels</option>
+        <option value="low" {% if active_filters.risk == 'low' %}selected{% endif %}>Low</option>
+        <option value="standard" {% if active_filters.risk == 'standard' %}selected{% endif %}>Standard</option>
+        <option value="high" {% if active_filters.risk == 'high' %}selected{% endif %}>High</option>
+      </select>
+    </div>
+    <div class="flex items-end gap-2">
+      <button type="submit" class="bg-green hover:bg-green-dim text-bg text-sm font-bold px-4 py-1.5 rounded-lg transition-colors">Filter</button>
+      {% if active_filters %}
+      <a href="{% url 'suppliers:farm_list' %}" class="text-sm text-slate-400 hover:text-slate-100 transition-colors px-2 py-1.5">Clear</a>
+      {% endif %}
+    </div>
+  </form>
 
   <div class="bg-card border border-border rounded-xl overflow-x-auto">
     <table class="w-full text-sm">
@@ -117,12 +158,17 @@
         <tr data-empty>
           <td colspan="6" class="px-5 py-16 text-center">
             <svg class="w-10 h-10 text-slate-700 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/></svg>
+            {% if active_filters %}
+            <p class="text-slate-500 text-sm mb-4">No farms match the current filters.</p>
+            <a href="{% url 'suppliers:farm_list' %}" class="inline-flex items-center gap-2 bg-card border border-border hover:border-slate-500 text-slate-300 text-xs font-medium px-4 py-2 rounded-lg transition-colors">Clear filters</a>
+            {% else %}
             <p class="text-slate-500 text-sm mb-4">No farms registered yet.</p>
             <a href="{% url 'suppliers:farm_create' %}"
                class="inline-flex items-center gap-2 bg-green hover:bg-green-dim text-bg font-bold text-xs px-4 py-2 rounded-lg transition-colors">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
               Add First Farm
             </a>
+            {% endif %}
           </td>
         </tr>
         {% endfor %}
@@ -133,11 +179,11 @@
   {% if page_obj.has_other_pages %}
   <div class="flex items-center justify-center gap-3 py-4">
     {% if page_obj.has_previous %}
-    <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">Previous</a>
+    <a href="?{% if filter_qs %}{{ filter_qs }}&{% endif %}page={{ page_obj.previous_page_number }}" class="px-3 py-1 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">Previous</a>
     {% endif %}
     <span class="text-slate-500 text-sm font-mono">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
     {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">Next</a>
+    <a href="?{% if filter_qs %}{{ filter_qs }}&{% endif %}page={{ page_obj.next_page_number }}" class="px-3 py-1 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">Next</a>
     {% endif %}
   </div>
   {% endif %}

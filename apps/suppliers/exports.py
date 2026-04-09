@@ -127,10 +127,9 @@ def _table_style(col_count):
 
 # ── FARMER REGISTRY ───────────────────────────────────────────────────────────
 
-def farmer_registry_csv(company):
+def farmer_registry_csv(queryset, company):
     """Returns an HttpResponse with the farmer registry as a CSV download."""
-    from .models import Farmer
-    farmers = Farmer.objects.filter(company=company).prefetch_related('farms').order_by('last_name', 'first_name')
+    farmers = queryset.prefetch_related('farms').order_by('last_name', 'first_name')
 
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = (
@@ -161,10 +160,9 @@ def farmer_registry_csv(company):
     return response
 
 
-def farmer_registry_pdf(company):
+def farmer_registry_pdf(queryset, company):
     """Returns an HttpResponse with the farmer registry as a branded PDF download."""
-    from .models import Farmer
-    farmers = Farmer.objects.filter(company=company).prefetch_related('farms').order_by('last_name', 'first_name')
+    farmers = queryset.prefetch_related('farms').order_by('last_name', 'first_name')
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -225,12 +223,9 @@ def farmer_registry_pdf(company):
 
 # ── FARM REGISTRY ─────────────────────────────────────────────────────────────
 
-def farm_registry_csv(company):
+def farm_registry_csv(queryset, company):
     """Returns an HttpResponse with the farm registry as a CSV download."""
-    from .models import Farm
-    farms = Farm.objects.filter(company=company).select_related(
-        'supplier', 'farmer'
-    ).order_by('name')
+    farms = queryset.select_related('supplier', 'farmer').order_by('name')
 
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = (
@@ -272,12 +267,9 @@ def farm_registry_csv(company):
     return response
 
 
-def farm_registry_pdf(company):
+def farm_registry_pdf(queryset, company):
     """Returns an HttpResponse with the farm registry as a branded PDF download."""
-    from .models import Farm
-    farms = Farm.objects.filter(company=company).select_related(
-        'supplier', 'farmer'
-    ).order_by('name')
+    farms = queryset.select_related('supplier', 'farmer').order_by('name')
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -360,18 +352,15 @@ def farm_registry_pdf(company):
     return response
 
 
-def farm_registry_geojson(company):
+def farm_registry_geojson(queryset, company):
     """
     Returns an HttpResponse with all company farms as a GeoJSON FeatureCollection.
     Each farm with a polygon becomes a Feature; farms without geolocation are
     included as null-geometry features so the attribute data is not lost.
     """
     import json
-    from .models import Farm
 
-    farms = Farm.objects.for_company(company).select_related(
-        'supplier', 'farmer'
-    ).order_by('name')
+    farms = queryset.select_related('supplier', 'farmer').order_by('name')
 
     STATUS_LABELS = {
         'compliant': 'Verified',

@@ -12,6 +12,20 @@ from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMix
 # FARMER VIEWS
 # ─────────────────────────────────────
 
+def _farmer_filter_qs(base_qs, params):
+    """Apply URL params to a Farmer queryset. Returns (filtered_qs, active_filters_dict)."""
+    filters = {}
+    lga     = params.get('lga', '').strip()
+    village = params.get('village', '').strip()
+    if lga:
+        base_qs = base_qs.filter(lga__icontains=lga)
+        filters['lga'] = lga
+    if village:
+        base_qs = base_qs.filter(village__icontains=village)
+        filters['village'] = village
+    return base_qs, filters
+
+
 class FarmerListView(StaffRequiredMixin, ListView):
     model = Farmer
     template_name = 'suppliers/farmers/list.html'
@@ -19,7 +33,19 @@ class FarmerListView(StaffRequiredMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        return Farmer.objects.filter(company=self.request.user.company)
+        qs = Farmer.objects.filter(company=self.request.user.company)
+        qs, _ = _farmer_filter_qs(qs, self.request.GET)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        _, ctx['active_filters'] = _farmer_filter_qs(
+            Farmer.objects.none(), self.request.GET
+        )
+        params = self.request.GET.copy()
+        params.pop('page', None)
+        ctx['filter_qs'] = params.urlencode()
+        return ctx
 
 
 class FarmerDetailView(StaffRequiredMixin, DetailView):
@@ -80,11 +106,15 @@ class FarmerUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, Up
 class FarmerExportView(StaffRequiredMixin, View):
     def get(self, request):
         from .exports import farmer_registry_csv, farmer_registry_pdf
-        fmt = request.GET.get('format', 'csv')
+        fmt     = request.GET.get('format', 'csv')
         company = request.user.company
+        base_qs = Farmer.objects.filter(company=company)
+        filter_params = request.GET.copy()
+        filter_params.pop('format', None)
+        qs, _   = _farmer_filter_qs(base_qs, filter_params)
         if fmt == 'pdf':
-            return farmer_registry_pdf(company)
-        return farmer_registry_csv(company)
+            return farmer_registry_pdf(qs, company)
+        return farmer_registry_csv(qs, company)
 
 
 class FarmerImportTemplateView(StaffRequiredMixin, View):
@@ -633,13 +663,18 @@ class FarmImportErrorsView(StaffRequiredMixin, View):
 class FarmExportView(StaffRequiredMixin, View):
     def get(self, request):
         from .exports import farm_registry_csv, farm_registry_pdf, farm_registry_geojson
-        fmt = request.GET.get('format', 'csv')
+        fmt     = request.GET.get('format', 'csv')
         company = request.user.company
+        base_qs = Farm.objects.filter(company=company)
+        # Strip 'format' from params so it doesn't leak into filter logic
+        filter_params = request.GET.copy()
+        filter_params.pop('format', None)
+        qs, _ = _farm_filter_qs(base_qs, filter_params)
         if fmt == 'pdf':
-            return farm_registry_pdf(company)
+            return farm_registry_pdf(qs, company)
         if fmt == 'geojson':
-            return farm_registry_geojson(company)
-        return farm_registry_csv(company)
+            return farm_registry_geojson(qs, company)
+        return farm_registry_csv(qs, company)
 
 
 class FarmerDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
@@ -734,6 +769,28 @@ class SupplierDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
 # FARM VIEWS
 # ─────────────────────────────────────
 
+def _farm_filter_qs(base_qs, params):
+    """Apply URL params to a Farm queryset. Returns (filtered_qs, active_filters_dict)."""
+    filters     = {}
+    supplier_id = params.get('supplier', '').strip()
+    state       = params.get('state', '').strip()
+    commodity   = params.get('commodity', '').strip()
+    risk        = params.get('risk', '').strip()
+    if supplier_id:
+        base_qs = base_qs.filter(supplier_id=supplier_id)
+        filters['supplier'] = supplier_id
+    if state:
+        base_qs = base_qs.filter(state_region__icontains=state)
+        filters['state'] = state
+    if commodity:
+        base_qs = base_qs.filter(commodity__icontains=commodity)
+        filters['commodity'] = commodity
+    if risk and risk in ('low', 'standard', 'high'):
+        base_qs = base_qs.filter(deforestation_risk_status=risk)
+        filters['risk'] = risk
+    return base_qs, filters
+
+
 class FarmListView(StaffRequiredMixin, ListView):
     model = Farm
     template_name = 'suppliers/farms/list.html'
@@ -741,7 +798,20 @@ class FarmListView(StaffRequiredMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        return Farm.objects.filter(company=self.request.user.company).select_related('supplier')
+        qs = Farm.objects.filter(company=self.request.user.company).select_related('supplier', 'farmer')
+        qs, _ = _farm_filter_qs(qs, self.request.GET)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        _, ctx['active_filters'] = _farm_filter_qs(Farm.objects.none(), self.request.GET)
+        params = self.request.GET.copy()
+        params.pop('page', None)
+        ctx['filter_qs'] = params.urlencode()
+        ctx['suppliers'] = Supplier.objects.filter(
+            company=self.request.user.company, is_active=True
+        ).order_by('name')
+        return ctx
 
 
 class FarmDetailView(StaffRequiredMixin, DetailView):
