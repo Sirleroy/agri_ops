@@ -160,81 +160,119 @@
 
   <!-- Map card -->
   {% if farm.geolocation %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
   <div class="bg-card border border-border rounded-xl overflow-hidden">
     <div class="px-6 pt-6 pb-3 flex items-center justify-between">
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Farm Boundary Map</p>
       <span class="text-xs font-mono text-green">{{ farm.area_hectares|default:"—" }} ha</span>
     </div>
-    <div id="farm-map" style="height: 380px; width: 100%;"></div>
-    <div class="px-6 py-3 border-t border-border">
+    <div id="farm-map" style="height: 420px; width: 100%;"></div>
+    <div class="px-6 py-3 border-t border-border flex items-center justify-between">
       <p class="text-xs font-mono text-slate-600">GeoJSON type: {{ farm.geolocation.type }} · Coordinate system: WGS84</p>
+      <p class="text-xs font-mono text-slate-700">Scroll zoom disabled — use +/− or pinch</p>
     </div>
   </div>
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   {{ farm.geolocation|json_script:"farm-geojson" }}
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      const geojson = JSON.parse(document.getElementById('farm-geojson').textContent);
-      if (!geojson) { document.getElementById('farm-map').innerHTML = '<p style="padding:20px;color:#64748b;">No geolocation data available.</p>'; return; }
+      const geojsonEl = document.getElementById('farm-geojson');
+      const geojson = geojsonEl ? JSON.parse(geojsonEl.textContent) : null;
+      if (!geojson) {
+        const msg = document.createElement('p');
+        msg.style.cssText = 'padding:20px;color:#64748b;';
+        msg.textContent = 'No geolocation data available.';
+        document.getElementById('farm-map').appendChild(msg);
+        return;
+      }
 
-      const map = L.map('farm-map', {
-        zoomControl: true,
-        scrollWheelZoom: false,
-      });
+      const map = L.map('farm-map', { zoomControl: true, scrollWheelZoom: false, maxZoom: 20 });
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-        maxZoom: 18,
-      }).addTo(map);
+      // ── Basemaps ──────────────────────────────────────────────────────────
+      const satellite = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        { attribution: 'Tiles &copy; Esri', maxZoom: 20, maxNativeZoom: 19 }
+      );
+      const street = L.tileLayer(
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 }
+      );
+      satellite.addTo(map);
+      let isSatellite = true;
 
-      const farmStyle = {
-        color: '#22c55e',
-        weight: 2,
-        opacity: 0.9,
-        fillColor: '#22c55e',
-        fillOpacity: 0.15,
-      };
-
-      const farmName = "{{ farm.name|escapejs }}";
+      // ── Farm polygon ──────────────────────────────────────────────────────
+      const farmName   = "{{ farm.name|escapejs }}";
       const farmerName = "{{ farm.farmer.full_name|default:""|escapejs }}";
-      const commodity = "{{ farm.commodity|escapejs }}";
-      const area = "{{ farm.area_hectares|default:"—"|escapejs }}";
+      const commodity  = "{{ farm.commodity|escapejs }}";
+      const area       = "{{ farm.area_hectares|default:"—"|escapejs }}";
 
       const layer = L.geoJSON(geojson, {
-        style: farmStyle,
+        style: { color: '#22c55e', weight: 2.5, opacity: 1, fillColor: '#22c55e', fillOpacity: 0.22 },
         pointToLayer: function (feature, latlng) {
           return L.circleMarker(latlng, {
-            radius: 8,
-            fillColor: '#22c55e',
-            color: '#16a34a',
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.8
+            radius: 8, fillColor: '#22c55e', color: '#16a34a',
+            weight: 2, opacity: 1, fillOpacity: 0.9,
           });
         },
-        onEachFeature: function (feature, layer) {
-          const div = document.createElement('div');
-          div.style.cssText = 'font-family:monospace;font-size:12px;';
-          const strong = document.createElement('strong');
-          strong.textContent = farmName;
-          div.appendChild(strong);
-          div.appendChild(document.createElement('br'));
-          div.appendChild(document.createTextNode(farmerName));
-          div.appendChild(document.createElement('br'));
-          div.appendChild(document.createTextNode(commodity + ' · ' + area + ' ha'));
-          layer.bindPopup(div);
-        }
+        onEachFeature: function (feature, lyr) {
+          const wrap  = document.createElement('div');
+          wrap.style.cssText = 'font-family:monospace;font-size:12px;line-height:1.7;';
+          const title = document.createElement('strong');
+          title.style.fontSize = '13px';
+          title.textContent = farmName;
+          wrap.appendChild(title);
+          if (farmerName) {
+            wrap.appendChild(document.createElement('br'));
+            wrap.appendChild(document.createTextNode(farmerName));
+          }
+          wrap.appendChild(document.createElement('br'));
+          wrap.appendChild(document.createTextNode(commodity + ' \u00b7 ' + area + ' ha'));
+          lyr.bindPopup(wrap);
+        },
       }).addTo(map);
 
-      try {
-        map.fitBounds(layer.getBounds(), { padding: [30, 30] });
-      } catch (e) {
-        map.setView([10.0, 8.0], 6);
+      function fitPolygon() {
+        try { map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 17 }); }
+        catch (e) { map.setView([10.0, 8.0], 6); }
       }
+      fitPolygon();
+
+      // ── Custom controls ───────────────────────────────────────────────────
+      const btnStyle = 'background:#131f2e;color:#94a3b8;border:1px solid #1e2d40;' +
+                       'padding:5px 10px;border-radius:6px;font-size:11px;font-family:monospace;' +
+                       'cursor:pointer;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.5);';
+
+      function makeControl(position, label, onClick) {
+        return L.Control.extend({
+          options: { position: position },
+          onAdd: function () {
+            const btn = L.DomUtil.create('button');
+            btn.style.cssText = btnStyle;
+            btn.textContent = label;
+            L.DomEvent.disableClickPropagation(btn);
+            L.DomEvent.on(btn, 'click', onClick.bind(null, btn));
+            return btn;
+          },
+        });
+      }
+
+      const ToggleControl = makeControl('topright', '\uD83D\uDDFA Street', function (btn) {
+        if (isSatellite) {
+          map.removeLayer(satellite); street.addTo(map);
+          btn.textContent = '\uD83D\uDEF0 Satellite'; isSatellite = false;
+        } else {
+          map.removeLayer(street); satellite.addTo(map);
+          btn.textContent = '\uD83D\uDDFA Street'; isSatellite = true;
+        }
+      });
+      const FitControl = makeControl('topright', '\u229E Fit', function () { fitPolygon(); });
+
+      new ToggleControl().addTo(map);
+      new FitControl().addTo(map);
     });
   </script>
   {% endif %}
