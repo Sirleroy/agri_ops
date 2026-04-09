@@ -1,6 +1,6 @@
 """
 Management command: seed_demo
-Builds a complete end-to-end demo chain for the Ake Collective tenant:
+Builds a complete end-to-end demo chain for the AgriOps Trading LTD tenant:
 
   Plateau Soy Cooperative (supplier)
     → 3 farmers (with FVF data)
@@ -89,7 +89,7 @@ FARM_GEODATA = [
 
 
 class Command(BaseCommand):
-    help = 'Seed a complete demo chain for the Ake Collective tenant'
+    help = 'Seed a complete demo chain for the AgriOps Trading LTD tenant'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -100,10 +100,11 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         from apps.companies.models import Company
-        ake = Company.objects.filter(name='Ake Collective').first()
+        ake = Company.objects.filter(name='AgriOps Trading LTD').first()
         if not ake:
             raise CommandError(
-                'Ake Collective company not found. Run seed_data first.'
+                'AgriOps Trading LTD company not found. '
+                'Check the company name in the admin panel.'
             )
 
         if options['flush']:
@@ -124,10 +125,10 @@ class Command(BaseCommand):
         from apps.sales_orders.models import SalesOrder
 
         SalesOrder.objects.filter(
-            company=ake, order_number='AKE-DEMO-SO-001'
+            company=ake, order_number='DEMO-SO-2026-001'
         ).delete()
         PurchaseOrder.objects.filter(
-            company=ake, order_number='AKE-DEMO-PO-001'
+            company=ake, order_number='DEMO-PO-2026-001'
         ).delete()
         Product.objects.filter(
             company=ake, name='Soybeans Export Grade'
@@ -278,7 +279,7 @@ class Command(BaseCommand):
 
         # ── Purchase Order → received ─────────────────────────────────────────
         po, po_created = PurchaseOrder.objects.get_or_create(
-            order_number='AKE-DEMO-PO-001', company=ake,
+            order_number='DEMO-PO-2026-001', company=ake,
             defaults={
                 'supplier': sup,
                 'status': 'received',
@@ -312,14 +313,14 @@ class Command(BaseCommand):
 
         # ── Sales Order ───────────────────────────────────────────────────────
         so, so_created = SalesOrder.objects.get_or_create(
-            order_number='AKE-DEMO-SO-001', company=ake,
+            order_number='DEMO-SO-2026-001', company=ake,
             defaults={
                 'customer_name': 'Nexira SAS',
                 'customer_email': 'procurement@nexira.eu',
                 'customer_phone': '+33 1 4000 0099',
                 'status': 'confirmed',
                 'is_eu_export': True,
-                'nxp_reference': 'NXP-2026-AKE-001',
+                'nxp_reference': 'NXP-2026-001',
                 'certificate_of_origin_ref': 'COO-2026-0441',
                 'notes': (
                     'EU export — EUDR due diligence required before dispatch. '
@@ -367,6 +368,6 @@ class Command(BaseCommand):
         self.stdout.write(f'    Farmers   → {len(farmers)} (all with FVF + consent)')
         self.stdout.write(f'    Farms     → {len(farms)} (GPS mapped, EUDR verified, satellite-visible)')
         self.stdout.write(f'    Product   → Soybeans Export Grade (HS 1201.90)')
-        self.stdout.write(f'    PO        → AKE-DEMO-PO-001  ·  25,000 kg received')
-        self.stdout.write(f'    SO        → AKE-DEMO-SO-001  ·  Nexira SAS  ·  EU export')
+        self.stdout.write(f'    PO        → DEMO-PO-2026-001  ·  25,000 kg received')
+        self.stdout.write(f'    SO        → DEMO-SO-2026-001  ·  Nexira SAS  ·  EU export')
         self.stdout.write(f'    Batch     → 3 farms linked  ·  20,000 kg  ·  DDS-ready')
