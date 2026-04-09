@@ -173,9 +173,9 @@ The EUDR requires a formal DDS to be filed with the EU Information System before
 
 Based on the operational process used by the founding company:
 
-1. **Field agent** travels to farm with SW Maps app installed
-2. **Perimeter mapping** — agent walks the farm boundary, SW Maps records GPS track as polygon
-3. **Export** — SW Maps exports GeoJSON FeatureCollection file
+1. **Field agent** travels to farm with a field mapping app installed (e.g. SW Maps, Avenza Maps)
+2. **Perimeter mapping** — agent walks the farm boundary; the app records the GPS track as a polygon
+3. **Export** — app exports GeoJSON FeatureCollection (or ZIP containing GeoJSON)
 4. **Dry-run upload** — GeoJSON uploaded to AgriOps import page with "Validate only" checked. System runs full validation pipeline and reports what would be created, any errors (bad geometry, wrong coordinates, non-Nigeria bounds), and completeness warnings (missing LGA, farmer name, commodity) — without writing anything
 5. **Review** — field officer or coordinator reviews the dry-run report, fixes issues if needed, re-runs
 6. **Commit upload** — same file uploaded without "Validate only" to write farms to the registry
@@ -195,7 +195,7 @@ Based on the operational process used by the founding company:
 | Farm CRUD UI | 2 | ✅ Complete |
 | EUDR API endpoints | 2 | ✅ Complete |
 | Compliance dashboard widget | 3 | ✅ Complete |
-| GeoJSON import from SW Maps | 4 | ✅ Complete |
+| GeoJSON / ZIP import from field mapping apps | 4 | ✅ Complete |
 | Compliance Report (PDF) | 4 | ✅ Complete |
 | Farm map visualisation (Leaflet.js) | 4 | ✅ Complete |
 | Batch model + quantity_kg + is_locked | 4.5 | ✅ Complete |

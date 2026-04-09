@@ -255,10 +255,11 @@ class FarmerImportView(StaffRequiredMixin, View):
         return render(request, self.template_name, {'result': result})
 
 
-def _sw_maps_csv_to_features(csv_text):
+def _wkt_csv_to_features(csv_text):
     """
-    Convert a SW Maps CSV export to a list of GeoJSON Feature dicts.
-    SW Maps exports polygon geometry as WKT in a 'geometry' column.
+    Convert a WKT-geometry CSV export to a list of GeoJSON Feature dicts.
+    Expects a 'geometry' (or 'wkt' / 'geom') column containing WKT polygon data —
+    the standard export format of SW Maps, Avenza Maps, QGIS, and most GIS tools.
     Returns (features, error_message) — error_message is None on success.
     """
     import csv as _csv
@@ -277,8 +278,8 @@ def _sw_maps_csv_to_features(csv_text):
     if not geom_col:
         return [], (
             "No geometry column found in CSV. "
-            "SW Maps should export a 'geometry' column containing the polygon boundary as WKT. "
-            "Try exporting as GeoJSON instead — File → Export → GeoJSON."
+            "Your mapping app should export a 'geometry' column containing the polygon boundary as WKT. "
+            "Try exporting as GeoJSON instead — most apps offer this under File → Export → GeoJSON."
         )
 
     try:
@@ -317,7 +318,7 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
     from django.db import transaction
     from shapely.geometry import mapping
     from .models import Farm, Farmer
-    from .forms import _validate_geojson_polygon, _find_overlapping_farm, _geojson_to_shape, normalize_sw_maps_geometry
+    from .forms import _validate_geojson_polygon, _find_overlapping_farm, _geojson_to_shape, normalize_field_gps_geometry
 
     # Accept a FeatureCollection dict as well as a plain list
     if isinstance(features, dict) and features.get('type') == 'FeatureCollection':
@@ -363,7 +364,7 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
             pass
 
         if geometry:
-            geometry = normalize_sw_maps_geometry(geometry)
+            geometry = normalize_field_gps_geometry(geometry)
 
         try:
             _validate_geojson_polygon(geometry)
@@ -375,7 +376,7 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
         if shape is not None and not shape.is_valid:
             repaired = shape.buffer(0)
             if repaired.is_valid and repaired.area > 0:
-                geometry = normalize_sw_maps_geometry(dict(mapping(repaired)))
+                geometry = normalize_field_gps_geometry(dict(mapping(repaired)))
             else:
                 errors.append({'row': row, 'name': name,
                                'reason': 'Polygon is self-intersecting and could not be repaired automatically.'})
@@ -509,7 +510,7 @@ class FarmImportView(StaffRequiredMixin, View):
             if not geojson_names:
                 ctx['form_error'] = (
                     'No GeoJSON file found inside the ZIP. '
-                    'Export from SW Maps as GeoJSON and try again.'
+                    'Export from your mapping app as GeoJSON and try again.'
                 )
                 return render(request, self.template_name, ctx)
 
@@ -554,7 +555,7 @@ class FarmImportView(StaffRequiredMixin, View):
             except Exception as e:
                 ctx['form_error'] = f'Could not read file: {e}'
                 return render(request, self.template_name, ctx)
-            features, csv_err = _sw_maps_csv_to_features(csv_text)
+            features, csv_err = _wkt_csv_to_features(csv_text)
             if csv_err:
                 ctx['form_error'] = csv_err
                 return render(request, self.template_name, ctx)
@@ -577,11 +578,11 @@ class FarmImportView(StaffRequiredMixin, View):
                     return render(request, self.template_name, ctx)
 
         else:
-            ctx['form_error'] = 'File must be a GeoJSON (.geojson, .json), SW Maps CSV (.csv), or ZIP export.'
+            ctx['form_error'] = 'File must be a GeoJSON (.geojson, .json), WKT CSV (.csv), or ZIP export.'
             return render(request, self.template_name, ctx)
 
         if not features:
-            ctx['form_error'] = 'File contains no features — check the export settings in SW Maps.'
+            ctx['form_error'] = 'File contains no features — check the export settings in your mapping app.'
             return render(request, self.template_name, ctx)
 
         dry_run = 'dry_run' in request.POST

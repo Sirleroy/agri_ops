@@ -89,12 +89,12 @@ Farmers are the individual people who own or manage farm plots. Building a farme
 5. Tick **Consent given** and record the consent date if you have verbal or written consent
 
 **Bulk import:**
-1. Download the **CSV Template** from the import page, or export directly from SW Maps if farmer data was collected there
+1. Download the **CSV Template** from the import page, or export directly from your field data collection app if farmer data was collected there
 2. Fill it in — one row per farmer (SW Maps exports are accepted as-is — column names are recognised automatically)
 3. Upload and review the summary
 4. Any rows with errors are listed — download the error file, fix the rows, and re-upload
 
-**SW Maps column names recognised:** First Name · Last Name · Phone Number · Village · LGA · Commodity · NIN
+**Column names recognised automatically:** First Name · Last Name · Phone Number · Village · LGA · Commodity · NIN (standard SW Maps export headers)
 
 ---
 
@@ -109,21 +109,26 @@ Farms are the GPS-mapped plots of land where commodities are grown. They are the
 3. Select the supplier (cooperative) this farm belongs to
 4. Link a farmer if they are already registered, or enter a name manually
 5. Enter the commodity (e.g. Soy), country, state, and area in hectares
-6. Paste the GeoJSON polygon from SW Maps into the Geolocation field
+6. Paste the GeoJSON polygon from your mapping app into the Geolocation field
 7. Set the deforestation risk status (Standard is the default)
 8. Click **Save**
 
-### Bulk import from SW Maps
+### Bulk farm polygon import
 
 This is the recommended workflow for field mapping exercises.
 
-**Accepted file formats:** GeoJSON (`.geojson` / `.json`) exported from SW Maps, or SW Maps CSV export (`.csv`). Both are handled transparently — no conversion needed.
+**Accepted file formats:**
+- **GeoJSON** (`.geojson` / `.json`) — exported from any mapping app
+- **ZIP archive** (`.zip`) — exported directly from SW Maps or any app that zips GeoJSON; multiple GeoJSON files inside a single ZIP are merged automatically
+- **WKT CSV** (`.csv`) — apps that export polygon geometry as WKT in a `geometry` column (SW Maps, QGIS, Avenza Maps)
+
+No conversion needed — the importer normalises coordinates, removes duplicate GPS points, and auto-corrects common geometry issues before validation.
 
 **Step 1 — Validate first (dry run)**
 1. Go to **Suppliers → Farms → Import**
 2. Select the supplier
 3. Set a default commodity (used for any polygon that doesn't have a Commodity column)
-4. Choose your GeoJSON or SW Maps CSV file
+4. Choose your file (GeoJSON, ZIP, or CSV)
 5. Tick **Validate only — don't save yet**
 6. Click **Upload and Validate**
 
@@ -142,8 +147,8 @@ Review the results:
 
 | Error | What it means | Fix |
 |---|---|---|
-| Falls outside Nigeria | Coordinates are wrong — likely swapped lat/lon or wrong map projection | Re-export from SW Maps with WGS84 setting |
-| Ring is not closed | The polygon boundary doesn't close back on itself | Re-export the boundary from SW Maps |
+| Falls outside Nigeria | Coordinates are wrong — likely swapped lat/lon or wrong map projection | Check your mapping app is set to WGS84 and re-export |
+| Ring is not closed | The polygon boundary doesn't close back on itself — the importer auto-corrects this; if this error persists the geometry is severely malformed | Re-map the farm boundary |
 | Only N points | Too few GPS points to make a valid polygon | Remap the farm — walk the full boundary |
 | Overlaps existing farm | This plot's boundary crosses a farm already in the system | Review both farms — adjust if a mapping error |
 
@@ -316,7 +321,7 @@ Go to **Company** in the sidebar to update:
 
 1. **Add supplier** → cooperative or aggregator
 2. **Add farmers** → bulk import via CSV or add individually
-3. **Map farms** → SW Maps field exercise → dry-run import → commit import
+3. **Map farms** → field mapping exercise → dry-run import → commit import
 4. **Verify farms** → set risk status, upload satellite evidence, mark EUDR verified
 5. **Create purchase order** → buy the commodity from the supplier → mark Received
 6. **Create sales order** → EU buyer order → link farms → batch is created
@@ -327,10 +332,10 @@ Go to **Company** in the sidebar to update:
 
 1. Brief field officers on farm naming convention before going out
 2. Field officer fills the **Field Verification Form (FVF)** with each farmer on-site (paper copy stays with farmer; officer retains a copy)
-3. Map all farms in SW Maps, record farmer name, village, LGA, and commodity in SW Maps properties
-4. Export from SW Maps — GeoJSON FeatureCollection or CSV (both formats accepted by the importer)
+3. Map all farms in your field mapping app (e.g. SW Maps, Avenza Maps), recording farmer name, village, LGA, and commodity in the feature properties
+4. Export as GeoJSON, ZIP, or CSV — all formats are accepted by the importer
 5. **Dry-run upload** first — review errors and warnings
-6. Fix any issues flagged (re-export from SW Maps if geometry errors)
+6. Fix any issues flagged; re-map or re-export if geometry errors persist
 7. Commit upload — confirm farm count in Upload History
 8. Fill in missing LGA, farmer links, and FVF data via the farm edit page
 

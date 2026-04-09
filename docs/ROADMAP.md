@@ -127,6 +127,16 @@ Shipped April 2026. Focused on field officer usability, digital audit trail for 
 
 ---
 
+## Phase 4.10 — Field GPS Import Hardening ✅ Complete
+
+Shipped April 2026. Driven by real field data from SW Maps revealing that GPS exports are consistently messy — duplicate vertices, 3D coordinates, occasionally unclosed rings.
+
+- **`normalize_field_gps_geometry()` pipeline** — pre-processing applied to all polygon imports before validation: strip Z-coordinates (elevation), remove consecutive duplicate GPS vertices (GPS-paused-at-corner produces long identical-point runs), auto-close rings where first ≠ last vertex, simplify via Ramer–Douglas–Peucker if vertex count exceeds 200 after dedup. Tolerance 0.00001° (≈ 1 m) — EUDR-grade precision preserved. Real-world result: 217-vertex SW Maps export reduced to 125 clean vertices. ✅
+- **ZIP upload support** — farm import page now accepts `.zip` directly. Unzipped in memory (stdlib `zipfile`, no new dependencies). All GeoJSON files inside the ZIP are found and merged into one import run — handles multi-session exports where field officers record several areas in the same outing. macOS `__MACOSX/` metadata folders and non-FeatureCollection JSON (e.g. `style.json`) skipped silently. Import log records the source filename(s). ✅
+- **Tool-agnostic pipeline** — renamed `normalize_sw_maps_geometry` → `normalize_field_gps_geometry` and `_sw_maps_csv_to_features` → `_wkt_csv_to_features`. All user-facing error messages updated to "your mapping app". The import pipeline now explicitly supports SW Maps, Avenza Maps, QGIS, ODK Collect, and any tool that exports GeoJSON or WKT CSV. ✅
+
+---
+
 ## Phase 5 — Buyer Portal 🔄 Planned
 - buyers.agriops.io — separate authenticated surface for EU buyers
 - Available inventory catalogue per operator

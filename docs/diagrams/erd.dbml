@@ -67,7 +67,7 @@ Table suppliers_farm {
   supplier_id               int         [ref: > suppliers_supplier.id]
   name                      varchar(255)
   farmer_name               varchar(255)
-  geolocation               jsonb        [note: 'GeoJSON Polygon. SW Maps / NCAN Farm Mapper export.']
+  geolocation               jsonb        [note: 'GeoJSON Polygon. Exported from any field mapping app (SW Maps, Avenza Maps, QGIS, etc.). Normalised on import.']
   area_hectares             decimal(10,2)
   country                   varchar(100)
   state_region              varchar(100)

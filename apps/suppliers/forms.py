@@ -225,30 +225,31 @@ def _validate_geojson_polygon(value):
     except Exception:
         raise forms.ValidationError(
             "This polygon could not be processed — the geometry may be degenerate or malformed. "
-            "Re-export from SW Maps and try again."
+            "Re-export from your mapping app and try again."
         )
 
     return value
 
 
-# ── SW Maps geometry normalisation ────────────────────────────────────────────
+# ── Field GPS geometry normalisation ─────────────────────────────────────────
 
 def strip_z_coordinates(geometry, precision=6):
     """
     Thin wrapper kept for backwards compatibility.
-    Prefer normalize_sw_maps_geometry() for new call sites.
+    Prefer normalize_field_gps_geometry() for new call sites.
     """
-    return normalize_sw_maps_geometry(geometry, precision=precision)
+    return normalize_field_gps_geometry(geometry, precision=precision)
 
 
-def normalize_sw_maps_geometry(geometry, max_vertices=200, simplify_tolerance=0.00001, precision=6):
+def normalize_field_gps_geometry(geometry, max_vertices=200, simplify_tolerance=0.00001, precision=6):
     """
-    Pre-process SW Maps / field GPS GeoJSON before validation.
-    Safe to call on any GeoJSON geometry dict; returns geometry unchanged if
-    the type is not Polygon or MultiPolygon.
+    Pre-process field GPS GeoJSON before validation.
+    Handles output from any field mapping app (SW Maps, Avenza Maps, ODK Collect,
+    QGIS, etc.). Safe to call on any GeoJSON geometry dict; returns geometry
+    unchanged if the type is not Polygon or MultiPolygon.
 
     Applied in order per ring:
-      1. Strip elevation (Z) — SW Maps exports [lon, lat, elev]
+      1. Strip elevation (Z) — field GPS apps typically export [lon, lat, elev]
       2. Round to `precision` decimal places (6 ≈ 11 cm — more than enough for
          farm boundary work; also prevents float bloat from Shapely repairs)
       3. Remove consecutive duplicate vertices — GPS pauses produce long runs of
@@ -392,7 +393,7 @@ class FarmForm(forms.ModelForm):
 
     def clean_geolocation(self):
         value = self.cleaned_data.get('geolocation')
-        value = normalize_sw_maps_geometry(value)  # strip Z, dedup, close, simplify
+        value = normalize_field_gps_geometry(value)  # strip Z, dedup, close, simplify
         return _validate_geojson_polygon(value)
 
     # ── Layer 2: Business rule checks ─────────────────────────────────────────
