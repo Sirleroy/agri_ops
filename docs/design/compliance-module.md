@@ -49,10 +49,10 @@ Each `Farm` record stores:
 - Commodity produced
 
 **Geolocation (EUDR Article 3):**
-- GeoJSON Polygon — farm boundary measured by field agents
+- GeoJSON Polygon (or MultiPolygon if auto-repaired) — farm boundary measured by field agents
 - Area in hectares
 - Mapping date and mapped_by (field agent)
-- Source application (SW Maps / NCAN Farm Mapper)
+- Source application (any field mapping app — SW Maps, Avenza Maps, QGIS, etc.)
 
 **Risk Classification:**
 - `deforestation_risk_status` — Low / Standard / High
@@ -176,7 +176,7 @@ Based on the operational process used by the founding company:
 1. **Field agent** travels to farm with a field mapping app installed (e.g. SW Maps, Avenza Maps)
 2. **Perimeter mapping** — agent walks the farm boundary; the app records the GPS track as a polygon
 3. **Export** — app exports GeoJSON FeatureCollection (or ZIP containing GeoJSON)
-4. **Dry-run upload** — GeoJSON uploaded to AgriOps import page with "Validate only" checked. System runs full validation pipeline and reports what would be created, any errors (bad geometry, wrong coordinates, non-Nigeria bounds), and completeness warnings (missing LGA, farmer name, commodity) — without writing anything
+4. **Dry-run upload** — GeoJSON, ZIP, or WKT CSV uploaded to AgriOps import page with "Validate only" checked. Before validation, the importer normalises all geometry: strips elevation (Z), removes duplicate GPS vertices, auto-closes rings, simplifies if > 200 vertices, and repairs self-intersecting boundaries via `buffer(0)`. Reports what would be created, any hard errors (unrepairable geometry, wrong coordinates, outside Nigeria bounds), and completeness warnings (missing LGA, farmer name, commodity) — without writing anything
 5. **Review** — field officer or coordinator reviews the dry-run report, fixes issues if needed, re-runs
 6. **Commit upload** — same file uploaded without "Validate only" to write farms to the registry
 7. **History check** — upload appears in `/farms/import/history/` with all counts and per-row detail. Dry-run and commit pair is visible side by side

@@ -143,14 +143,27 @@ Review the results:
 2. This time leave **Validate only** unticked
 3. Click **Upload and Validate** — farms are now saved
 
-**Common validation errors:**
+**What the importer fixes automatically**
+
+These issues are corrected silently before validation — you do not need to fix your file:
+
+| Issue | What happens |
+|---|---|
+| 3D coordinates `[lon, lat, elevation]` | Elevation stripped — 2D coordinates stored |
+| GPS-pause duplicate vertices | Consecutive identical points removed |
+| Unclosed ring (first ≠ last point) | Closing vertex appended automatically |
+| Too many vertices (> 200 after dedup) | Simplified via Ramer–Douglas–Peucker at ≈ 1 m tolerance |
+| Self-intersecting boundary (GPS track crossed itself) | `buffer(0)` repair applied — boundary resolved into valid geometry, may be stored as MultiPolygon |
+
+**Hard validation errors** (polygon cannot import — action required)
 
 | Error | What it means | Fix |
 |---|---|---|
-| Falls outside Nigeria | Coordinates are wrong — likely swapped lat/lon or wrong map projection | Check your mapping app is set to WGS84 and re-export |
-| Ring is not closed | The polygon boundary doesn't close back on itself — the importer auto-corrects this; if this error persists the geometry is severely malformed | Re-map the farm boundary |
-| Only N points | Too few GPS points to make a valid polygon | Remap the farm — walk the full boundary |
-| Overlaps existing farm | This plot's boundary crosses a farm already in the system | Review both farms — adjust if a mapping error |
+| Falls outside Nigeria | Polygon centroid is outside lon 2.5–15°E / lat 4–14.2°N — likely swapped lat/lon or wrong map projection | Confirm your app is set to WGS84; check coordinate order |
+| Fewer than 4 points | Too few GPS points to form a valid polygon | Re-map the farm — walk the full boundary |
+| Unrepairable self-intersection | GPS track crossed itself in a way `buffer(0)` cannot resolve | Re-walk the farm boundary |
+| Duplicate farm name | A farm with this name already exists under this supplier | Check for double-entry; rename if a different plot |
+| Overlaps existing farm | Boundary shares area with a farm already in the system | Review both farms — adjust if a mapping error |
 
 **Upload history**
 Every import attempt is saved. See the **Recent Uploads** table at the bottom of the import page, or click **View all →** for the full history with expandable error detail.
