@@ -215,8 +215,10 @@ def _validate_geojson_polygon(value):
         poly = shapely_shape({'type': geo_type, 'coordinates': coordinates})
         if not poly.is_valid:
             raise forms.ValidationError(
-                "This polygon's boundary crosses itself (self-intersecting geometry). "
-                "Re-map the farm — the GPS track may have looped back across itself."
+                "This polygon's boundary crosses itself (self-intersecting geometry) "
+                "and could not be repaired automatically. The GPS track likely looped "
+                "back across itself in a way that cannot be resolved without re-mapping. "
+                "Re-walk the farm boundary and re-export."
             )
     except forms.ValidationError:
         raise
@@ -258,6 +260,13 @@ def normalize_field_gps_geometry(geometry, max_vertices=200, simplify_tolerance=
       5. Simplify if ring still exceeds max_vertices — uses Ramer–Douglas–Peucker
          via Shapely with a default tolerance of 0.00001° (≈ 1 m); falls back to
          the un-simplified ring if Shapely is unavailable or simplification fails
+
+    Applied to the full polygon after ring processing:
+      6. Self-intersection repair via buffer(0) — GPS tracks that loop back across
+         themselves produce self-intersecting polygons. buffer(0) resolves the
+         crossing without altering the farm's actual extent. Falls back silently if
+         Shapely is unavailable or the geometry is too degenerate to repair (the
+         validator will then surface a clear error message).
     """
     if not geometry:
         return geometry
@@ -309,7 +318,36 @@ def normalize_field_gps_geometry(geometry, max_vertices=200, simplify_tolerance=
     else:
         return geometry
 
-    return {**geometry, 'coordinates': clean}
+    # Step 6: repair self-intersecting geometry before handing to the validator.
+    # buffer(0) can produce a MultiPolygon from a Polygon input (e.g. a GPS track
+    # that crossed itself splits the area into two valid sub-polygons). We accept
+    # that type change — the validator handles MultiPolygon, and the area is correct.
+    try:
+        from shapely.geometry import shape as _shape, mapping as _mapping
+        shp = _shape({'type': geo_type, 'coordinates': clean})
+        if not shp.is_valid:
+            repaired = shp.buffer(0)
+            if repaired.is_valid and repaired.area > 0:
+                repaired_geo    = dict(_mapping(repaired))
+                repaired_type   = repaired_geo['type']   # may differ from geo_type
+                repaired_coords = repaired_geo['coordinates']
+
+                def _reround_ring(ring):
+                    return [
+                        [round(float(c[0]), precision), round(float(c[1]), precision)]
+                        for c in ring
+                    ]
+
+                if repaired_type == 'Polygon':
+                    clean    = [_reround_ring(r) for r in repaired_coords]
+                    geo_type = 'Polygon'
+                elif repaired_type == 'MultiPolygon':
+                    clean    = [[_reround_ring(r) for r in poly] for poly in repaired_coords]
+                    geo_type = 'MultiPolygon'
+    except Exception:
+        pass  # fall back to pre-repair geometry; validator surfaces a clear error
+
+    return {**geometry, 'type': geo_type, 'coordinates': clean}
 
 
 # ── Spatial overlap detection (Layer 4) ──────────────────────────────────────

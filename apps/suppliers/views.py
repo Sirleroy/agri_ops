@@ -316,7 +316,6 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
     import json
     from django import forms as django_forms
     from django.db import transaction
-    from shapely.geometry import mapping
     from .models import Farm, Farmer
     from .forms import _validate_geojson_polygon, _find_overlapping_farm, _geojson_to_shape, normalize_field_gps_geometry
 
@@ -371,16 +370,6 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
         except django_forms.ValidationError as e:
             errors.append({'row': row, 'name': name, 'reason': e.messages[0]})
             continue
-
-        shape = _geojson_to_shape(geometry)
-        if shape is not None and not shape.is_valid:
-            repaired = shape.buffer(0)
-            if repaired.is_valid and repaired.area > 0:
-                geometry = normalize_field_gps_geometry(dict(mapping(repaired)))
-            else:
-                errors.append({'row': row, 'name': name,
-                               'reason': 'Polygon is self-intersecting and could not be repaired automatically.'})
-                continue
 
         if Farm.objects.filter(company=company, supplier=supplier, name__iexact=name).exists():
             duplicates.append({'row': row, 'name': name})
