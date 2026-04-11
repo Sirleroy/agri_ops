@@ -45,7 +45,6 @@ class Command(BaseCommand):
     def _seed(self):
         import datetime
         from apps.companies.models import Company
-        from apps.users.models import CustomUser
         from apps.suppliers.models import Supplier, Farm, Farmer
         from apps.products.models import Product
         from apps.inventory.models import Inventory
@@ -69,13 +68,13 @@ class Command(BaseCommand):
         self.stdout.write(f'  Company: {ake}')
 
         # Users — Ake
-        ake_admin = self._make_user('ake_admin', 'Amara', 'Okafor',
+        self._make_user('ake_admin', 'Amara', 'Okafor',
                                     'org_admin', ake, 'Operations Director')
         ake_mgr   = self._make_user('ake_manager', 'Bello', 'Musa',
                                     'manager', ake, 'Procurement Manager')
         ake_staff = self._make_user('ake_staff', 'Chisom', 'Eze',
                                     'staff', ake, 'Field Officer')
-        ake_view  = self._make_user('ake_viewer', 'Dayo', 'Adeyemi',
+        self._make_user('ake_viewer', 'Dayo', 'Adeyemi',
                                     'viewer', ake, 'Finance Analyst')
 
         # Suppliers — Ake
@@ -308,9 +307,9 @@ class Command(BaseCommand):
         )
         self.stdout.write(f'  Company: {agro}')
 
-        agro_admin = self._make_user('agro_admin', 'Funke', 'Adebayo',
+        self._make_user('agro_admin', 'Funke', 'Adebayo',
                                      'org_admin', agro, 'General Manager')
-        agro_staff = self._make_user('agro_staff', 'Gbenga', 'Oladele',
+        self._make_user('agro_staff', 'Gbenga', 'Oladele',
                                      'staff', agro, 'Inventory Officer')
 
         sup4, _ = Supplier.objects.get_or_create(

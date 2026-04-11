@@ -8,7 +8,8 @@ from apps.sales_orders.batch_views import PublicTraceView
 from apps.dashboard.access_views import RequestAccessView
 
 
-_legal = lambda t: TemplateView.as_view(template_name=f'legal/{t}.html')
+def _legal(t):
+    return TemplateView.as_view(template_name=f'legal/{t}.html')
 
 legal_urls = ([
     path('terms/',    _legal('terms'),   name='terms'),

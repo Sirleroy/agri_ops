@@ -2,7 +2,7 @@ from apps.audit.mixins import AuditUpdateMixin
 from django.views.generic import ListView, DetailView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from .models import CustomUser
-from .permissions import OrgAdminRequiredMixin, StaffRequiredMixin, ManagerRequiredMixin
+from .permissions import OrgAdminRequiredMixin, ManagerRequiredMixin
 
 
 class UserListView(ManagerRequiredMixin, ListView):

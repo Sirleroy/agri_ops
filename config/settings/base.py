@@ -70,8 +70,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'agri_ops_project.wsgi.application'
 
-import dj_database_url
-import os
+import dj_database_url  # noqa: E402
+import os  # noqa: E402
 
 if os.environ.get('DATABASE_URL'):
     DATABASES = {
@@ -136,7 +136,7 @@ REST_FRAMEWORK = {
     },
 }
 
-from datetime import timedelta
+from datetime import timedelta  # noqa: E402
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME':  timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),

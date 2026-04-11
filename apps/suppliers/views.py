@@ -343,11 +343,10 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
     Returns a result dict: {total, created, duplicates, blocked, errors, error_detail,
                             blocked_detail, warnings, dry_run}
     """
-    import json
     from django import forms as django_forms
     from django.db import transaction
     from .models import Farm, Farmer
-    from .forms import _validate_geojson_polygon, _find_overlapping_farm, _geojson_to_shape, normalize_field_gps_geometry
+    from .forms import _validate_geojson_polygon, _find_overlapping_farm, normalize_field_gps_geometry
 
     # Accept a FeatureCollection dict as well as a plain list
     if isinstance(features, dict) and features.get('type') == 'FeatureCollection':
@@ -377,7 +376,7 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
         village      = (props.get('Village') or props.get('village') or '').strip()
         lga          = (props.get('LGA')     or props.get('lga')     or '').strip()
         phone_raw    = props.get('Phone Number') or props.get('phone') or ''
-        phone        = '' if str(phone_raw).strip() in ('', '0', '0.0', 'None') else str(phone_raw).strip()
+        '' if str(phone_raw).strip() in ('', '0', '0.0', 'None') else str(phone_raw).strip()
         commodity    = (props.get('Commodity') or props.get('commodity') or default_commodity or 'Unknown').strip()
         state_region = (props.get('State') or props.get('state_region') or props.get('Region') or '').strip()
 

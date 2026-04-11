@@ -92,7 +92,8 @@
     </div>
   </form>
 
-  <div class="bg-card border border-border rounded-xl overflow-x-auto">
+  <!-- Desktop table -->
+  <div class="hidden sm:block bg-card border border-border rounded-xl overflow-x-auto">
     <table class="w-full text-sm">
       <thead>
         <tr class="border-b border-border">
@@ -174,6 +175,68 @@
         {% endfor %}
       </tbody>
     </table>
+  </div>
+
+  <!-- Mobile cards -->
+  <div class="sm:hidden space-y-2">
+    {% for farm in farms %}
+    <div data-row class="bg-card border border-border rounded-xl p-4">
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <div class="min-w-0">
+          <a href="{% url 'suppliers:farm_detail' farm.pk %}" class="font-medium text-slate-100 hover:text-green transition-colors">{{ farm.name }}</a>
+          {% if farm.farmer %}<p class="text-xs text-slate-500 mt-0.5">{{ farm.farmer.full_name }}</p>{% endif %}
+          <p class="text-xs text-slate-600 mt-0.5">{{ farm.supplier.name }}</p>
+        </div>
+        <div class="flex flex-col items-end gap-1 flex-shrink-0">
+          {% if farm.compliance_status == 'compliant' %}
+            <span class="px-2 py-1 rounded text-xs font-mono bg-green/10 text-green border border-green/20">✓ Verified</span>
+          {% elif farm.compliance_status == 'expired' %}
+            <span class="px-2 py-1 rounded text-xs font-mono bg-orange-500/10 text-orange-400 border border-orange-500/20">Expired</span>
+          {% elif farm.compliance_status == 'high_risk' %}
+            <span class="px-2 py-1 rounded text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20">High Risk</span>
+          {% else %}
+            <span class="px-2 py-1 rounded text-xs font-mono bg-slate-500/10 text-slate-400 border border-slate-500/20">Pending</span>
+          {% endif %}
+          {% if farm.verification_expiry %}
+            <span class="expiry-badge text-xs font-mono text-slate-500" data-expiry="{{ farm.verification_expiry|date:'Y-m-d' }}"></span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2 text-xs mb-3">
+        <div><p class="text-slate-500 font-mono mb-0.5">Commodity</p><p class="text-slate-300">{{ farm.commodity }}</p></div>
+        <div><p class="text-slate-500 font-mono mb-0.5">Risk</p>
+          {% if farm.deforestation_risk_status == 'low' %}
+            <span class="px-1.5 py-0.5 rounded text-xs font-mono bg-green/10 text-green border border-green/20">Low</span>
+          {% elif farm.deforestation_risk_status == 'standard' %}
+            <span class="px-1.5 py-0.5 rounded text-xs font-mono bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">Standard</span>
+          {% else %}
+            <span class="px-1.5 py-0.5 rounded text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20">High</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="flex items-center gap-3 pt-3 border-t border-border">
+        <a href="{% url 'suppliers:farm_update' farm.pk %}" class="text-xs text-slate-400 hover:text-green transition-colors">Edit</a>
+        {% if request.user.system_role == 'org_admin' %}
+        <button @click="openDeleteModal('{% url 'suppliers:farm_delete' farm.pk %}', '{{ farm.name|escapejs }}')" class="text-xs text-slate-400 hover:text-red-400 transition-colors">Delete</button>
+        {% endif %}
+        <a href="{% url 'suppliers:farm_detail' farm.pk %}" class="ml-auto text-xs text-slate-400 hover:text-slate-100 transition-colors">View →</a>
+      </div>
+    </div>
+    {% empty %}
+    <div data-empty class="bg-card border border-border rounded-xl px-5 py-16 text-center">
+      <svg class="w-10 h-10 text-slate-700 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/></svg>
+      {% if active_filters %}
+      <p class="text-slate-500 text-sm mb-4">No farms match the current filters.</p>
+      <a href="{% url 'suppliers:farm_list' %}" class="inline-flex items-center gap-2 bg-card border border-border hover:border-slate-500 text-slate-300 text-xs font-medium px-4 py-2 rounded-lg transition-colors">Clear filters</a>
+      {% else %}
+      <p class="text-slate-500 text-sm mb-4">No farms registered yet.</p>
+      <a href="{% url 'suppliers:farm_create' %}" class="inline-flex items-center gap-2 bg-green hover:bg-green-dim text-bg font-bold text-xs px-4 py-2 rounded-lg transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Add First Farm
+      </a>
+      {% endif %}
+    </div>
+    {% endfor %}
   </div>
 
   {% if page_obj.has_other_pages %}

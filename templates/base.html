@@ -71,6 +71,18 @@
     }
     input:not([type="checkbox"]):not([type="radio"]):focus,
     select:focus, textarea:focus { border-color: #22c55e; }
+
+    /* Error state — field border turns red when the field has a validation error */
+    .field-has-error input:not([type="checkbox"]):not([type="radio"]),
+    .field-has-error select,
+    .field-has-error textarea {
+      border-color: #ef4444 !important;
+    }
+    .field-has-error input:not([type="checkbox"]):not([type="radio"]):focus,
+    .field-has-error select:focus,
+    .field-has-error textarea:focus {
+      border-color: #f87171 !important;
+    }
     select option { background: #111827; }
 
     /* Active nav indicator */
@@ -494,17 +506,18 @@
       }
     });
 
-    /* Client-side table search */
+    /* Client-side table search — handles both desktop tr[data-row] and mobile div[data-row] */
     function initTableSearch(inputId, tbodySelector) {
       const input = document.getElementById(inputId);
       if (!input) return;
       input.addEventListener('input', function () {
         const q = this.value.toLowerCase();
-        document.querySelectorAll(tbodySelector + ' tr[data-row]').forEach(function (row) {
+        document.querySelectorAll('[data-row]').forEach(function (row) {
           row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
         });
-        const empty = document.querySelector(tbodySelector + ' tr[data-empty]');
-        if (empty) empty.style.display = 'none';
+        document.querySelectorAll('[data-empty]').forEach(function (el) {
+          el.style.display = 'none';
+        });
       });
     }
 

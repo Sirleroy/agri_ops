@@ -1,6 +1,5 @@
 from django.test import TestCase
 from apps.companies.models import Company
-from apps.users.models import CustomUser
 from apps.suppliers.models import Supplier, Farm
 
 

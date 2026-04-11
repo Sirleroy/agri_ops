@@ -87,5 +87,3 @@ class SalesOrderItem(models.Model):
 
 
 # Import Batch and quality models so Django discovers them all
-from apps.sales_orders.batch import Batch
-from apps.sales_orders.quality import PhytosanitaryCertificate, BatchQualityTest

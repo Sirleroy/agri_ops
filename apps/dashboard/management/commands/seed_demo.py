@@ -151,7 +151,6 @@ class Command(BaseCommand):
 
     def _seed(self, ake):
         import datetime
-        from apps.companies.models import Company
         from apps.users.models import CustomUser
         from apps.suppliers.models import Supplier, Farm, Farmer
         from apps.products.models import Product
@@ -364,10 +363,10 @@ class Command(BaseCommand):
         # ── Summary ───────────────────────────────────────────────────────────
         self.stdout.write('')
         self.stdout.write('  Demo chain summary:')
-        self.stdout.write(f'    Supplier  → Plateau Soy Cooperative')
+        self.stdout.write('    Supplier  → Plateau Soy Cooperative')
         self.stdout.write(f'    Farmers   → {len(farmers)} (all with FVF + consent)')
         self.stdout.write(f'    Farms     → {len(farms)} (GPS mapped, EUDR verified, satellite-visible)')
-        self.stdout.write(f'    Product   → Soybeans Export Grade (HS 1201.90)')
-        self.stdout.write(f'    PO        → DEMO-PO-2026-001  ·  25,000 kg received')
-        self.stdout.write(f'    SO        → DEMO-SO-2026-001  ·  Nexira SAS  ·  EU export')
-        self.stdout.write(f'    Batch     → 3 farms linked  ·  20,000 kg  ·  DDS-ready')
+        self.stdout.write('    Product   → Soybeans Export Grade (HS 1201.90)')
+        self.stdout.write('    PO        → DEMO-PO-2026-001  ·  25,000 kg received')
+        self.stdout.write('    SO        → DEMO-SO-2026-001  ·  Nexira SAS  ·  EU export')
+        self.stdout.write('    Batch     → 3 farms linked  ·  20,000 kg  ·  DDS-ready')

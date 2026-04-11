@@ -17,7 +17,8 @@
     </a>
   </div>
 
-  <div class="bg-card border border-border rounded-xl overflow-x-auto">
+  <!-- Desktop table -->
+  <div class="hidden sm:block bg-card border border-border rounded-xl overflow-x-auto">
     <table class="w-full text-sm">
       <thead>
         <tr class="border-b border-border bg-white/[0.02]">
@@ -80,6 +81,51 @@
         {% endfor %}
       </tbody>
     </table>
+  </div>
+
+  <!-- Mobile cards -->
+  <div class="sm:hidden space-y-2">
+    {% for order in orders %}
+    <div data-row
+         data-expected="{{ order.expected_delivery|date:'Y-m-d' }}"
+         data-status="{{ order.status }}"
+         class="bg-card border border-border rounded-xl p-4">
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <div class="min-w-0">
+          <a href="{% url 'purchase_orders:detail' order.pk %}" class="font-semibold text-slate-100 hover:text-green transition-colors font-mono">PO-{{ order.order_number }}</a>
+          <p class="text-xs text-slate-500 mt-0.5">{{ order.supplier.name|default:"No supplier" }}</p>
+        </div>
+        <span class="px-2 py-1 rounded-md text-xs font-mono font-semibold flex-shrink-0
+          {% if order.status == 'received' %}bg-green/10 text-green border border-green/20
+          {% elif order.status == 'cancelled' %}bg-red-500/10 text-red-400 border border-red-500/20
+          {% elif order.status == 'ordered' %}bg-blue-500/10 text-blue-400 border border-blue-500/20
+          {% elif order.status == 'approved' %}bg-purple-500/10 text-purple-400 border border-purple-500/20
+          {% else %}bg-yellow-500/10 text-yellow-400 border border-yellow-500/20{% endif %}">
+          {{ order.get_status_display }}
+        </span>
+      </div>
+      <div class="grid grid-cols-2 gap-2 text-xs mb-3">
+        <div><p class="text-slate-500 font-mono mb-0.5">Order Date</p><p class="text-slate-300 font-mono">{{ order.order_date|date:"d M Y" }}</p></div>
+        <div><p class="text-slate-500 font-mono mb-0.5">Expected</p><p data-delivery-cell class="text-slate-300 font-mono">{{ order.expected_delivery|date:"d M Y"|default:"—" }}</p></div>
+      </div>
+      <div class="flex items-center gap-3 pt-3 border-t border-border">
+        <a href="{% url 'purchase_orders:update' order.pk %}" class="text-xs text-slate-400 hover:text-green transition-colors">Edit</a>
+        {% if request.user.is_manager_or_above %}
+        <button @click="openDeleteModal('{% url 'purchase_orders:delete' order.pk %}', 'PO-{{ order.order_number|escapejs }}')" class="text-xs text-slate-400 hover:text-red-400 transition-colors">Delete</button>
+        {% endif %}
+        <a href="{% url 'purchase_orders:detail' order.pk %}" class="ml-auto text-xs text-slate-400 hover:text-slate-100 transition-colors">View →</a>
+      </div>
+    </div>
+    {% empty %}
+    <div data-empty class="bg-card border border-border rounded-xl px-5 py-16 text-center">
+      <svg class="w-10 h-10 text-slate-700 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+      <p class="text-slate-500 text-sm mb-4">No purchase orders yet.</p>
+      <a href="{% url 'purchase_orders:create' %}" class="inline-flex items-center gap-2 bg-green hover:bg-green-dim text-bg text-xs font-bold px-4 py-2 rounded-lg transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Create First Order
+      </a>
+    </div>
+    {% endfor %}
   </div>
 
   {% if page_obj.has_other_pages %}

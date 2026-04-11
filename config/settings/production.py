@@ -1,8 +1,7 @@
-from .base import *
+from .base import *  # noqa: F403
 from decouple import config
 import dj_database_url
 import os
-import logging.handlers
 import sentry_sdk
 
 # Render injects DATABASE_URL automatically
@@ -46,8 +45,8 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_COOKIE_AGE              = 28800  # 8 hours
 
 # ── Static and media ─────────────────────────────────────────
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-MEDIA_ROOT  = BASE_DIR / 'media'
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # noqa: F405
+MEDIA_ROOT  = BASE_DIR / 'media'  # noqa: F405
 
 # ── Email (configure via .env in production) ─────────────────
 EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'

@@ -17,7 +17,7 @@ class Command(BaseCommand):
             return
 
         password = secrets.token_urlsafe(24)
-        user = User.objects.create_user(
+        User.objects.create_user(
             username=username,
             password=password,
             is_staff=True,
@@ -25,7 +25,7 @@ class Command(BaseCommand):
             system_role='staff',
         )
 
-        self.stdout.write(self.style.SUCCESS(f'\nOps user created:'))
+        self.stdout.write(self.style.SUCCESS('\nOps user created:'))
         self.stdout.write(f'  Username: {username}')
         self.stdout.write(f'  Password: {password}')
         self.stdout.write(self.style.WARNING('\nSave these credentials to your password manager NOW. They will not be shown again.'))

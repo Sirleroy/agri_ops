@@ -106,7 +106,7 @@ def _doc_header(company, title, subtitle, st):
     return t
 
 
-def _table_style(col_count):
+def _table_style():
     """Standard data table style."""
     return TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), DARK),
@@ -200,7 +200,7 @@ def farmer_registry_pdf(queryset, company):
 
         col_widths = [38*mm, 14*mm, 22*mm, 24*mm, 24*mm, 24*mm, 30*mm, 10*mm, 20*mm]
         t = Table(data, colWidths=col_widths, repeatRows=1)
-        t.setStyle(_table_style(len(col_widths)))
+        t.setStyle(_table_style())
         story.append(t)
     else:
         story.append(Paragraph("No farmers registered.", st["meta"]))
@@ -324,7 +324,7 @@ def farm_registry_pdf(queryset, company):
 
         col_widths = [40*mm, 32*mm, 38*mm, 24*mm, 16*mm, 38*mm, 30*mm, 22*mm]
         t = Table(data, colWidths=col_widths, repeatRows=1)
-        style = _table_style(len(col_widths))
+        style = _table_style()
 
         # Colour-code EUDR status column (index 6) per row
         for i, farm in enumerate(farms, start=1):

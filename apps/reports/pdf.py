@@ -14,7 +14,7 @@ from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
     HRFlowable, KeepTogether
 )
-from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 
 
 # ── Colour palette ────────────────────────────────────────────
@@ -33,7 +33,7 @@ ORANGE_LIGHT= colors.HexColor("#ffedd5")
 
 
 def _styles():
-    base = getSampleStyleSheet()
+    getSampleStyleSheet()
     return {
         "title": ParagraphStyle(
             "title", fontName="Helvetica-Bold", fontSize=20,

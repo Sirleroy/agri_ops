@@ -94,7 +94,7 @@ class FarmerForm(forms.ModelForm):
         last_name     = cleaned_data.get('last_name', '').strip()
         village       = cleaned_data.get('village', '').strip()
         lga           = cleaned_data.get('lga', '').strip()
-        full_name     = f"{first_name} {last_name}".strip()
+        f"{first_name} {last_name}".strip()
 
         if first_name and village and lga:
             qs = Farmer.objects.filter(
