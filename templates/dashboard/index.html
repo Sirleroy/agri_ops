@@ -209,6 +209,7 @@
             <span class="flex-shrink-0 px-2 py-0.5 rounded text-xs font-mono
               {% if log.action == 'create' %}bg-green/10 text-green
               {% elif log.action == 'update' %}bg-blue-500/10 text-blue-400
+              {% elif log.action == 'import' %}bg-purple-500/10 text-purple-400
               {% else %}bg-red-500/10 text-red-400{% endif %}">
               {{ log.action }}
             </span>

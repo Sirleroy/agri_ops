@@ -282,6 +282,25 @@ class FarmerImportView(StaffRequiredMixin, View):
             'session_key':  session_key,
             'error_detail': error_detail,
         }
+
+        if created_count:
+            from apps.audit.models import AuditLog
+            from apps.audit.mixins import get_client_ip
+            AuditLog.objects.create(
+                company=request.user.company,
+                user=request.user,
+                action='import',
+                model_name='Farmer',
+                object_repr=f'{created_count} farmer{"s" if created_count != 1 else ""} — {csv_file.name}',
+                changes={
+                    'created':    created_count,
+                    'duplicates': duplicate_count,
+                    'errors':     len(error_rows),
+                    'file':       csv_file.name,
+                },
+                ip_address=get_client_ip(request),
+            )
+
         return render(request, self.template_name, {'result': result})
 
 
@@ -628,6 +647,27 @@ class FarmImportView(StaffRequiredMixin, View):
         session_key = 'farm_import_problems'
         request.session[session_key] = result['error_detail'] + result['blocked_detail']
         result['session_key'] = session_key
+
+        if not dry_run and result['created']:
+            from apps.audit.models import AuditLog
+            from apps.audit.mixins import get_client_ip
+            created = result['created']
+            AuditLog.objects.create(
+                company=company,
+                user=request.user,
+                action='import',
+                model_name='Farm',
+                object_repr=f'{created} farm{"s" if created != 1 else ""} — {geojson_file.name}',
+                changes={
+                    'created':    created,
+                    'duplicates': result['duplicates'],
+                    'blocked':    result['blocked'],
+                    'errors':     result['errors'],
+                    'supplier':   supplier.name,
+                    'file':       geojson_file.name,
+                },
+                ip_address=get_client_ip(request),
+            )
 
         ctx['result'] = result
         return render(request, self.template_name, ctx)

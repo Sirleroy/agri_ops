@@ -8,6 +8,7 @@ class AuditLog(models.Model):
         ('create', 'Create'),
         ('update', 'Update'),
         ('delete', 'Delete'),
+        ('import', 'Import'),
     ]
 
     company     = models.ForeignKey(
