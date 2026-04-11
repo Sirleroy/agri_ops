@@ -3,7 +3,7 @@ from django.views import View
 from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404, render
 from .models import Supplier, Farm, FarmCertification, Farmer
-from .forms import FarmerForm, FarmForm, FarmUpdateForm
+from .forms import FarmerForm, FarmForm, FarmUpdateForm, _compute_area_ha
 from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin, OtherRevealMixin
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 
@@ -399,19 +399,11 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
         commodity    = (props.get('Commodity') or props.get('commodity') or default_commodity or 'Unknown').strip()
         state_region = (props.get('State') or props.get('state_region') or props.get('Region') or '').strip()
 
-        area = None
-        try:
-            ha_raw = props.get('Area_Hectares') or props.get('area_ha')
-            sm_raw = props.get('AREA') or props.get('area')
-            if ha_raw and float(ha_raw) > 0:
-                area = round(float(ha_raw), 4)
-            elif sm_raw and float(sm_raw) > 0:
-                area = round(float(sm_raw) / 10000, 4)
-        except (ValueError, TypeError):
-            pass
-
         if geometry:
             geometry = normalize_field_gps_geometry(geometry)
+
+        # Area computed from normalized polygon — file metadata is ignored
+        area = _compute_area_ha(geometry) if geometry else None
 
         try:
             _validate_geojson_polygon(geometry)

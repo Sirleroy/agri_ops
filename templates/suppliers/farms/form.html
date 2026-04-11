@@ -39,7 +39,7 @@
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Farm Identity</p>
       <div class="grid grid-cols-2 gap-4 mb-6">
         {% for field in form %}
-          {% if field.name in 'supplier,name,farmer,country,state_region,commodity,area_hectares,harvest_year' %}
+          {% if field.name in 'supplier,name,farmer,country,state_region,commodity,harvest_year' %}
           <div class="{% if field.name == 'name' or field.name == 'supplier' %}col-span-2{% endif %}{% if field.errors %} field-has-error{% endif %}">
             <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">
               {{ field.label }}{% if field.field.required %} *{% endif %}

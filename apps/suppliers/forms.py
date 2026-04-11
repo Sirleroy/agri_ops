@@ -8,9 +8,40 @@ Validation layers applied here:
   Layer 4 — Spatial overlap detection (shapely — no PostGIS required)
 """
 import datetime
+import math
 from django import forms
 
 from .models import Farm, Farmer, Supplier
+
+
+def _compute_area_ha(geojson_geometry):
+    """
+    Compute farm area in hectares from a GeoJSON Polygon geometry dict.
+    Uses the spherical excess / Shoelace formula on WGS-84 coordinates.
+    Returns a rounded float, or None if the geometry is missing/invalid.
+    """
+    if not geojson_geometry:
+        return None
+    try:
+        coords = geojson_geometry.get('coordinates', [])
+        if not coords:
+            return None
+        ring = coords[0]  # outer ring only
+        if len(ring) < 4:
+            return None
+
+        R = 6_371_009  # Earth mean radius in metres
+        n = len(ring)
+        area_m2 = 0.0
+        for i in range(n - 1):
+            lon1, lat1 = math.radians(ring[i][0]),   math.radians(ring[i][1])
+            lon2, lat2 = math.radians(ring[i + 1][0]), math.radians(ring[i + 1][1])
+            area_m2 += (lon2 - lon1) * (2 + math.sin(lat1) + math.sin(lat2))
+
+        area_m2 = abs(area_m2) * R * R / 2.0
+        return round(area_m2 / 10_000, 4)  # → hectares
+    except Exception:
+        return None
 
 
 # ── Farmer ────────────────────────────────────────────────────────────────────
@@ -412,7 +443,7 @@ class FarmForm(forms.ModelForm):
         model  = Farm
         fields = [
             'supplier', 'name', 'farmer', 'country', 'state_region',
-            'commodity', 'area_hectares', 'harvest_year',
+            'commodity', 'harvest_year',
             'deforestation_risk_status', 'deforestation_reference_date',
             'land_cleared_after_cutoff', 'mapping_date', 'mapped_by', 'geolocation',
         ]
@@ -435,12 +466,6 @@ class FarmForm(forms.ModelForm):
         return _validate_geojson_polygon(value)
 
     # ── Layer 2: Business rule checks ─────────────────────────────────────────
-
-    def clean_area_hectares(self):
-        area = self.cleaned_data.get('area_hectares')
-        if area is not None and area <= 0:
-            raise forms.ValidationError("Area must be greater than 0 hectares.")
-        return area
 
     def clean_harvest_year(self):
         year = self.cleaned_data.get('harvest_year')

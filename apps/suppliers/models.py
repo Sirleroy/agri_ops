@@ -192,6 +192,14 @@ class Farm(models.Model):
     def __str__(self):
         return f"{self.name} — {self.supplier.name}"
 
+    def save(self, *args, **kwargs):
+        if self.geolocation:
+            from apps.suppliers.forms import _compute_area_ha
+            computed = _compute_area_ha(self.geolocation)
+            if computed is not None:
+                self.area_hectares = computed
+        super().save(*args, **kwargs)
+
     @property
     def is_eudr_commodity(self):
         """True if this farm's commodity falls under EUDR 2023/1115 scope."""
