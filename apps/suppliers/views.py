@@ -460,17 +460,21 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
         ))
 
     created_count = 0
+    created_names = []
     if not dry_run:
         with transaction.atomic():
             for j in range(0, len(to_create), 50):
                 batch = to_create[j:j + 50]
                 Farm.objects.bulk_create(batch)
                 created_count += len(batch)
+        created_names = [f.name for f in to_create]
 
     return {
         'total':          len(features),
         'created':        created_count if not dry_run else 0,
+        'created_names':  created_names,
         'would_create':   len(to_create),
+        'would_create_names': [f.name for f in to_create] if dry_run else [],
         'duplicates':     len(duplicates),
         'blocked':        len(blocked),
         'errors':         len(errors),
@@ -661,6 +665,7 @@ class FarmImportView(StaffRequiredMixin, View):
                 ip_address=get_client_ip(request),
             )
 
+        result['supplier_id'] = supplier.pk
         ctx['result'] = result
         return render(request, self.template_name, ctx)
 

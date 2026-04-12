@@ -77,10 +77,29 @@
     {% endif %}
 
     {% if result.created > 0 %}
-    <a href="{% url 'suppliers:farm_list' %}"
+    <div class="mb-4">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Farms Created</p>
+      <div class="bg-surface border border-green/20 rounded-lg px-4 py-3 flex flex-wrap gap-x-6 gap-y-1">
+        {% for name in result.created_names %}
+        <span class="text-sm font-mono text-green">{{ name }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    <a href="{% url 'suppliers:farm_list' %}?supplier={{ result.supplier_id }}"
       class="inline-flex items-center gap-2 bg-green hover:bg-green-dim text-bg text-sm font-bold px-4 py-2 rounded-lg transition-colors">
-      View Farm Registry
+      View in Farm Registry
     </a>
+    {% endif %}
+
+    {% if result.dry_run and result.would_create_names %}
+    <div class="mt-4">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Would Create</p>
+      <div class="bg-surface border border-blue-500/20 rounded-lg px-4 py-3 flex flex-wrap gap-x-6 gap-y-1">
+        {% for name in result.would_create_names %}
+        <span class="text-sm font-mono text-blue-300">{{ name }}</span>
+        {% endfor %}
+      </div>
+    </div>
     {% endif %}
 
     <!-- Error detail -->
