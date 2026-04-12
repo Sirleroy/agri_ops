@@ -366,6 +366,7 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
     from django.db import transaction
     from .models import Farm, Farmer
     from .forms import _validate_geojson_polygon, _find_overlapping_farm, normalize_field_gps_geometry
+    from .ng_geodata import canonicalise_lga_state, normalise_commodity
 
     # Accept a FeatureCollection dict as well as a plain list
     if isinstance(features, dict) and features.get('type') == 'FeatureCollection':
@@ -389,15 +390,16 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
             f"Farm {row}"
         ).strip()
 
-        first_name   = (props.get('First Name') or props.get('first_name') or '').strip()
-        last_name    = (props.get('Last Name')  or props.get('last_name')  or '').strip()
+        first_name   = (props.get('First Name') or props.get('first_name') or '').strip().title()
+        last_name    = (props.get('Last Name')  or props.get('last_name')  or '').strip().title()
         farmer_label = f"{first_name} {last_name}".strip()
-        village      = (props.get('Village') or props.get('village') or '').strip()
-        lga          = (props.get('LGA')     or props.get('lga')     or '').strip()
-        phone_raw    = props.get('Phone Number') or props.get('phone') or ''
-        '' if str(phone_raw).strip() in ('', '0', '0.0', 'None') else str(phone_raw).strip()
-        commodity    = (props.get('Commodity') or props.get('commodity') or default_commodity or 'Unknown').strip()
-        state_region = (props.get('State') or props.get('state_region') or props.get('Region') or '').strip()
+        village      = (props.get('Village') or props.get('village') or '').strip().title()
+        lga_raw      = (props.get('LGA')     or props.get('lga')     or '').strip()
+        state_raw    = (props.get('State') or props.get('state_region') or props.get('Region') or '').strip()
+        lga, state_region = canonicalise_lga_state(lga_raw, state_raw)
+        commodity    = normalise_commodity(
+            (props.get('Commodity') or props.get('commodity') or default_commodity or 'Unknown').strip()
+        )
 
         if geometry:
             geometry = normalize_field_gps_geometry(geometry)

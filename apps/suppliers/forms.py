@@ -106,8 +106,16 @@ class FarmerForm(forms.ModelForm):
         return ', '.join(known) if known else ''
 
     def clean_nin(self):
+        import re as _re
         nin = self.cleaned_data.get('nin', '').strip()
         if nin:
+            # Canonicalise: strip spaces, dashes, uppercase
+            nin = _re.sub(r'[^A-Z0-9]', '', nin.upper())
+            # NIN is 11 digits
+            if not _re.fullmatch(r'\d{11}', nin):
+                raise forms.ValidationError(
+                    "NIN must be exactly 11 digits. Remove any spaces or dashes."
+                )
             qs = Farmer.objects.filter(company=self.company, nin=nin)
             if self.instance and self.instance.pk:
                 qs = qs.exclude(pk=self.instance.pk)

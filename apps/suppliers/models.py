@@ -58,8 +58,26 @@ class Farmer(models.Model):
     objects = TenantManager()
 
     def save(self, *args, **kwargs):
+        # Name — title-case, strip whitespace
+        if self.first_name:
+            self.first_name = self.first_name.strip().title()
+        if self.last_name:
+            self.last_name = self.last_name.strip().title()
+        # Phone — E.164 normalisation
         if self.phone:
             self.phone = _normalise_ng_phone(self.phone)
+        # NIN — digits only, uppercase, strip spaces/dashes
+        if self.nin:
+            import re as _re
+            self.nin = _re.sub(r'[^A-Z0-9]', '', self.nin.strip().upper())
+        # LGA / State — canonical lookup
+        if self.lga or self.village:
+            from apps.suppliers.ng_geodata import canonicalise_lga_state
+            canonical_lga, canonical_state = canonicalise_lga_state(
+                self.lga or '', getattr(self, 'state_region', '') or ''
+            )
+            if canonical_lga:
+                self.lga = canonical_lga
         super().save(*args, **kwargs)
 
     @property
@@ -229,6 +247,11 @@ class Farm(models.Model):
         return f"{self.name} — {self.supplier.name}"
 
     def save(self, *args, **kwargs):
+        # Commodity — canonical name
+        if self.commodity:
+            from apps.suppliers.ng_geodata import normalise_commodity
+            self.commodity = normalise_commodity(self.commodity)
+        # Area — computed from polygon boundary
         if self.geolocation:
             from apps.suppliers.forms import _compute_area_ha
             computed = _compute_area_ha(self.geolocation)
