@@ -1,4 +1,5 @@
 import datetime
+import re
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from apps.companies.models import Company
@@ -9,6 +10,24 @@ from apps.companies.managers import TenantManager
 EUDR_COMMODITIES = {
     'cattle', 'cocoa', 'coffee', 'oil palm', 'palm oil', 'rubber', 'soya', 'soy', 'wood',
 }
+
+
+def _normalise_ng_phone(raw):
+    """
+    Normalise a Nigerian phone number to E.164 format (+234XXXXXXXXXX).
+    Accepts:  08012345678 · 8012345678 · +2348012345678 · 234 801 234 5678
+    Returns:  +2348012345678  or the original string if it doesn't look Nigerian.
+    """
+    if not raw:
+        return raw
+    digits = re.sub(r'\D', '', str(raw))
+    if len(digits) == 11 and digits.startswith('0'):
+        return '+234' + digits[1:]          # 08012345678  → +2348012345678
+    if len(digits) == 13 and digits.startswith('234'):
+        return '+' + digits                 # 2348012345678 → +2348012345678
+    if len(digits) == 14 and digits.startswith('2340'):
+        return '+234' + digits[4:]          # rare: 23408012345678 double-prefix
+    return raw  # not a recognisable Nigerian number — store as-is
 
 
 class Farmer(models.Model):
@@ -38,9 +57,21 @@ class Farmer(models.Model):
 
     objects = TenantManager()
 
+    def save(self, *args, **kwargs):
+        if self.phone:
+            self.phone = _normalise_ng_phone(self.phone)
+        super().save(*args, **kwargs)
+
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}".strip()
+
+    @property
+    def display_phone(self):
+        """Local format (08XXXXXXXXXX) — compact for display and PDF."""
+        if self.phone and self.phone.startswith('+234'):
+            return '0' + self.phone[4:]
+        return self.phone or '—'
 
     def __str__(self):
         return self.full_name or f"Farmer #{self.pk}"
@@ -83,6 +114,11 @@ class Supplier(models.Model):
 
     class Meta:
         ordering = ['name']
+
+    def save(self, *args, **kwargs):
+        if self.phone:
+            self.phone = _normalise_ng_phone(self.phone)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name} — {self.get_category_display()}"

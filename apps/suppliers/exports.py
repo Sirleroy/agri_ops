@@ -166,7 +166,7 @@ def farmer_registry_pdf(queryset, company):
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(
-        buffer, pagesize=A4,
+        buffer, pagesize=landscape(A4),
         leftMargin=18*mm, rightMargin=18*mm,
         topMargin=18*mm, bottomMargin=20*mm,
         title=f"Farmer Registry — {company.name}",
@@ -189,7 +189,7 @@ def farmer_registry_pdf(queryset, company):
             data.append([
                 f.full_name,
                 f.get_gender_display() or "—",
-                f.phone or "—",
+                f.display_phone,
                 f.village or "—",
                 f.lga or "—",
                 f.nin or "—",
@@ -198,7 +198,8 @@ def farmer_registry_pdf(queryset, company):
                 f.created_at.strftime("%d %b %Y"),
             ])
 
-        col_widths = [38*mm, 14*mm, 22*mm, 24*mm, 24*mm, 24*mm, 30*mm, 10*mm, 20*mm]
+        # Landscape A4: 297mm - 36mm margins = 261mm usable
+        col_widths = [48*mm, 14*mm, 32*mm, 32*mm, 30*mm, 28*mm, 45*mm, 12*mm, 20*mm]
         t = Table(data, colWidths=col_widths, repeatRows=1)
         t.setStyle(_table_style())
         story.append(t)
@@ -211,7 +212,7 @@ def farmer_registry_pdf(queryset, company):
         st["footer"]
     ))
 
-    doc.build(story, onFirstPage=_page_footer, onLaterPages=_page_footer)
+    doc.build(story, onFirstPage=_page_footer_landscape, onLaterPages=_page_footer_landscape)
     buffer.seek(0)
 
     response = HttpResponse(buffer, content_type='application/pdf')
