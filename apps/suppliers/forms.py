@@ -274,7 +274,7 @@ def strip_z_coordinates(geometry, precision=6):
     return normalize_field_gps_geometry(geometry, precision=precision)
 
 
-def normalize_field_gps_geometry(geometry, max_vertices=200, simplify_tolerance=0.00001, precision=6):
+def normalize_field_gps_geometry(geometry, max_vertices=200, simplify_tolerance=0.00005, precision=6):
     """
     Pre-process field GPS GeoJSON before validation.
     Handles output from any field mapping app (SW Maps, Avenza Maps, ODK Collect,
@@ -289,7 +289,7 @@ def normalize_field_gps_geometry(geometry, max_vertices=200, simplify_tolerance=
          identical coordinates that inflate vertex counts without adding information
       4. Auto-close the ring if first != last — some apps omit the closing vertex
       5. Simplify if ring still exceeds max_vertices — uses Ramer–Douglas–Peucker
-         via Shapely with a default tolerance of 0.00001° (≈ 1 m); falls back to
+         via Shapely with a default tolerance of 0.00005° (≈ 5 m); falls back to
          the un-simplified ring if Shapely is unavailable or simplification fails
 
     Applied to the full polygon after ring processing:
