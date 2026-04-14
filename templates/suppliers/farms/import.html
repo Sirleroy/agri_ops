@@ -216,6 +216,30 @@
   </div>
   {% endif %}
 
+  {% if result.dry_run and result.would_create > 0 %}
+  <!-- Sticky commit bar — always visible while reviewing dry-run results -->
+  <div class="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pt-3"
+       style="background: linear-gradient(to top, #0a0f1a 60%, transparent);">
+    <div class="max-w-3xl mx-auto">
+      <form method="post" class="flex items-center justify-between gap-4 bg-green rounded-xl px-5 py-3.5 shadow-2xl">
+        {% csrf_token %}
+        <input type="hidden" name="use_session" value="1">
+        <div>
+          <p class="text-bg font-bold text-sm">{{ result.would_create }} farm{{ result.would_create|pluralize }} ready to commit</p>
+          <p class="text-bg/70 text-xs font-mono mt-0.5">Dry run complete — tap to save</p>
+        </div>
+        <button type="submit"
+          class="flex items-center gap-2 bg-bg/20 hover:bg-bg/30 text-bg font-bold text-sm px-5 py-2 rounded-lg transition-colors flex-shrink-0">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Commit
+        </button>
+      </form>
+    </div>
+  </div>
+  <!-- Spacer so the last card isn't hidden behind the sticky bar -->
+  <div class="h-24"></div>
+  {% endif %}
+
   <!-- Instructions -->
   <div class="bg-card border border-border rounded-xl p-6">
     <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">How to Import</p>
