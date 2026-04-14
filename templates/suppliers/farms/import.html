@@ -59,7 +59,15 @@
       <p class="text-sm font-mono text-amber-400 mb-1">{{ result.warnings|length }} row{{ result.warnings|length|pluralize }} imported with incomplete data — fill these in after.</p>
       <ul class="mt-2 space-y-1">
         {% for w in result.warnings %}
-        <li class="text-xs text-amber-300/80 font-mono">Row {{ w.row }} — {{ w.name }}: {{ w.issues|join:", " }}</li>
+        <li class="text-xs text-amber-300/80 font-mono">
+          Row {{ w.row }} —
+          {% if w.farm_pk %}
+            <a href="{% url 'suppliers:farm_update' w.farm_pk %}?next={{ request.path }}" class="underline hover:text-amber-200 transition-colors">{{ w.name }}</a>
+          {% else %}
+            {{ w.name }}
+          {% endif %}
+          : {{ w.issues|join:", " }}
+        </li>
         {% endfor %}
       </ul>
     </div>

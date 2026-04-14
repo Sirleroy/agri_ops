@@ -488,6 +488,17 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                 created_count += len(batch)
         created_names = [f.name for f in to_create]
 
+        # Attach farm PKs to warnings so the UI can link straight to the edit page
+        if warnings:
+            warning_names = {w['name'] for w in warnings}
+            pk_by_name = dict(
+                Farm.objects.filter(
+                    company=company, supplier=supplier, name__in=warning_names
+                ).values_list('name', 'pk')
+            )
+            for w in warnings:
+                w['farm_pk'] = pk_by_name.get(w['name'])
+
     return {
         'total':          len(features),
         'created':        created_count if not dry_run else 0,
