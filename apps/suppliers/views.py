@@ -382,24 +382,24 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
     for i, feature in enumerate(features):
         row = i + 1
         raw_props = feature.get('properties') or {}
-        props     = {k.strip(): v for k, v in raw_props.items()}
+        props     = {k.strip().lower(): v for k, v in raw_props.items()}
         geometry  = feature.get('geometry')
 
         name = (
-            props.get('NAME') or props.get('name') or
-            props.get('farm_name') or props.get('Farm Name') or
+            props.get('name') or props.get('farm_name') or props.get('farm name') or
             f"Farm {row}"
         ).strip()
 
-        first_name   = (props.get('First Name') or props.get('first_name') or '').strip().title()
-        last_name    = (props.get('Last Name')  or props.get('last_name')  or '').strip().title()
+        first_name   = (props.get('first name') or props.get('first_name') or '').strip().title()
+        last_name    = (props.get('last name')  or props.get('last_name')  or '').strip().title()
         farmer_label = f"{first_name} {last_name}".strip()
-        village      = (props.get('Village') or props.get('village') or '').strip().title()
-        lga_raw      = (props.get('LGA')     or props.get('lga')     or '').strip()
-        state_raw    = (props.get('State') or props.get('state_region') or props.get('Region') or '').strip()
+        phone_raw    = (props.get('phone number') or props.get('phone_number') or props.get('phone') or '').strip()
+        village      = (props.get('village') or '').strip().title()
+        lga_raw      = (props.get('lga') or '').strip()
+        state_raw    = (props.get('state') or props.get('state_region') or props.get('region') or '').strip()
         lga, state_region = canonicalise_lga_state(lga_raw, state_raw)
         commodity    = normalise_commodity(
-            (props.get('Commodity') or props.get('commodity') or default_commodity or 'Unknown').strip()
+            (props.get('commodity') or default_commodity or 'Unknown').strip()
         )
 
         if geometry:
@@ -458,6 +458,7 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                         company=company,
                         first_name=first_name,
                         last_name=last_name,
+                        phone=phone_raw,
                         village=village,
                         lga=lga,
                     )
