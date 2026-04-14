@@ -385,21 +385,30 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
         props     = {k.strip().lower(): v for k, v in raw_props.items()}
         geometry  = feature.get('geometry')
 
-        name = (
-            props.get('name') or props.get('farm_name') or props.get('farm name') or
-            f"Farm {row}"
-        ).strip()
+        def _s(val):
+            """Coerce a GeoJSON property value to a stripped string."""
+            if val is None:
+                return ''
+            # Floats like 8135099470.0 should become '8135099470'
+            if isinstance(val, float) and val == int(val):
+                return str(int(val))
+            return str(val).strip()
 
-        first_name   = (props.get('first name') or props.get('first_name') or '').strip().title()
-        last_name    = (props.get('last name')  or props.get('last_name')  or '').strip().title()
+        name = (
+            _s(props.get('name') or props.get('farm_name') or props.get('farm name')) or
+            f"Farm {row}"
+        )
+
+        first_name   = _s(props.get('first name') or props.get('first_name')).title()
+        last_name    = _s(props.get('last name')  or props.get('last_name')).title()
         farmer_label = f"{first_name} {last_name}".strip()
-        phone_raw    = (props.get('phone number') or props.get('phone_number') or props.get('phone') or '').strip()
-        village      = (props.get('village') or '').strip().title()
-        lga_raw      = (props.get('lga') or '').strip()
-        state_raw    = (props.get('state') or props.get('state_region') or props.get('region') or '').strip()
+        phone_raw    = _s(props.get('phone number') or props.get('phone_number') or props.get('phone'))
+        village      = _s(props.get('village')).title()
+        lga_raw      = _s(props.get('lga'))
+        state_raw    = _s(props.get('state') or props.get('state_region') or props.get('region'))
         lga, state_region = canonicalise_lga_state(lga_raw, state_raw)
         commodity    = normalise_commodity(
-            (props.get('commodity') or default_commodity or 'Unknown').strip()
+            _s(props.get('commodity')) or default_commodity or 'Unknown'
         )
 
         if geometry:
