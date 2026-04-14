@@ -372,11 +372,12 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
     if isinstance(features, dict) and features.get('type') == 'FeatureCollection':
         features = features.get('features') or []
 
-    to_create  = []
-    duplicates = []
-    blocked    = []
-    errors     = []
-    warnings   = []
+    to_create    = []
+    duplicates   = []
+    blocked      = []
+    errors       = []
+    warnings     = []
+    farmer_cache = {}  # (first_name_lower, last_name_lower, village_lower, lga_lower) -> Farmer
 
     for i, feature in enumerate(features):
         row = i + 1
@@ -437,14 +438,30 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
             warnings.append({'row': row, 'name': name, 'issues': row_warnings})
 
         linked_farmer = None
-        if first_name and village and lga:
-            linked_farmer = Farmer.objects.filter(
-                company=company,
-                first_name__iexact=first_name,
-                last_name__iexact=last_name,
-                village__iexact=village,
-                lga__iexact=lga,
-            ).first()
+        if first_name:
+            cache_key = (first_name.lower(), last_name.lower(), village.lower(), lga.lower())
+            if cache_key in farmer_cache:
+                linked_farmer = farmer_cache[cache_key]
+            else:
+                q = Farmer.objects.filter(
+                    company=company,
+                    first_name__iexact=first_name,
+                    last_name__iexact=last_name,
+                )
+                if village:
+                    q = q.filter(village__iexact=village)
+                if lga:
+                    q = q.filter(lga__iexact=lga)
+                linked_farmer = q.first()
+                if linked_farmer is None and not dry_run:
+                    linked_farmer = Farmer.objects.create(
+                        company=company,
+                        first_name=first_name,
+                        last_name=last_name,
+                        village=village,
+                        lga=lga,
+                    )
+                farmer_cache[cache_key] = linked_farmer
 
         to_create.append(Farm(
             company=company,
