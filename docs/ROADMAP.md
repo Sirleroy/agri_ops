@@ -138,6 +138,24 @@ Shipped April 2026. Driven by real field data from SW Maps revealing that GPS ex
 
 ---
 
+## Phase 4.11 — Field Flow Completion ✅ Complete
+
+Shipped April 2026. Closed the last gaps in the end-to-end field officer workflow — from SW Maps export to committed farm records — making the full data collection loop operable from a mobile phone in the field.
+
+- **Dry run → one-tap commit** — parsed features stashed in session after dry run. A sticky green bar fixed to the bottom of the screen shows "N farms ready to commit" and stays visible at all scroll positions. One tap commits without re-uploading the file. Session cleared on commit ✅
+- **Multi-file upload** — file input accepts `multiple`. FOs can Ctrl/Cmd + select several GeoJSON, CSV, or ZIP files; the view merges all features before running the pipeline ✅
+- **Farmer auto-creation on import** — GeoJSON import pipeline now creates a `Farmer` record when `first name` is present and no matching record exists. Previously only looked up existing farmers, silently leaving `farm.farmer` null ✅
+- **Farmer completeness — badge + post-import nudge** — `Farmer` model gains `missing_fields` and `is_complete` properties (required: phone, NIN, village). Amber "Incomplete" badge on farmer list. Farmer detail header shows exactly which fields are missing with a direct edit link. After every real import, a second amber section lists all farmers linked to created farms that still need completing ✅
+- **Warning farm names link to edit page** — farms flagged with incomplete data on the import result page show their name as a direct link to the farm edit form with `?next=` back to import ✅
+- **Mobile import result page** — error detail and blocked detail tables replaced with stacked cards on small screens ✅
+- **Case-insensitive GeoJSON property lookup** — SW Maps exports lowercase keys with spaces (`first name`, `last name`, `phone number`). Lookup was title-case only — farmer names and phone numbers were silently dropped on every real field export. Fixed by normalising all property keys to lowercase on ingest ✅
+- **Float coercion hotfix** — SW Maps exports `phone number` as a float (`8135099470.0`), causing `AttributeError: 'float' object has no attribute 'strip'` in production. `_s()` helper coerces all GeoJSON property values to strings; whole-number floats drop the decimal so phone normalisation works correctly ✅
+- **Phone captured from GeoJSON import** — `phone number` / `phone_number` / `phone` now passed to `Farmer.objects.create()`. Normalised to E.164 by `Farmer.save()` ✅
+
+**Result:** Complete data collection loop from a phone in the field. FO maps polygon in SW Maps → exports ZIP → uploads to AgriOps on mobile → dry run → one tap commit → farms and farmer records created with phone normalised → incomplete profiles flagged with direct edit links.
+
+---
+
 ## Phase 5 — Buyer Portal 🔄 Planned
 - buyers.agriops.io — separate authenticated surface for EU buyers
 - Available inventory catalogue per operator
@@ -188,4 +206,4 @@ Trade shows: Biofach, SIAL Paris, Fi Europe.
 
 ---
 
-*Last updated: 8 April 2026*
+*Last updated: 14 April 2026*

@@ -30,7 +30,7 @@ Enterprise AgriTech exists but is priced for multinationals. The gap is everyone
 | Supplier Management | Centralised supplier profiles with category and contact tracking | ✅ Live |
 | Farmer Registry | Farmer model with village, LGA, NIN, and FVF consent records | ✅ Live |
 | Farm Mapping (EUDR) | GPS polygon draw/import per farm — SW Maps / NCAN Farm Mapper compatible | ✅ Live |
-| GeoJSON Ingestion Pipeline | 27-test validation + normalisation (Z-strip, dedup, simplify, closure) | ✅ Live |
+| GeoJSON Ingestion Pipeline | 27-test validation + normalisation (Z-strip, dedup, simplify, closure). Dry-run mode, multi-file upload, one-tap commit. SW Maps properties matched case-insensitively | ✅ Live |
 | Product & Inventory Tracking | Stock levels, low-stock alerts, warehouse location management | ✅ Live |
 | Purchase Orders | Full procurement workflow with line items and status tracking | ✅ Live |
 | Sales Orders + Batches | Customer order management with batch traceability links to farms | ✅ Live |
@@ -157,8 +157,10 @@ Phase 5 ░░░░░░░░░░  Buyer portal — catalogue, trace viewer
 
 **Phase 4 active work:**
 - Demo chain — end-to-end seed data for operator demos
-- Dashboard intelligence layer (business insights carousel)
 - Billing / subscription management (trigger: first paying tenant)
+
+**Phase 4.11 complete (14 April 2026):**
+Field flow hardened end-to-end — dry run → one-tap commit (sticky bar, no re-upload), multi-file selection, farmer auto-creation on GeoJSON import, completeness badges, post-import nudge, case-insensitive SW Maps property lookup, float coercion hotfix.
 
 **Phase 5 planned:**
 - `buyers.agriops.io` — buyer-facing catalogue and traceability viewer

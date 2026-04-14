@@ -94,7 +94,9 @@ Farmers are the individual people who own or manage farm plots. Building a farme
 3. Upload and review the summary
 4. Any rows with errors are listed — download the error file, fix the rows, and re-upload
 
-**Column names recognised automatically:** First Name · Last Name · Phone Number · Village · LGA · Commodity · NIN (standard SW Maps export headers)
+**Column names recognised automatically (SW Maps exports):** `first name` · `last name` · `phone number` · `Village` · `LGA` · `commodity` · `NIN`. Column matching is case-insensitive — you do not need to reformat SW Maps exports before uploading.
+
+**Farmer profile completeness:** After importing farmers, any record missing phone, NIN, or village shows an amber **Incomplete** badge on the farmer list. The farmer detail page shows exactly which fields are missing and links directly to the edit form. Fill these in before your first compliance audit.
 
 ---
 
@@ -122,13 +124,15 @@ This is the recommended workflow for field mapping exercises.
 - **ZIP archive** (`.zip`) — exported directly from SW Maps or any app that zips GeoJSON; multiple GeoJSON files inside a single ZIP are merged automatically
 - **WKT CSV** (`.csv`) — apps that export polygon geometry as WKT in a `geometry` column (SW Maps, QGIS, Avenza Maps)
 
-No conversion needed — the importer normalises coordinates, removes duplicate GPS points, and auto-corrects common geometry issues before validation.
+You can select **multiple files at once** by holding Ctrl (Windows/Linux) or Cmd (Mac) in the file picker. Features from all files are merged into one import run — useful when a field team records several areas in separate sessions.
+
+No conversion needed — the importer normalises coordinates, removes duplicate GPS points, and auto-corrects common geometry issues before validation. SW Maps property keys are matched case-insensitively (`first name`, `last name`, `phone number`, etc. are all recognised automatically).
 
 **Step 1 — Validate first (dry run)**
 1. Go to **Suppliers → Farms → Import**
 2. Select the supplier
 3. Set a default commodity (used for any polygon that doesn't have a Commodity column)
-4. Choose your file (GeoJSON, ZIP, or CSV)
+4. Choose your file(s) (GeoJSON, ZIP, or CSV)
 5. Tick **Validate only — don't save yet**
 6. Click **Upload and Validate**
 
@@ -136,12 +140,14 @@ Review the results:
 - **Green (Would create)** — polygons that passed all checks
 - **Red (Errors)** — polygons that failed validation. Check the "What went wrong" column for the specific reason
 - **Orange (Overlap blocked)** — polygons that overlap an existing farm
-- **Amber (Warnings)** — polygons that will import but are missing data (no LGA, no farmer name, etc.)
+- **Amber (Warnings)** — polygons that will import but are missing data (no LGA, no farmer name, etc.). Farm names in the warning list are clickable — tap to open that farm's edit page directly
 
 **Step 2 — Commit**
-1. Once satisfied with the dry-run results, upload the same file again
-2. This time leave **Validate only** unticked
-3. Click **Upload and Validate** — farms are now saved
+Once satisfied with the dry-run results, tap the green **Commit N Farms** bar fixed at the bottom of the screen. The farms are saved immediately — no need to re-upload the file. The bar stays visible as you scroll through the results.
+
+**After a successful commit**, two amber sections may appear below the summary:
+- **Incomplete farm data** — farms missing LGA, farmer name, or commodity. Each farm name is a link to its edit page. Tap, fill in the missing field, save — you return directly to the import page.
+- **Incomplete farmer profiles** — farmer records created during this import that are missing phone, NIN, or village. Same pattern — tap the name, fill in the fields, save.
 
 **What the importer fixes automatically**
 
@@ -345,12 +351,13 @@ Go to **Company** in the sidebar to update:
 
 1. Brief field officers on farm naming convention before going out
 2. Field officer fills the **Field Verification Form (FVF)** with each farmer on-site (paper copy stays with farmer; officer retains a copy)
-3. Map all farms in your field mapping app (e.g. SW Maps, Avenza Maps), recording farmer name, village, LGA, and commodity in the feature properties
-4. Export as GeoJSON, ZIP, or CSV — all formats are accepted by the importer
+3. Map all farms in your field mapping app (e.g. SW Maps, Avenza Maps), recording farmer first name, last name, phone number, village, LGA, and commodity in the feature properties
+4. Export as GeoJSON, ZIP, or CSV — all formats are accepted. You can select multiple files at once in the file picker (Ctrl/Cmd + click)
 5. **Dry-run upload** first — review errors and warnings
 6. Fix any issues flagged; re-map or re-export if geometry errors persist
-7. Commit upload — confirm farm count in Upload History
-8. Fill in missing LGA, farmer links, and FVF data via the farm edit page
+7. Tap the green **Commit N Farms** bar to save — no re-upload needed
+8. Fill in any remaining missing data (LGA, FVF fields) using the amber links on the import result page
+9. Confirm farm count in Upload History
 
 ---
 
@@ -362,4 +369,4 @@ Go to **Company** in the sidebar to update:
 
 ---
 
-*AgriOps · [app.agriops.io](https://app.agriops.io) · Version 1.1 · April 2026*
+*AgriOps · [app.agriops.io](https://app.agriops.io) · Version 1.2 · April 2026*
