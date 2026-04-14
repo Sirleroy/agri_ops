@@ -91,6 +91,22 @@ class Farmer(models.Model):
             return '0' + self.phone[4:]
         return self.phone or '—'
 
+    @property
+    def missing_fields(self):
+        """Fields required for a complete farmer profile (phone, NIN, village)."""
+        missing = []
+        if not self.phone:
+            missing.append('Phone')
+        if not self.nin:
+            missing.append('NIN')
+        if not self.village:
+            missing.append('Village')
+        return missing
+
+    @property
+    def is_complete(self):
+        return not self.missing_fields
+
     def __str__(self):
         return self.full_name or f"Farmer #{self.pk}"
 

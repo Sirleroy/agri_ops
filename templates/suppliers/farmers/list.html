@@ -82,6 +82,9 @@
         <tr data-row class="border-b border-border/50 hover:bg-white/[0.02] transition-colors">
           <td class="px-5 py-3 font-semibold text-slate-100">
             <a href="{% url 'suppliers:farmer_detail' farmer.pk %}" class="hover:text-green transition-colors">{{ farmer.full_name }}</a>
+            {% if farmer.missing_fields %}
+            <span class="ml-2 px-1.5 py-0.5 rounded text-xs font-mono bg-amber-500/10 text-amber-400 border border-amber-500/20">Incomplete</span>
+            {% endif %}
           </td>
           <td class="px-5 py-3 text-slate-400 font-mono text-xs hidden sm:table-cell">{{ farmer.village|default:"—" }}</td>
           <td class="px-5 py-3 text-slate-400 font-mono text-xs hidden sm:table-cell">{{ farmer.lga|default:"—" }}</td>

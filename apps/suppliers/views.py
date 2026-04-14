@@ -695,6 +695,27 @@ class FarmImportView(StaffRequiredMixin, View):
             )
 
         result['supplier_id'] = supplier.pk
+
+        # Incomplete farmer nudge — farmers linked to created farms missing phone/NIN/village
+        if not dry_run and result['created']:
+            created_farms = Farm.objects.filter(
+                company=company, supplier=supplier,
+                name__in=result['created_names']
+            ).select_related('farmer')
+            seen_pks = set()
+            incomplete = []
+            for farm in created_farms:
+                if farm.farmer and farm.farmer.pk not in seen_pks:
+                    seen_pks.add(farm.farmer.pk)
+                    missing = farm.farmer.missing_fields
+                    if missing:
+                        incomplete.append({
+                            'pk':        farm.farmer.pk,
+                            'full_name': farm.farmer.full_name,
+                            'missing':   missing,
+                        })
+            result['incomplete_farmers'] = incomplete
+
         ctx['result'] = result
         return render(request, self.template_name, ctx)
 

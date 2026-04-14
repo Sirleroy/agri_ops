@@ -5,12 +5,21 @@
 
 <div class="max-w-3xl space-y-6">
 
-  <div class="flex items-center justify-between">
-    <a href="{% url 'suppliers:farmer_list' %}" class="text-sm text-slate-500 hover:text-slate-100 transition-colors font-mono">← Farmers</a>
-    <a href="{% url 'suppliers:farmer_update' farmer.pk %}?next={{ request.path }}"
-       class="bg-green hover:bg-green-dim text-bg font-bold text-xs px-4 py-2 rounded-lg transition-colors">
-      Edit Farmer
-    </a>
+  <div class="flex items-center justify-between gap-3">
+    <a href="{% url 'suppliers:farmer_list' %}" class="text-sm text-slate-500 hover:text-slate-100 transition-colors font-mono flex-shrink-0">← Farmers</a>
+    <div class="flex items-center gap-3 flex-wrap justify-end">
+      {% if farmer.missing_fields %}
+      <a href="{% url 'suppliers:farmer_update' farmer.pk %}?next={{ request.path }}"
+         class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Incomplete — {{ farmer.missing_fields|join:", " }} missing
+      </a>
+      {% endif %}
+      <a href="{% url 'suppliers:farmer_update' farmer.pk %}?next={{ request.path }}"
+         class="bg-green hover:bg-green-dim text-bg font-bold text-xs px-4 py-2 rounded-lg transition-colors">
+        Edit Farmer
+      </a>
+    </div>
   </div>
 
   <!-- Identity card -->

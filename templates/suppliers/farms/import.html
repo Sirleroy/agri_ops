@@ -70,16 +70,30 @@
     {% if result.warnings %}
     <div class="mb-4 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
       <p class="text-sm font-mono text-amber-400 mb-1">{{ result.warnings|length }} row{{ result.warnings|length|pluralize }} imported with incomplete data — fill these in after.</p>
-      <ul class="mt-2 space-y-1">
+      <ul class="mt-2 space-y-1.5">
         {% for w in result.warnings %}
-        <li class="text-xs text-amber-300/80 font-mono">
+        <li class="text-xs text-amber-300/80 font-mono leading-relaxed">
           Row {{ w.row }} —
           {% if w.farm_pk %}
             <a href="{% url 'suppliers:farm_update' w.farm_pk %}?next={{ request.path }}" class="underline hover:text-amber-200 transition-colors">{{ w.name }}</a>
           {% else %}
             {{ w.name }}
           {% endif %}
-          : {{ w.issues|join:", " }}
+          : {{ w.issues|join:" · " }}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% if result.incomplete_farmers %}
+    <div class="mb-4 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+      <p class="text-sm font-mono text-amber-400 mb-1">{{ result.incomplete_farmers|length }} farmer profile{{ result.incomplete_farmers|length|pluralize }} need{{ result.incomplete_farmers|length|pluralize:"," }} completing.</p>
+      <ul class="mt-2 space-y-1.5">
+        {% for f in result.incomplete_farmers %}
+        <li class="text-xs text-amber-300/80 font-mono leading-relaxed">
+          <a href="{% url 'suppliers:farmer_update' f.pk %}?next={{ request.path }}" class="underline hover:text-amber-200 transition-colors">{{ f.full_name }}</a>
+          — {{ f.missing|join:", " }} missing
         </li>
         {% endfor %}
       </ul>
@@ -127,7 +141,18 @@
     {% if result.error_detail %}
     <div class="mt-6">
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Validation Errors</p>
-      <div class="bg-surface border border-border rounded-lg overflow-x-auto">
+      <!-- Mobile cards -->
+      <div class="sm:hidden space-y-2">
+        {% for err in result.error_detail %}
+        <div class="bg-surface border border-border rounded-lg px-4 py-3 text-xs font-mono">
+          <p class="text-slate-500 mb-1">Row {{ err.row }}</p>
+          <p class="text-slate-300 font-semibold mb-1">{{ err.name }}</p>
+          <p class="text-red-400 leading-relaxed">{{ err.reason }}</p>
+        </div>
+        {% endfor %}
+      </div>
+      <!-- Desktop table -->
+      <div class="hidden sm:block bg-surface border border-border rounded-lg overflow-x-auto">
         <table class="w-full text-xs font-mono">
           <thead>
             <tr class="border-b border-border">
@@ -154,7 +179,18 @@
     {% if result.blocked_detail %}
     <div class="mt-4">
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Overlap Blocked</p>
-      <div class="bg-surface border border-border rounded-lg overflow-x-auto">
+      <!-- Mobile cards -->
+      <div class="sm:hidden space-y-2">
+        {% for b in result.blocked_detail %}
+        <div class="bg-surface border border-border rounded-lg px-4 py-3 text-xs font-mono">
+          <p class="text-slate-500 mb-1">Row {{ b.row }}</p>
+          <p class="text-slate-300 font-semibold mb-1">{{ b.name }}</p>
+          <p class="text-orange-400 leading-relaxed">{{ b.reason }}</p>
+        </div>
+        {% endfor %}
+      </div>
+      <!-- Desktop table -->
+      <div class="hidden sm:block bg-surface border border-border rounded-lg overflow-x-auto">
         <table class="w-full text-xs font-mono">
           <thead>
             <tr class="border-b border-border">
