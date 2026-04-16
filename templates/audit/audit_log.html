@@ -28,10 +28,6 @@
   <form method="get" class="bg-card border border-border rounded-xl p-4 space-y-3">
     <!-- Quick date filters -->
     <div class="flex flex-wrap gap-2">
-      {% for label, val in "All time,|Today,today|Last 7 days,7d|Last 30 days,30d"|split:"|" %}
-        {% with parts=label|split:"," %}{% endwith %}
-      {% endfor %}
-      {% for item in "All time,,Today,today,Last 7 days,7d,Last 30 days,30d"|split:"," %}{% endfor %}
       <a href="?action={{ current_filters.action }}&model={{ current_filters.model }}&user={{ current_filters.user }}&q={{ current_filters.q }}"
          class="px-3 py-1 rounded-full text-xs font-mono transition-colors {% if not current_filters.range %}bg-green/10 text-green border border-green/30{% else %}text-slate-500 border border-border hover:text-slate-300{% endif %}">
         All time
