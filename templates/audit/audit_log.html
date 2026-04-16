@@ -50,7 +50,7 @@
     <div class="flex flex-wrap gap-2">
       <select name="action"
               onchange="this.form.submit()"
-              class="bg-surface border border-border rounded-lg px-3 py-1.5 text-xs font-mono text-slate-300 focus:outline-none focus:border-green/50">
+              class="w-auto bg-surface border border-border rounded-lg px-3 py-1.5 text-xs font-mono text-slate-300 focus:outline-none focus:border-green/50">
         <option value="">All actions</option>
         <option value="create"  {% if current_filters.action == 'create'  %}selected{% endif %}>Create</option>
         <option value="update"  {% if current_filters.action == 'update'  %}selected{% endif %}>Update</option>
@@ -60,7 +60,7 @@
 
       <select name="model"
               onchange="this.form.submit()"
-              class="bg-surface border border-border rounded-lg px-3 py-1.5 text-xs font-mono text-slate-300 focus:outline-none focus:border-green/50">
+              class="w-auto bg-surface border border-border rounded-lg px-3 py-1.5 text-xs font-mono text-slate-300 focus:outline-none focus:border-green/50">
         <option value="">All models</option>
         {% for m in distinct_models %}
         <option value="{{ m }}" {% if current_filters.model == m %}selected{% endif %}>{{ m }}</option>
@@ -69,7 +69,7 @@
 
       <select name="user"
               onchange="this.form.submit()"
-              class="bg-surface border border-border rounded-lg px-3 py-1.5 text-xs font-mono text-slate-300 focus:outline-none focus:border-green/50">
+              class="w-auto bg-surface border border-border rounded-lg px-3 py-1.5 text-xs font-mono text-slate-300 focus:outline-none focus:border-green/50">
         <option value="">All users</option>
         {% for u in company_users %}
         <option value="{{ u.pk }}" {% if current_filters.user == u.pk|stringformat:"s" %}selected{% endif %}>
