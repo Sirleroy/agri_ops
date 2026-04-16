@@ -11,7 +11,12 @@
   </a>
 
   <div class="bg-card border border-border rounded-xl p-6">
-    <h2 class="text-base font-bold text-slate-100 mb-5">{% if object %}Edit PO-{{ object.order_number }}{% else %}Create Purchase Order{% endif %}</h2>
+    <h2 class="text-base font-bold text-slate-100 mb-1">{% if object %}Edit PO-{{ object.order_number }}{% else %}Create Purchase Order{% endif %}</h2>
+    {% if not object %}
+    <p class="text-xs text-slate-500 font-mono mb-5">Order number will be assigned automatically.</p>
+    {% else %}
+    <div class="mb-5"></div>
+    {% endif %}
 
     <form method="post" class="space-y-4">
       {% csrf_token %}
@@ -36,5 +41,4 @@
   </div>
 
 </div>
-
 {% endblock %}

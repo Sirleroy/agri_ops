@@ -10,4 +10,6 @@ urlpatterns = [
     path('<int:pk>/edit/', views.PurchaseOrderUpdateView.as_view(), name='update'),
     path('<int:pk>/delete/', views.PurchaseOrderDeleteView.as_view(), name='delete'),
     path('<int:pk>/mark-received/', views.PurchaseOrderMarkReceivedView.as_view(), name='mark_received'),
+    path('<int:pk>/items/add/', views.PurchaseOrderItemCreateView.as_view(), name='add_item'),
+    path('items/<int:item_pk>/delete/', views.PurchaseOrderItemDeleteView.as_view(), name='delete_item'),
 ]
