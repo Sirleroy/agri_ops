@@ -4,12 +4,21 @@
 {% block content %}
 <div class="max-w-3xl space-y-6">
 
-  <div class="flex items-center justify-between">
-    <div class="flex items-center gap-3">
+  <!-- Back navigation -->
+  <div class="flex items-center gap-3 flex-wrap">
+    {% if batch.sales_order %}
+    <a href="{% url 'sales_orders:detail' batch.sales_order.pk %}" class="text-sm text-slate-500 hover:text-slate-100 transition-colors flex items-center gap-1">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      SO-{{ batch.sales_order.order_number }}
+    </a>
+    <span class="text-slate-700">/</span>
+    {% endif %}
+    <a href="{% url 'sales_orders:batch_list' %}" class="text-sm text-slate-500 hover:text-slate-100 transition-colors">All Batches</a>
+  </div>
+
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <div class="flex items-center gap-3 flex-wrap">
       <span class="px-3 py-1 rounded-full text-xs font-mono bg-green/10 text-green border border-green/20">{{ batch.commodity }}</span>
-      {% if batch.sales_order %}
-      <span class="px-3 py-1 rounded-full text-xs font-mono bg-slate-500/10 text-slate-400 border border-slate-500/20">{{ batch.sales_order.order_number }}</span>
-      {% endif %}
       {% if batch.is_locked %}
       <span class="px-3 py-1 rounded-full text-xs font-mono bg-orange-500/10 text-orange-400 border border-orange-500/20">⚿ Locked</span>
       {% endif %}
@@ -43,6 +52,29 @@
     </div>
   </div>
 
+  <!-- EUDR Readiness Strip -->
+  <div class="bg-card border border-border rounded-xl px-5 py-4">
+    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-3">Certificate Readiness</p>
+    <div class="flex flex-wrap gap-2">
+      <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono border
+        {% if readiness.farms %}bg-green/10 text-green border-green/20{% else %}bg-yellow-500/10 text-yellow-400 border-yellow-500/20{% endif %}">
+        {% if readiness.farms %}✓{% else %}⚠{% endif %} Farms linked
+      </span>
+      <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono border
+        {% if readiness.quantity %}bg-green/10 text-green border-green/20{% else %}bg-yellow-500/10 text-yellow-400 border-yellow-500/20{% endif %}">
+        {% if readiness.quantity %}✓{% else %}⚠{% endif %} Quantity set
+      </span>
+      <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono border
+        {% if readiness.phyto %}bg-green/10 text-green border-green/20{% else %}bg-yellow-500/10 text-yellow-400 border-yellow-500/20{% endif %}">
+        {% if readiness.phyto %}✓{% else %}⚠{% endif %} Phytosanitary cert
+      </span>
+      <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono border
+        {% if readiness.quality %}bg-green/10 text-green border-green/20{% else %}bg-yellow-500/10 text-yellow-400 border-yellow-500/20{% endif %}">
+        {% if readiness.quality %}✓{% else %}⚠{% endif %} Quality test pass
+      </span>
+    </div>
+  </div>
+
   <div class="bg-card border border-border rounded-xl p-6">
     <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Batch Details</p>
     <dl class="grid grid-cols-2 gap-4 text-sm">
@@ -56,7 +88,13 @@
       </div>
       <div>
         <dt class="text-xs text-slate-500 font-mono mb-1">Sales Order</dt>
-        <dd class="text-slate-100">{{ batch.sales_order.order_number|default:"—" }}</dd>
+        <dd>
+          {% if batch.sales_order %}
+          <a href="{% url 'sales_orders:detail' batch.sales_order.pk %}" class="text-slate-100 hover:text-green transition-colors font-mono">
+            SO-{{ batch.sales_order.order_number }}
+          </a>
+          {% else %}—{% endif %}
+        </dd>
       </div>
       <div>
         <dt class="text-xs text-slate-500 font-mono mb-1">Quantity (net mass)</dt>

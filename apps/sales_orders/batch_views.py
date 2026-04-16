@@ -35,8 +35,16 @@ class BatchDetailView(StaffRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['phytosanitary_certs'] = self.object.phytosanitary_certs.all()
-        context['quality_tests'] = self.object.quality_tests.all()
+        phyto_certs = list(self.object.phytosanitary_certs.all())
+        quality_tests = self.object.quality_tests.all()
+        context['phytosanitary_certs'] = phyto_certs
+        context['quality_tests'] = quality_tests
+        context['readiness'] = {
+            'farms': self.object.farms.exists(),
+            'quantity': bool(self.object.quantity_kg),
+            'phyto': any(c.is_current for c in phyto_certs),
+            'quality': quality_tests.filter(result='pass').exists(),
+        }
         return context
 
 
@@ -44,7 +52,6 @@ class BatchCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = Batch
     template_name = 'sales_orders/batches/form.html'
     fields = ['sales_order', 'commodity', 'quantity_kg', 'farms', 'notes']
-    success_url = reverse_lazy('sales_orders:batch_list')
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
@@ -55,16 +62,24 @@ class BatchCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
         form.fields['sales_order'].queryset = SalesOrder.objects.filter(company=company)
         return form
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['all_farms'] = context['form'].fields['farms'].queryset
+        context['selected_farm_ids'] = set()
+        return context
+
     def form_valid(self, form):
         form.instance.company = self.request.user.company
         return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.object.pk})
 
 
 class BatchUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = Batch
     template_name = 'sales_orders/batches/form.html'
     fields = ['sales_order', 'commodity', 'quantity_kg', 'farms', 'notes']
-    success_url = reverse_lazy('sales_orders:batch_list')
 
     def get_object(self):
         obj = super().get_object()
@@ -88,6 +103,20 @@ class BatchUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
         form.fields['farms'].queryset = Farm.objects.filter(company=company)
         form.fields['sales_order'].queryset = SalesOrder.objects.filter(company=company)
         return form
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['all_farms'] = context['form'].fields['farms'].queryset
+        context['selected_farm_ids'] = set(
+            str(pk) for pk in self.object.farms.values_list('pk', flat=True)
+        )
+        return context
+
+    def get_success_url(self):
+        next_url = self.request.GET.get('next')
+        if next_url:
+            return next_url
+        return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.object.pk})
 
 
 # ─────────────────────────────────────

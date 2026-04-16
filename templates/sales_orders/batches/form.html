@@ -2,40 +2,76 @@
 {% block title %}{% if form.instance.pk %}Edit Batch{% else %}New Batch{% endif %} — AgriOps{% endblock %}
 {% block page_title %}{% if form.instance.pk %}Edit Batch{% else %}New Traceability Batch{% endif %}{% endblock %}
 {% block content %}
-<div class="max-w-2xl">
-  <form method="post" class="space-y-5">
+<div class="max-w-2xl space-y-4">
+
+  <a href="{% if request.GET.next %}{{ request.GET.next }}{% elif form.instance.pk %}{% url 'sales_orders:batch_detail' form.instance.pk %}{% else %}{% url 'sales_orders:batch_list' %}{% endif %}"
+     class="text-sm text-slate-500 hover:text-slate-100 transition-colors flex items-center gap-1 w-fit">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    Back
+  </a>
+
+  <form method="post" class="space-y-4">
     {% csrf_token %}
 
     <div class="bg-card border border-border rounded-xl p-6 space-y-5">
-      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Batch Details</p>
+      <h2 class="text-base font-bold text-slate-100">{% if form.instance.pk %}Edit {{ form.instance.batch_number }}{% else %}New Traceability Batch{% endif %}</h2>
 
       <div>
-        <label class="block text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Sales Order</label>
+        <label class="block text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">Sales Order</label>
         {{ form.sales_order }}
+        {% if form.sales_order.errors %}<p class="text-xs text-red-400 mt-1">{{ form.sales_order.errors.0 }}</p>{% endif %}
       </div>
       <div>
-        <label class="block text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Commodity</label>
+        <label class="block text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">Commodity <span class="text-red-400 normal-case font-sans">*</span></label>
         {{ form.commodity }}
+        {% if form.commodity.errors %}<p class="text-xs text-red-400 mt-1">{{ form.commodity.errors.0 }}</p>{% endif %}
       </div>
       <div>
-        <label class="block text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Quantity (kg)</label>
+        <label class="block text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">Quantity (kg)</label>
         <p class="text-xs text-slate-600 mb-2">Net mass in kilograms — required for EUDR due diligence statement.</p>
         {{ form.quantity_kg }}
+        {% if form.quantity_kg.errors %}<p class="text-xs text-red-400 mt-1">{{ form.quantity_kg.errors.0 }}</p>{% endif %}
       </div>
       <div>
-        <label class="block text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Farms</label>
-        <p class="text-xs text-slate-600 mb-2">Hold Ctrl/Cmd to select multiple farms.</p>
-        {{ form.farms }}
-      </div>
-      <div>
-        <label class="block text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Notes</label>
+        <label class="block text-xs font-mono text-slate-400 uppercase tracking-widest mb-2">Notes</label>
         {{ form.notes }}
       </div>
     </div>
 
+    <!-- Farms -->
+    <div class="bg-card border border-border rounded-xl p-6">
+      <label class="block text-xs font-mono text-slate-400 uppercase tracking-widest mb-3">Linked Farms</label>
+      {% if all_farms %}
+      <div class="space-y-2 max-h-72 overflow-y-auto pr-1">
+        {% for farm in all_farms %}
+        <label class="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-transparent hover:border-border hover:bg-white/[0.02] cursor-pointer transition-colors">
+          <input type="checkbox" name="farms" value="{{ farm.pk }}"
+            {% if farm.pk|stringformat:"s" in selected_farm_ids %}checked{% endif %}
+            class="w-4 h-4 accent-green flex-shrink-0">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-slate-200 font-medium truncate">{{ farm.name }}</p>
+            <p class="text-xs text-slate-500 font-mono truncate">{{ farm.supplier.name }} · {{ farm.commodity }}{% if farm.area_hectares %} · {{ farm.area_hectares }} ha{% endif %}</p>
+          </div>
+          {% if farm.compliance_status == 'compliant' %}
+            <span class="text-xs font-mono text-green flex-shrink-0">✓ Verified</span>
+          {% elif farm.compliance_status == 'disqualified' %}
+            <span class="text-xs font-mono text-red-400 flex-shrink-0">Disqualified</span>
+          {% else %}
+            <span class="text-xs font-mono text-slate-500 flex-shrink-0">Pending</span>
+          {% endif %}
+        </label>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-sm text-slate-500">No farms registered yet.
+        <a href="{% url 'suppliers:farm_create' %}" class="text-green hover:text-green-dim transition-colors">Add a farm →</a>
+      </p>
+      {% endif %}
+    </div>
+
     {% if form.errors %}
     <div class="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
-      <p class="text-xs text-red-400">{{ form.errors }}</p>
+      <p class="text-xs text-red-400">{{ form.non_field_errors }}</p>
     </div>
     {% endif %}
 
@@ -44,7 +80,7 @@
               class="bg-green hover:bg-green-dim text-bg font-bold text-sm px-6 py-2.5 rounded-lg transition-colors">
         {% if form.instance.pk %}Save Changes{% else %}Create Batch{% endif %}
       </button>
-      <a href="{% url 'sales_orders:batch_list' %}"
+      <a href="{% if request.GET.next %}{{ request.GET.next }}{% elif form.instance.pk %}{% url 'sales_orders:batch_detail' form.instance.pk %}{% else %}{% url 'sales_orders:batch_list' %}{% endif %}"
          class="text-sm text-slate-500 hover:text-slate-300 transition-colors">Cancel</a>
     </div>
   </form>
