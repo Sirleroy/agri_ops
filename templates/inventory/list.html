@@ -23,10 +23,10 @@
       <thead>
         <tr class="border-b border-border bg-white/[0.02]">
           <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Product</th>
-          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Company</th>
+          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Lot</th>
+          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Grade</th>
           <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Location</th>
           <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Quantity</th>
-          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Threshold</th>
           <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Status</th>
           <th class="px-5 py-3"></th>
         </tr>
@@ -37,10 +37,20 @@
           <td class="px-5 py-3 font-semibold text-slate-100">
             <a href="{% url 'inventory:detail' item.pk %}" class="hover:text-green transition-colors">{{ item.product.name }}</a>
           </td>
-          <td class="px-5 py-3 text-slate-400">{{ item.company.name }}</td>
+          <td class="px-5 py-3 text-slate-400 font-mono text-xs">{{ item.lot_number|default:"—" }}</td>
+          <td class="px-5 py-3">
+            {% if item.quality_grade %}
+            <span class="px-2 py-0.5 rounded text-xs font-mono font-semibold
+              {% if item.quality_grade == 'A' %}bg-green/10 text-green border border-green/20
+              {% elif item.quality_grade == 'B' %}bg-blue-500/10 text-blue-400 border border-blue-500/20
+              {% elif item.quality_grade == 'C' %}bg-yellow-500/10 text-yellow-400 border border-yellow-500/20
+              {% else %}bg-slate-500/10 text-slate-400 border border-slate-500/20{% endif %}">
+              {{ item.quality_grade }}
+            </span>
+            {% else %}<span class="text-slate-600">—</span>{% endif %}
+          </td>
           <td class="px-5 py-3 text-slate-400">{{ item.warehouse_location|default:"—" }}</td>
           <td class="px-5 py-3 font-mono text-slate-200">{{ item.quantity }} {{ item.product.get_unit_display }}</td>
-          <td class="px-5 py-3 font-mono text-slate-500">{{ item.low_stock_threshold }}</td>
           <td class="px-5 py-3">
             {% if item.is_low_stock %}
               <span class="px-2 py-1 rounded-md text-xs font-mono font-semibold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">Low Stock</span>
@@ -63,7 +73,7 @@
         </tr>
         {% empty %}
         <tr data-empty>
-          <td colspan="7" class="px-5 py-16 text-center">
+          <td colspan="8" class="px-5 py-16 text-center">
             <svg class="w-10 h-10 text-slate-700 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"/></svg>
             <p class="text-slate-500 text-sm mb-4">No inventory records yet.</p>
             <a href="{% url 'inventory:create' %}" class="inline-flex items-center gap-2 bg-green hover:bg-green-dim text-bg text-xs font-bold px-4 py-2 rounded-lg transition-colors">

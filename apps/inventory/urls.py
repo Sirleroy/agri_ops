@@ -9,4 +9,5 @@ urlpatterns = [
     path('new/', views.InventoryCreateView.as_view(), name='create'),
     path('<int:pk>/edit/', views.InventoryUpdateView.as_view(), name='update'),
     path('<int:pk>/delete/', views.InventoryDeleteView.as_view(), name='delete'),
+    path('<int:pk>/adjust/', views.InventoryAdjustView.as_view(), name='adjust'),
 ]

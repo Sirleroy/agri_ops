@@ -10,31 +10,55 @@
     Back to Inventory
   </a>
 
-  <div class="bg-card border border-border rounded-xl p-6">
-    <h2 class="text-base font-bold text-slate-100 mb-5">{% if object %}Edit Stock Record{% else %}Add New Stock{% endif %}</h2>
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
 
-    <form method="post" class="space-y-4">
-      {% csrf_token %}
+    <!-- Stock -->
+    <div class="bg-card border border-border rounded-xl p-6 space-y-4">
+      <h2 class="text-base font-bold text-slate-100">{% if object %}Edit Stock Record{% else %}Add New Stock{% endif %}</h2>
+
       {% for field in form %}
-      <div>
-        <label class="block text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">
-          {{ field.label }}{% if field.field.required %} <span class="text-red-400 normal-case font-sans">*</span>{% endif %}
-        </label>
-        {{ field }}
-        {% if field.help_text %}<p class="text-xs text-slate-600 mt-1">{{ field.help_text }}</p>{% endif %}
-        {% if field.errors %}<p class="text-xs text-red-400 mt-1">{{ field.errors.0 }}</p>{% endif %}
-      </div>
+        {% if field.name in 'product,quantity,warehouse_location,low_stock_threshold' %}
+        <div>
+          <label class="block text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">
+            {{ field.label }}{% if field.field.required %} <span class="text-red-400 normal-case font-sans">*</span>{% endif %}
+          </label>
+          {{ field }}
+          {% if field.help_text %}<p class="text-xs text-slate-600 mt-1">{{ field.help_text }}</p>{% endif %}
+          {% if field.errors %}<p class="text-xs text-red-400 mt-1">{{ field.errors.0 }}</p>{% endif %}
+        </div>
+        {% endif %}
       {% endfor %}
+    </div>
 
-      <div class="flex gap-3 pt-2">
-        <button type="submit" class="px-5 py-2 bg-green hover:bg-green-dim text-bg font-bold text-sm rounded-lg transition-colors">
-          {% if object %}Save Changes{% else %}Add Stock{% endif %}
-        </button>
-        <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}{% url 'inventory:list' %}{% endif %}" class="px-5 py-2 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">Cancel</a>
+    <!-- Commodity details -->
+    <div class="bg-card border border-border rounded-xl p-6 space-y-4">
+      <div>
+        <h3 class="text-sm font-bold text-slate-300">Commodity Details</h3>
+        <p class="text-xs text-slate-600 mt-0.5">Optional — record quality and provenance at intake.</p>
       </div>
-    </form>
-  </div>
+
+      {% for field in form %}
+        {% if field.name not in 'product,quantity,warehouse_location,low_stock_threshold' %}
+        <div>
+          <label class="block text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">
+            {{ field.label }}{% if field.field.required %} <span class="text-red-400 normal-case font-sans">*</span>{% endif %}
+          </label>
+          {{ field }}
+          {% if field.help_text %}<p class="text-xs text-slate-600 mt-1">{{ field.help_text }}</p>{% endif %}
+          {% if field.errors %}<p class="text-xs text-red-400 mt-1">{{ field.errors.0 }}</p>{% endif %}
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <div class="flex gap-3">
+      <button type="submit" class="px-5 py-2 bg-green hover:bg-green-dim text-bg font-bold text-sm rounded-lg transition-colors">
+        {% if object %}Save Changes{% else %}Add Stock{% endif %}
+      </button>
+      <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}{% url 'inventory:list' %}{% endif %}" class="px-5 py-2 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">Cancel</a>
+    </div>
+  </form>
 
 </div>
-
 {% endblock %}

@@ -64,10 +64,10 @@ class Inventory(models.Model):
         if not self.lot_number:
             from django.utils import timezone
             prefix = self.product.name[:2].upper() if self.product else "XX"
-            self.lot_number = f"{prefix}-{timezone.now().strftime('%Y-%m%d')}-{self.pk or '?'}"
+            self.lot_number = f"{prefix}-{timezone.now().strftime('%Y-%m-%d')}-{self.pk or '?'}"
         super().save(*args, **kwargs)
         # Fix lot number after first save when pk is now available
         if '?' in self.lot_number:
             prefix = self.product.name[:2].upper() if self.product else "XX"
-            self.lot_number = f"{prefix}-{timezone.now().strftime('%Y-%m%d')}-{self.pk}"
+            self.lot_number = f"{prefix}-{timezone.now().strftime('%Y-%m-%d')}-{self.pk}"
             Inventory.objects.filter(pk=self.pk).update(lot_number=self.lot_number)
