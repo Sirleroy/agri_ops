@@ -646,7 +646,7 @@ class FarmImportView(StaffRequiredMixin, View):
                     return render(request, self.template_name, ctx)
                 features.extend(file_features)
                 filenames.append(f.name)
-            filename = ', '.join(filenames)
+            filename = ', '.join(filenames)[:255]
 
             if not features:
                 ctx['form_error'] = 'File contains no features — check the export settings in your mapping app.'
