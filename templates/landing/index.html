@@ -296,14 +296,13 @@
 <nav>
   <div style="max-width:1200px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between;">
     <div style="display:flex;align-items:center;gap:10px;">
-      <div style="width:32px;height:32px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+      <div style="width:32px;height:32px;background:var(--green);border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px rgba(34,197,94,0.4),0 2px 8px rgba(34,197,94,0.25);">
         <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:#080d14;">A</span>
       </div>
       <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#f1f5f9;">AgriOps</span>
     </div>
     <div style="display:flex;align-items:center;gap:16px;">
-      <span class="live-dot" style="display:none;" id="nav-live-dot"></span>
-      <span id="nav-live-text" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);letter-spacing:0.1em;display:none;">LIVE</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);letter-spacing:0.1em;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:4px;padding:2px 8px;">BETA</span>
       <a href="https://docs.agriops.io" style="font-family:'Syne',sans-serif;font-size:13px;color:#64748b;text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='var(--green)'" onmouseout="this.style.color='#64748b'">Docs</a>
       {% if user.is_authenticated %}
         <a href="/dashboard/" class="btn-primary" style="padding:8px 18px;font-size:13px;">Dashboard</a>
@@ -364,7 +363,7 @@
       <div style="width:1px;background:var(--border);"></div>
       <div>
         <p style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:var(--green);">Full audit trail</p>
-        <p style="font-size:12px;color:#64748b;margin-top:2px;">Every action logged, every actor recorded</p>
+        <p style="font-size:12px;color:#64748b;margin-top:2px;">Every action logged — filterable, exportable, with before/after change diffs</p>
       </div>
       <div style="width:1px;background:var(--border);"></div>
       <div>
@@ -630,10 +629,10 @@
 
       <div class="feature-card reveal delay-2">
         <div style="width:40px;height:40px;background:rgba(34,197,94,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
-          <svg width="20" height="20" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          <svg width="20" height="20" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
         </div>
-        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#f1f5f9;margin-bottom:8px;">Role-Based Access</h3>
-        <p style="font-size:13px;color:#64748b;line-height:1.7;">Org admins, managers, staff, and viewers — each sees exactly what they need. Every write action audit-logged with user, timestamp, and IP. Your data is yours alone.</p>
+        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#f1f5f9;margin-bottom:8px;">Import Data Quality</h3>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;">Dry-run validation before a single record is saved. Auto-correction catches malformed geometries, LGA name variants, and phone formats at ingest time. A three-tier model — auto-corrected, flagged, rejected — means every import produces a clean, auditable result. Import history logged for every run.</p>
       </div>
 
       <div class="feature-card reveal delay-3">
@@ -948,7 +947,7 @@
 <footer style="border-top:1px solid var(--border);padding:40px 24px;">
   <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
     <div style="display:flex;align-items:center;gap:10px;">
-      <div style="width:28px;height:28px;background:var(--green);border-radius:6px;display:flex;align-items:center;justify-content:center;">
+      <div style="width:28px;height:28px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px rgba(34,197,94,0.35),0 2px 6px rgba(34,197,94,0.2);">
         <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:12px;color:#080d14;">A</span>
       </div>
       <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#94a3b8;">AgriOps</span>
@@ -973,15 +972,6 @@
 
 
 <script>
-  // Show live dot + text on desktop only
-  function updateNavLive() {
-    const show = window.innerWidth >= 640;
-    document.getElementById('nav-live-dot').style.display = show ? 'inline-block' : 'none';
-    document.getElementById('nav-live-text').style.display = show ? 'inline' : 'none';
-  }
-  updateNavLive();
-  window.addEventListener('resize', updateNavLive);
-
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(e => {
       if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
