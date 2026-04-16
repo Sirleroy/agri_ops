@@ -111,7 +111,7 @@
     <!-- Page intro -->
     <div class="mb-8 pb-6 border-b border-border">
       <div class="flex items-center gap-2 mb-3">
-        <span class="px-2.5 py-1 rounded-full text-xs font-mono bg-green/10 border border-green/20 text-green">Version 1.0 · April 2026</span>
+        <span class="px-2.5 py-1 rounded-full text-xs font-mono bg-green/10 border border-green/20 text-green">Version 1.2 · April 2026</span>
         <a href="https://docs.agriops.io/user-manual" target="_blank" rel="noopener"
            class="px-2.5 py-1 rounded-full text-xs font-mono bg-card border border-border text-slate-400 hover:text-green transition-colors flex items-center gap-1">
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
@@ -178,7 +178,7 @@
 
       <!-- Farmers -->
       <h2 id="farmers">Farmers</h2>
-      <p>Farmers are the individual people who own or manage farm plots. Building a farmer registry before importing farms gives you cleaner data.</p>
+      <p>Farmers are the individual people who own or manage farm plots. Building a farmer registry before importing farms gives you cleaner data — farms can be linked to a farmer record rather than just a name.</p>
       <ol>
         <li>Go to <strong>Suppliers → Farmers</strong></li>
         <li>Click <strong>New Farmer</strong></li>
@@ -186,7 +186,8 @@
         <li>NIN (National Identification Number) is optional but useful for deduplication</li>
         <li>Tick <strong>Consent given</strong> and record the consent date</li>
       </ol>
-      <p><strong>Bulk import:</strong> Download the CSV Template, fill it in (one row per farmer), upload and review the summary. Any rows with errors are listed — download the error file, fix the rows, and re-upload.</p>
+      <p><strong>Bulk import:</strong> Download the CSV Template, fill it in (one row per farmer), upload and review the summary. Any rows with errors are listed — download the error file, fix the rows, and re-upload. SW Maps exports are accepted as-is — column names (<code>first name</code>, <code>last name</code>, <code>phone number</code>, <code>Village</code>, <code>LGA</code>, <code>commodity</code>, <code>NIN</code>) are recognised automatically regardless of capitalisation.</p>
+      <p><strong>Completeness badges:</strong> After importing, any farmer missing phone, NIN, or village shows an amber <strong>Incomplete</strong> badge on the farmer list. The detail page shows exactly which fields are missing with a direct link to the edit form. Fill these in before your first compliance audit.</p>
 
       <!-- Farms -->
       <h2 id="farms">Farms</h2>
@@ -204,31 +205,80 @@
         <li>Click <strong>Save</strong></li>
       </ol>
 
-      <h3 id="bulk-import-from-sw-maps">Bulk import from SW Maps</h3>
-      <p>This is the recommended workflow for field mapping exercises.</p>
+      <h3 id="bulk-import">Bulk import</h3>
+      <p>This is the recommended workflow for field mapping exercises. The importer accepts:</p>
+      <ul>
+        <li><strong>GeoJSON</strong> (<code>.geojson</code> / <code>.json</code>) — exported from any mapping app</li>
+        <li><strong>ZIP archive</strong> (<code>.zip</code>) — exported directly from SW Maps; multiple GeoJSON files inside are merged automatically</li>
+        <li><strong>WKT CSV</strong> (<code>.csv</code>) — apps that export polygon geometry as WKT in a <code>geometry</code> column</li>
+      </ul>
+      <p>You can select <strong>multiple files at once</strong> (hold Ctrl or Cmd in the file picker) — features from all files are merged into one import run.</p>
+
       <p><strong>Step 1 — Validate first (dry run)</strong></p>
       <ol>
         <li>Go to <strong>Suppliers → Farms → Import</strong></li>
         <li>Select the supplier and set a default commodity</li>
-        <li>Choose your GeoJSON file exported from SW Maps</li>
+        <li>Choose your file(s)</li>
         <li>Tick <strong>Validate only — don't save yet</strong></li>
         <li>Click <strong>Upload and Validate</strong></li>
       </ol>
-      <p>Review the results: <strong style="color:#22c55e">Green (Would create)</strong> · <strong style="color:#ef4444">Red (Errors)</strong> · <strong style="color:#f59e0b">Orange (Overlap blocked)</strong> · <strong style="color:#d97706">Amber (Warnings)</strong> — polygons that will import but are missing data.</p>
-      <p><strong>Step 2 — Commit:</strong> Upload the same file again with Validate only unticked. Farms are saved.</p>
+      <p>Review the results:</p>
+      <ul>
+        <li><strong style="color:#22c55e">Green (Would create)</strong> — passed all checks, ready to save</li>
+        <li><strong style="color:#ef4444">Red (Errors)</strong> — failed validation; see "What went wrong" column</li>
+        <li><strong style="color:#f59e0b">Orange (Overlap blocked)</strong> — boundary overlaps an existing farm</li>
+        <li><strong style="color:#d97706">Amber (Warnings)</strong> — will import but missing data (LGA, farmer name, etc.)</li>
+      </ul>
+      <p>The <strong>integrity strip</strong> below the main counts shows three numbers: <strong style="color:#93c5fd">Auto-corrected</strong> (geometry or LGA silently fixed), <strong style="color:#fcd34d">Flagged</strong> (incomplete data), and <strong style="color:#f87171">Rejected</strong> (hard errors + overlap blocks). Nothing is saved at this stage.</p>
 
-      <p><strong>Common validation errors:</strong></p>
+      <p><strong>Step 2 — Commit</strong><br>
+      Once satisfied, tap the green <strong>Commit N Farms</strong> bar fixed at the bottom of the screen. Farms are saved immediately — you do not need to re-upload the file. The bar stays visible as you scroll through the results.</p>
+
+      <p><strong>After a successful commit</strong> two amber sections may appear: incomplete farm data (missing LGA, farmer name, or commodity) and incomplete farmer profiles (missing phone, NIN, or village). Each item is a direct link to the edit page — tap, fill in the missing field, save, and you return to the import page.</p>
+
+      <p><strong>What the importer fixes automatically</strong> (no action needed):</p>
       <table>
-        <thead><tr><th>Error</th><th>What it means</th><th>Fix</th></tr></thead>
+        <thead><tr><th>Issue</th><th>What happens</th></tr></thead>
         <tbody>
-          <tr><td>Falls outside Nigeria</td><td>Coordinates wrong — likely swapped lat/lon</td><td>Re-export from SW Maps with WGS84 setting</td></tr>
-          <tr><td>Ring is not closed</td><td>Polygon boundary doesn't close back on itself</td><td>Re-export the boundary from SW Maps</td></tr>
-          <tr><td>Only N points</td><td>Too few GPS points to make a valid polygon</td><td>Remap the farm — walk the full boundary</td></tr>
-          <tr><td>Overlaps existing farm</td><td>This plot's boundary crosses an existing farm</td><td>Review both farms — adjust if a mapping error</td></tr>
+          <tr><td>3D coordinates <code>[lon, lat, elevation]</code></td><td>Elevation stripped — 2D coordinates stored</td></tr>
+          <tr><td>GPS-pause duplicate vertices</td><td>Consecutive identical points removed</td></tr>
+          <tr><td>Unclosed ring</td><td>Closing vertex appended automatically</td></tr>
+          <tr><td>Too many vertices (&gt; 200)</td><td>Simplified via Ramer–Douglas–Peucker</td></tr>
+          <tr><td>Self-intersecting boundary</td><td><code>buffer(0)</code> repair applied</td></tr>
+          <tr><td>Abbreviated LGA (e.g. "T. Balewa")</td><td>Fuzzy-matched → canonical name + state auto-filled</td></tr>
+          <tr><td>Phone as scientific notation (e.g. <code>9.088E9</code>)</td><td>Coerced to integer string before normalisation</td></tr>
+          <tr><td>Mixed-case property keys (<code>FIRST NAME</code>, etc.)</td><td>Normalised to lowercase — no reformatting needed</td></tr>
         </tbody>
       </table>
 
-      <p>Every import attempt is saved. See the <strong>Recent Uploads</strong> table at the bottom of the import page, or click <strong>View all →</strong> for the full history with expandable error detail.</p>
+      <p><strong>Hard errors</strong> (must be fixed before the polygon can import):</p>
+      <table>
+        <thead><tr><th>Error</th><th>What it means</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td>Falls outside Nigeria</td><td>Coordinates likely swapped lat/lon or wrong projection</td><td>Confirm WGS84 in your app; check coordinate order</td></tr>
+          <tr><td>Fewer than 4 points</td><td>Too few GPS points for a valid polygon</td><td>Re-map the farm — walk the full boundary</td></tr>
+          <tr><td>Unrepairable self-intersection</td><td>GPS track crossed itself beyond automatic repair</td><td>Re-walk the farm boundary</td></tr>
+          <tr><td>Duplicate farm name</td><td>A farm with this name already exists under this supplier</td><td>Check for double-entry; rename if a different plot</td></tr>
+          <tr><td>Overlaps existing farm</td><td>Boundary shares area with a farm already in the system</td><td>Review both farms — adjust if a mapping error</td></tr>
+        </tbody>
+      </table>
+
+      <p>Every import attempt is saved. See the <strong>Recent Uploads</strong> table at the bottom of the import page, or click <strong>View all →</strong> for the full history.</p>
+
+      <h3 id="fvf">Field Verification Form (FVF)</h3>
+      <p>The FVF is completed during the farm mapping exercise — field officers fill in the paper form with the farmer on-site. Once back at base, enter the data via the farm edit page (not the create page — FVF fields appear after the farm is imported).</p>
+      <table>
+        <thead><tr><th>Field</th><th>What to record</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Land Acquisition</strong></td><td>How the farmer acquired the land — Inherited, Bought from neighbour, Granted by local leader</td></tr>
+          <tr><td><strong>Land Tenure</strong></td><td>Documentation basis — Title Deed or Village Consent</td></tr>
+          <tr><td><strong>Years Farming</strong></td><td>How many years the farmer has been working this plot</td></tr>
+          <tr><td><strong>Untouched Forest Present</strong></td><td>Is there any primary forest remaining on the farm? (Yes = risk flag)</td></tr>
+          <tr><td><strong>Expansion Intent</strong></td><td>Does the farmer plan to expand? (Yes = forward risk flag, shown in red)</td></tr>
+          <tr><td><strong>Consent Given + Date</strong></td><td>Record that the farmer gave informed consent for GPS mapping and data collection</td></tr>
+        </tbody>
+      </table>
+      <blockquote>The paper form is the legal record — it carries the farmer's and village head's signatures. AgriOps holds the searchable digital copy.</blockquote>
 
       <h3 id="eudr-verification">EUDR verification</h3>
       <p>After a farm is registered, a compliance officer must verify it:</p>
@@ -340,12 +390,14 @@
       <h3>Field mapping exercise</h3>
       <ol>
         <li>Brief field officers on farm naming convention before going out</li>
-        <li>Map all farms in SW Maps — record farmer name, village, LGA, and commodity in SW Maps properties</li>
-        <li>Export as GeoJSON FeatureCollection from SW Maps</li>
-        <li><strong>Dry-run upload first</strong> — review errors and warnings</li>
-        <li>Fix any issues flagged (re-export from SW Maps if geometry errors)</li>
-        <li>Commit upload — confirm farm count in Upload History</li>
-        <li>Fill in missing LGA, farmer links, and other warnings via the farm edit page</li>
+        <li>Field officer fills the <strong>Field Verification Form (FVF)</strong> with each farmer on-site — paper copy stays with farmer</li>
+        <li>Map all farms in your mapping app (SW Maps, Avenza Maps, etc.) — record farmer first name, last name, phone, village, LGA, and commodity in the feature properties</li>
+        <li>Export as GeoJSON, ZIP, or CSV — you can select multiple files at once in the file picker (Ctrl/Cmd + click)</li>
+        <li><strong>Dry-run upload first</strong> — review errors and warnings; check the integrity strip (auto-corrected / flagged / rejected)</li>
+        <li>Fix any hard errors flagged; re-map or re-export if geometry errors persist</li>
+        <li>Tap the green <strong>Commit N Farms</strong> bar to save — no re-upload needed</li>
+        <li>Fill in any remaining missing data using the amber links on the import result page</li>
+        <li>Confirm farm count in Upload History; enter FVF field data via the farm edit page</li>
       </ol>
 
       <!-- Help -->
@@ -376,7 +428,8 @@
         <a href="#farms" class="toc-link">Farms</a>
         <div class="toc-sub">
           <a href="#adding-a-single-farm" class="toc-link">↳ Single Farm</a>
-          <a href="#bulk-import-from-sw-maps" class="toc-link">↳ Bulk Import</a>
+          <a href="#bulk-import" class="toc-link">↳ Bulk Import</a>
+          <a href="#fvf" class="toc-link">↳ FVF</a>
           <a href="#eudr-verification" class="toc-link">↳ EUDR Verification</a>
         </div>
         <a href="#products" class="toc-link">Products</a>

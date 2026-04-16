@@ -37,7 +37,7 @@
       {% if result.dry_run %}Validation Preview{% else %}Import Summary{% endif %}
     </p>
 
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
       <div class="bg-slate-500/10 border border-slate-500/20 rounded-lg p-4 text-center">
         <p class="text-2xl font-bold text-slate-300 font-mono">{{ result.total }}</p>
         <p class="text-xs text-slate-500 font-mono mt-1">Total</p>
@@ -58,6 +58,31 @@
       <div class="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4 text-center">
         <p class="text-2xl font-bold text-orange-400 font-mono">{{ result.blocked }}</p>
         <p class="text-xs text-slate-400 font-mono mt-1">Overlap blocked</p>
+      </div>
+    </div>
+
+    <!-- Data integrity strip -->
+    <div class="grid grid-cols-3 gap-2 mb-6">
+      <div class="bg-surface border border-border rounded-lg px-3 py-2 flex items-center gap-2" title="Polygons auto-corrected by the normalisation layer (geometry repair, LGA fuzzy match)">
+        <span class="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0"></span>
+        <div>
+          <p class="text-base font-bold font-mono text-blue-300">{{ result.auto_corrected }}</p>
+          <p class="text-xs text-slate-500 font-mono">Auto-corrected</p>
+        </div>
+      </div>
+      <div class="bg-surface border border-border rounded-lg px-3 py-2 flex items-center gap-2" title="Polygons imported but flagged — missing LGA, farmer name, or commodity">
+        <span class="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0"></span>
+        <div>
+          <p class="text-base font-bold font-mono text-amber-300">{{ result.warnings|length }}</p>
+          <p class="text-xs text-slate-500 font-mono">Flagged</p>
+        </div>
+      </div>
+      <div class="bg-surface border border-border rounded-lg px-3 py-2 flex items-center gap-2" title="Polygons blocked or rejected — overlap conflicts and hard validation errors">
+        <span class="w-2 h-2 rounded-full bg-red-400 flex-shrink-0"></span>
+        <div>
+          <p class="text-base font-bold font-mono text-red-300">{{ result.blocked|add:result.errors }}</p>
+          <p class="text-xs text-slate-500 font-mono">Rejected</p>
+        </div>
       </div>
     </div>
 

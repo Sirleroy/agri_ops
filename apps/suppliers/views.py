@@ -372,12 +372,13 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
     if isinstance(features, dict) and features.get('type') == 'FeatureCollection':
         features = features.get('features') or []
 
-    to_create    = []
-    duplicates   = []
-    blocked      = []
-    errors       = []
-    warnings     = []
-    farmer_cache = {}  # (first_name_lower, last_name_lower, village_lower, lga_lower) -> Farmer
+    to_create      = []
+    duplicates     = []
+    blocked        = []
+    errors         = []
+    warnings       = []
+    auto_corrected = 0
+    farmer_cache   = {}  # (first_name_lower, last_name_lower, village_lower, lga_lower) -> Farmer
 
     for i, feature in enumerate(features):
         row = i + 1
@@ -411,8 +412,16 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
             _s(props.get('commodity')) or default_commodity or 'Unknown'
         )
 
+        # Track geometry auto-correction (3D→2D, dedup, close ring, simplify, buffer(0) repair)
+        raw_geometry = geometry
         if geometry:
             geometry = normalize_field_gps_geometry(geometry)
+
+        # LGA canonicalization: fuzzy-matched if the resolved value differs from raw input
+        lga_was_corrected = bool(lga_raw) and lga.strip().lower() != lga_raw.strip().lower()
+        geom_was_corrected = bool(raw_geometry) and geometry != raw_geometry
+        if lga_was_corrected or geom_was_corrected:
+            auto_corrected += 1
 
         # Area computed from normalized polygon — file metadata is ignored
         area = _compute_area_ha(geometry) if geometry else None
@@ -510,18 +519,19 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                 w['farm_pk'] = pk_by_name.get(w['name'])
 
     return {
-        'total':          len(features),
-        'created':        created_count if not dry_run else 0,
-        'created_names':  created_names,
-        'would_create':   len(to_create),
+        'total':           len(features),
+        'created':         created_count if not dry_run else 0,
+        'created_names':   created_names,
+        'would_create':    len(to_create),
         'would_create_names': [f.name for f in to_create] if dry_run else [],
-        'duplicates':     len(duplicates),
-        'blocked':        len(blocked),
-        'errors':         len(errors),
-        'error_detail':   errors,
-        'blocked_detail': blocked,
-        'warnings':       warnings,
-        'dry_run':        dry_run,
+        'duplicates':      len(duplicates),
+        'blocked':         len(blocked),
+        'errors':          len(errors),
+        'auto_corrected':  auto_corrected,
+        'error_detail':    errors,
+        'blocked_detail':  blocked,
+        'warnings':        warnings,
+        'dry_run':         dry_run,
     }
 
 
@@ -673,6 +683,7 @@ class FarmImportView(StaffRequiredMixin, View):
             duplicates=result['duplicates'],
             blocked=result['blocked'],
             errors=result['errors'],
+            auto_corrected=result['auto_corrected'],
             warning_count=len(result['warnings']),
             error_detail=result['error_detail'],
             blocked_detail=result['blocked_detail'],

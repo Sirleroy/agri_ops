@@ -82,4 +82,5 @@ urlpatterns = [
     path('sales-orders/', include('apps.sales_orders.urls', namespace='sales_orders')),
     path('companies/', include('apps.companies.urls', namespace='companies')),
     path('users/', include('apps.users.urls', namespace='users')),
+    path('audit/', include('apps.audit.urls', namespace='audit')),
 ]

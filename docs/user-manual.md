@@ -142,6 +142,14 @@ Review the results:
 - **Orange (Overlap blocked)** — polygons that overlap an existing farm
 - **Amber (Warnings)** — polygons that will import but are missing data (no LGA, no farmer name, etc.). Farm names in the warning list are clickable — tap to open that farm's edit page directly
 
+![Dry-run validation preview on mobile — 5 polygons total, 3 ready to create, 2 overlap blocked, with the sticky Commit bar at the bottom of the screen](assets/import-dry-run-mobile.png)
+
+> **What you're seeing above**
+>
+> This is a dry run with 5 polygons from a single field session. Three passed all checks and are ready to save (green). Two overlap existing farms and are blocked (amber) — those plots need to be reviewed before committing. Nothing has been written to the database yet.
+>
+> The green **Commit 3 Farms** bar fixed at the bottom of the screen is what saves the valid polygons. It stays visible as you scroll through the full results list — you do not need to scroll back to the top to commit.
+
 **Step 2 — Commit**
 Once satisfied with the dry-run results, tap the green **Commit N Farms** bar fixed at the bottom of the screen. The farms are saved immediately — no need to re-upload the file. The bar stays visible as you scroll through the results.
 
@@ -151,7 +159,17 @@ Once satisfied with the dry-run results, tap the green **Commit N Farms** bar fi
 
 **What the importer fixes automatically**
 
-These issues are corrected silently before validation — you do not need to fix your file:
+The importer applies a three-tier model to every polygon before anything touches the database:
+
+| Tier | What happens | Visible in UI |
+|---|---|---|
+| **Auto-corrected** | Input normalised silently — safe to proceed | Blue "Auto-corrected" count |
+| **Flagged** | Record accepted but incomplete — operator review required | Amber nudge links |
+| **Rejected** | Record blocked — unrecoverable error | Red error / orange overlap rows |
+
+Auto-corrections are counted and shown on the import result page. They are never silently discarded — the count confirms the pipeline ran.
+
+Specific issues corrected silently before validation — you do not need to fix your file:
 
 | Issue | What happens |
 |---|---|
@@ -160,6 +178,9 @@ These issues are corrected silently before validation — you do not need to fix
 | Unclosed ring (first ≠ last point) | Closing vertex appended automatically |
 | Too many vertices (> 200 after dedup) | Simplified via Ramer–Douglas–Peucker at ≈ 1 m tolerance |
 | Self-intersecting boundary (GPS track crossed itself) | `buffer(0)` repair applied — boundary resolved into valid geometry, may be stored as MultiPolygon |
+| Abbreviated or misspelled LGA (e.g. "T. Balewa") | Fuzzy-matched to canonical LGA name and state auto-filled |
+| Numeric phone exported as scientific notation (e.g. `9.088E9`) | Coerced to integer string before E.164 normalisation |
+| Mixed-case GeoJSON property keys (`FIRST NAME`, `First Name`, etc.) | Normalised to lowercase before field mapping — no reformatting needed |
 
 **Hard validation errors** (polygon cannot import — action required)
 

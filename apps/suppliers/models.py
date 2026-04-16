@@ -326,6 +326,7 @@ class FarmImportLog(models.Model):
     blocked       = models.PositiveIntegerField(default=0)
     errors        = models.PositiveIntegerField(default=0)
     warning_count = models.PositiveIntegerField(default=0)
+    auto_corrected = models.PositiveIntegerField(default=0)
     error_detail   = models.JSONField(default=list)
     blocked_detail = models.JSONField(default=list)
     warning_detail = models.JSONField(default=list)
