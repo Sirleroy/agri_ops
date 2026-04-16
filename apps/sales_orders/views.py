@@ -2,7 +2,10 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.views import View
 from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404, redirect
-from .models import SalesOrder
+from django.utils import timezone
+from decimal import Decimal, InvalidOperation
+from .models import SalesOrder, SalesOrderItem
+from apps.products.models import Product
 from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin, log_action
 
@@ -31,8 +34,13 @@ class SalesOrderDetailView(StaffRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['items'] = self.object.items.select_related('product')
+        items = list(self.object.items.select_related('product'))
+        context['items'] = items
+        context['order_total'] = sum(item.total_price for item in items)
         context['linked_batch'] = self.object.batches.first()
+        context['products'] = Product.objects.filter(
+            company=self.request.user.company, is_active=True
+        ).order_by('name')
         from apps.suppliers.models import Farm
         context['available_farms'] = Farm.objects.filter(
             company=self.request.user.company
@@ -43,21 +51,26 @@ class SalesOrderDetailView(StaffRequiredMixin, DetailView):
 class SalesOrderCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = SalesOrder
     template_name = 'sales_orders/form.html'
-    fields = ['order_number', 'customer_name', 'customer_email',
-              'customer_phone', 'status', 'nxp_reference', 'certificate_of_origin_ref', 'is_eu_export', 'notes']
-    success_url = reverse_lazy('sales_orders:list')
+    fields = ['customer_name', 'customer_email', 'customer_phone', 'is_eu_export', 'notes']
 
     def form_valid(self, form):
-        form.instance.company = self.request.user.company
+        company = self.request.user.company
+        year = timezone.now().year
+        count = SalesOrder.objects.filter(company=company).count()
+        form.instance.order_number = f"{year}-{count + 1:04d}"
+        form.instance.company = company
+        form.instance.created_by = self.request.user
         return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('sales_orders:detail', kwargs={'pk': self.object.pk})
 
 
 class SalesOrderUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = SalesOrder
     template_name = 'sales_orders/form.html'
-    fields = ['order_number', 'customer_name', 'customer_email',
-              'customer_phone', 'status', 'nxp_reference', 'certificate_of_origin_ref', 'is_eu_export', 'notes']
-    success_url = reverse_lazy('sales_orders:list')
+    fields = ['order_number', 'customer_name', 'customer_email', 'customer_phone',
+              'status', 'nxp_reference', 'certificate_of_origin_ref', 'is_eu_export', 'notes']
 
     def get_object(self):
         obj = super().get_object()
@@ -65,6 +78,12 @@ class SalesOrderUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
             from django.http import Http404
             raise Http404
         return obj
+
+    def get_success_url(self):
+        next_url = self.request.GET.get('next')
+        if next_url:
+            return next_url
+        return reverse_lazy('sales_orders:detail', kwargs={'pk': self.object.pk})
 
 
 class SalesOrderDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
@@ -80,10 +99,54 @@ class SalesOrderDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
         return obj
 
 
+class SalesOrderItemCreateView(StaffRequiredMixin, View):
+    """Add a line item to an open sales order."""
+    def post(self, request, pk):
+        order = get_object_or_404(SalesOrder, pk=pk, company=request.user.company)
+        if order.status in ('completed', 'cancelled'):
+            return redirect('sales_orders:detail', pk=pk)
+
+        product_id = request.POST.get('product')
+        try:
+            quantity = Decimal(request.POST.get('quantity', ''))
+            unit_price = Decimal(request.POST.get('unit_price', ''))
+            if quantity <= 0 or unit_price < 0:
+                raise InvalidOperation
+        except InvalidOperation:
+            return redirect('sales_orders:detail', pk=pk)
+
+        product = get_object_or_404(Product, pk=product_id, company=request.user.company)
+        SalesOrderItem.objects.create(
+            sales_order=order,
+            product=product,
+            quantity=quantity,
+            unit_price=unit_price,
+        )
+        log_action(request, 'update', order, changes={'item_added': str(product)})
+        return redirect('sales_orders:detail', pk=pk)
+
+
+class SalesOrderItemDeleteView(ManagerRequiredMixin, View):
+    """Remove a line item from an open sales order."""
+    def post(self, request, item_pk):
+        item = get_object_or_404(
+            SalesOrderItem, pk=item_pk,
+            sales_order__company=request.user.company
+        )
+        order = item.sales_order
+        if order.status in ('completed', 'cancelled'):
+            return redirect('sales_orders:detail', pk=order.pk)
+
+        log_action(request, 'update', order, changes={'item_removed': str(item.product)})
+        item.delete()
+        return redirect('sales_orders:detail', pk=order.pk)
+
+
 class SalesOrderLinkFarmsView(StaffRequiredMixin, View):
     """
     Links farms to a sales order for EUDR traceability.
     Creates or updates the Batch transparently — the user just selects farms.
+    Requires at least one line item so commodity is known.
     """
     def post(self, request, pk):
         from apps.suppliers.models import Farm
@@ -92,9 +155,12 @@ class SalesOrderLinkFarmsView(StaffRequiredMixin, View):
         order = get_object_or_404(SalesOrder, pk=pk, company=request.user.company)
         farm_pks = request.POST.getlist('farm_pks')
 
-        items = order.items.select_related('product')
-        first_item = items.first()
-        commodity = first_item.product.name if first_item else 'Unknown'
+        items = list(order.items.select_related('product'))
+        if not items:
+            return redirect('sales_orders:detail', pk=pk)
+
+        first_item = items[0]
+        commodity = first_item.product.name
         quantity_kg = sum(item.quantity for item in items)
 
         batch = order.batches.first()

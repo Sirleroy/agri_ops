@@ -3,7 +3,7 @@
 {% block page_title %}SO-{{ order.order_number }}{% endblock %}
 
 {% block content %}
-<div class="space-y-4 max-w-4xl">
+<div class="space-y-4 max-w-4xl" x-data="{ addOpen: false }">
 
   <div class="flex items-center justify-between">
     <a href="{% url 'sales_orders:list' %}" class="text-sm text-slate-500 hover:text-slate-100 transition-colors flex items-center gap-1">
@@ -18,41 +18,69 @@
     </div>
   </div>
 
+  <!-- SO Header -->
   <div class="bg-card border border-border rounded-xl p-6 space-y-4">
     <div class="flex items-start justify-between">
       <div>
         <h2 class="text-xl font-black text-slate-100 font-mono">SO-{{ order.order_number }}</h2>
         <p class="text-sm text-slate-500 mt-1">{{ order.company.name }}</p>
       </div>
-      <span class="px-3 py-1 rounded-lg text-xs font-mono font-semibold
-        {% if order.status == 'completed' %}bg-green/10 text-green border border-green/20
-        {% elif order.status == 'cancelled' %}bg-red-500/10 text-red-400 border border-red-500/20
-        {% elif order.status == 'dispatched' %}bg-blue-500/10 text-blue-400 border border-blue-500/20
-        {% elif order.status == 'confirmed' %}bg-purple-500/10 text-purple-400 border border-purple-500/20
-        {% else %}bg-yellow-500/10 text-yellow-400 border border-yellow-500/20{% endif %}">
-        {{ order.get_status_display }}
-      </span>
+      <div class="flex items-center gap-2 flex-wrap justify-end">
+        {% if order.is_eu_export %}
+        <span class="px-2 py-1 rounded text-xs font-mono font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">EU Export</span>
+        {% endif %}
+        <span class="px-3 py-1 rounded-lg text-xs font-mono font-semibold
+          {% if order.status == 'completed' %}bg-green/10 text-green border border-green/20
+          {% elif order.status == 'cancelled' %}bg-red-500/10 text-red-400 border border-red-500/20
+          {% elif order.status == 'dispatched' %}bg-blue-500/10 text-blue-400 border border-blue-500/20
+          {% elif order.status == 'confirmed' %}bg-purple-500/10 text-purple-400 border border-purple-500/20
+          {% else %}bg-yellow-500/10 text-yellow-400 border border-yellow-500/20{% endif %}">
+          {{ order.get_status_display }}
+        </span>
+      </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-border">
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-border">
       <div>
         <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Customer</p>
-        <p class="text-sm text-slate-200">{{ order.customer_name }}</p>
-      </div>
-      <div>
-        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Email</p>
-        <p class="text-sm text-slate-200">{{ order.customer_email|default:"—" }}</p>
-      </div>
-      <div>
-        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Phone</p>
-        <p class="text-sm text-slate-200">{{ order.customer_phone|default:"—" }}</p>
+        <p class="text-sm text-slate-200 font-semibold">{{ order.customer_name }}</p>
       </div>
       <div>
         <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Order Date</p>
         <p class="text-sm text-slate-200 font-mono">{{ order.order_date|date:"d M Y" }}</p>
       </div>
+      {% if order_total %}
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Order Total</p>
+        <p class="text-sm text-slate-200 font-mono font-semibold">₦{{ order_total }}</p>
+      </div>
+      {% endif %}
+      {% if order.customer_email %}
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Email</p>
+        <p class="text-sm text-slate-200">{{ order.customer_email }}</p>
+      </div>
+      {% endif %}
+      {% if order.customer_phone %}
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Phone</p>
+        <p class="text-sm text-slate-200">{{ order.customer_phone }}</p>
+      </div>
+      {% endif %}
+      {% if order.nxp_reference %}
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">NXP Reference</p>
+        <p class="text-sm text-slate-200 font-mono">{{ order.nxp_reference }}</p>
+      </div>
+      {% endif %}
+      {% if order.certificate_of_origin_ref %}
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Cert. of Origin</p>
+        <p class="text-sm text-slate-200 font-mono">{{ order.certificate_of_origin_ref }}</p>
+      </div>
+      {% endif %}
       {% if order.notes %}
-      <div class="col-span-2">
+      <div class="col-span-2 sm:col-span-3">
         <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Notes</p>
         <p class="text-sm text-slate-200">{{ order.notes }}</p>
       </div>
@@ -60,6 +88,7 @@
     </div>
   </div>
 
+  <!-- Certificate download -->
   {% if linked_batch %}
   <a href="{% url 'sales_orders:batch_certificate' linked_batch.pk %}"
      class="flex items-center justify-between w-full bg-green/10 border border-green/30 hover:bg-green/20 rounded-xl px-5 py-4 transition-colors group">
@@ -74,41 +103,118 @@
   </a>
   {% endif %}
 
-  <div class="bg-card border border-border rounded-xl overflow-x-auto">
-    <div class="px-5 py-3 border-b border-border bg-white/[0.02]">
+  <!-- Line Items -->
+  <div class="bg-card border border-border rounded-xl overflow-hidden">
+    <div class="px-5 py-3 border-b border-border bg-white/[0.02] flex items-center justify-between">
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Line Items</p>
+      {% if order.status != 'completed' and order.status != 'cancelled' %}
+      <button @click="addOpen = !addOpen"
+        :class="addOpen ? 'bg-green/10 text-green border-green/30' : 'text-slate-400 border-border hover:text-slate-100'"
+        class="flex items-center gap-1.5 text-xs font-mono border rounded-md px-3 py-1.5 transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Add Item
+      </button>
+      {% endif %}
     </div>
-    <table class="w-full text-sm">
-      <thead>
-        <tr class="border-b border-border bg-white/[0.02]">
-          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Product</th>
-          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Quantity</th>
-          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Unit Price</th>
-          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in items %}
-        <tr class="border-b border-border/50">
-          <td class="px-5 py-3 text-slate-200">{{ item.product.name }}</td>
-          <td class="px-5 py-3 text-slate-400 font-mono">{{ item.quantity }}</td>
-          <td class="px-5 py-3 text-slate-400 font-mono">₦{{ item.unit_price }}</td>
-          <td class="px-5 py-3 text-slate-200 font-mono font-semibold">₦{{ item.total_price }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="4" class="px-5 py-8 text-center">
-            <p class="text-slate-500 font-mono text-sm mb-3">No line items added yet.</p>
-            <a href="{% url 'sales_orders:update' order.pk %}?next={{ request.path }}"
-               class="inline-flex items-center gap-1.5 bg-green hover:bg-green-dim text-bg text-xs font-bold px-4 py-2 rounded-lg transition-colors">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-              Add Line Items
-            </a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+
+    <!-- Inline add item form -->
+    {% if order.status != 'completed' and order.status != 'cancelled' %}
+    <div x-show="addOpen" x-transition.opacity
+         class="px-5 py-4 border-b border-border bg-white/[0.02]">
+      <form method="post" action="{% url 'sales_orders:add_item' order.pk %}"
+            class="flex flex-wrap items-end gap-3">
+        {% csrf_token %}
+        <div class="flex-1 min-w-[180px]">
+          <label class="block text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Product</label>
+          <select name="product" required
+            class="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-green outline-none transition-colors">
+            <option value="">Select product…</option>
+            {% for product in products %}
+            <option value="{{ product.pk }}">{{ product.name }} ({{ product.get_unit_display }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="w-28">
+          <label class="block text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Quantity</label>
+          <input type="number" name="quantity" min="0.01" step="0.01" placeholder="0.00" required
+            class="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-green outline-none transition-colors">
+        </div>
+        <div class="w-32">
+          <label class="block text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Unit Price (₦)</label>
+          <input type="number" name="unit_price" min="0" step="0.01" placeholder="0.00" required
+            class="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-green outline-none transition-colors">
+        </div>
+        <button type="submit"
+          class="px-4 py-2 bg-green hover:bg-green-dim text-bg text-sm font-bold rounded-lg transition-colors whitespace-nowrap">
+          Add
+        </button>
+        <button type="button" @click="addOpen = false"
+          class="px-4 py-2 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">
+          Cancel
+        </button>
+      </form>
+    </div>
+    {% endif %}
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border bg-white/[0.02]">
+            <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Product</th>
+            <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Quantity</th>
+            <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Unit Price</th>
+            <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Total</th>
+            {% if order.status != 'completed' and order.status != 'cancelled' and request.user.is_manager_or_above %}
+            <th class="px-5 py-3"></th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr class="border-b border-border/50 hover:bg-white/[0.02] transition-colors">
+            <td class="px-5 py-3 text-slate-200">{{ item.product.name }}</td>
+            <td class="px-5 py-3 text-slate-400 font-mono">{{ item.quantity }} {{ item.product.get_unit_display }}</td>
+            <td class="px-5 py-3 text-slate-400 font-mono">₦{{ item.unit_price }}</td>
+            <td class="px-5 py-3 text-slate-200 font-mono font-semibold">₦{{ item.total_price }}</td>
+            {% if order.status != 'completed' and order.status != 'cancelled' and request.user.is_manager_or_above %}
+            <td class="px-5 py-3">
+              <form method="post" action="{% url 'sales_orders:delete_item' item.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="text-slate-600 hover:text-red-400 transition-colors" title="Remove item">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+              </form>
+            </td>
+            {% endif %}
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="px-5 py-10 text-center">
+              <p class="text-slate-500 font-mono text-sm mb-3">No line items yet.</p>
+              {% if order.status != 'completed' and order.status != 'cancelled' %}
+              <button @click="addOpen = true"
+                class="inline-flex items-center gap-1.5 bg-green hover:bg-green-dim text-bg text-xs font-bold px-4 py-2 rounded-lg transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Add First Item
+              </button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        {% if items %}
+        <tfoot>
+          <tr class="border-t border-border bg-white/[0.02]">
+            <td colspan="3" class="px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest text-right">Order Total</td>
+            <td class="px-5 py-3 text-slate-100 font-mono font-bold">₦{{ order_total }}</td>
+            {% if order.status != 'completed' and order.status != 'cancelled' and request.user.is_manager_or_above %}
+            <td></td>
+            {% endif %}
+          </tr>
+        </tfoot>
+        {% endif %}
+      </table>
+    </div>
   </div>
 
   <!-- Farm Traceability -->
@@ -116,13 +222,17 @@
     <div class="flex items-center justify-between mb-4">
       <div>
         <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Farm Traceability</p>
-        <p class="text-xs text-slate-600 mt-1">Link the farms that supplied this order for traceability</p>
+        <p class="text-xs text-slate-600 mt-1">
+          {% if not items %}Add line items first — commodity is derived from your products.
+          {% else %}Link the farms that supplied this order.{% endif %}
+        </p>
       </div>
       {% if linked_batch %}
       <span class="px-2 py-1 rounded text-xs font-mono bg-green/10 text-green border border-green/20">{{ linked_batch.farms.count }} farm{{ linked_batch.farms.count|pluralize }} linked</span>
       {% endif %}
     </div>
 
+    {% if items %}
     <form method="post" action="{% url 'sales_orders:link_farms' order.pk %}">
       {% csrf_token %}
       <div class="space-y-2 mb-4 max-h-64 overflow-y-auto pr-1">
@@ -154,6 +264,16 @@
       </button>
       {% endif %}
     </form>
+    {% else %}
+    <div class="py-6 text-center">
+      <p class="text-sm text-slate-500">Add at least one line item before linking farms.</p>
+      <button @click="addOpen = true"
+        class="mt-3 inline-flex items-center gap-1.5 text-xs text-green hover:text-green-dim transition-colors font-mono">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Add items →
+      </button>
+    </div>
+    {% endif %}
   </div>
 
 </div>

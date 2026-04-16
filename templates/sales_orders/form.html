@@ -10,42 +10,70 @@
     Back to Sales Orders
   </a>
 
-  <div class="bg-card border border-border rounded-xl p-6">
-    <h2 class="text-base font-bold text-slate-100 mb-5">{% if object %}Edit SO-{{ object.order_number }}{% else %}Create Sales Order{% endif %}</h2>
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
 
-    <form method="post" class="space-y-4">
-      {% csrf_token %}
-      {% for field in form %}
-      {% if field.name != 'is_eu_export' %}
+    <!-- Customer details -->
+    <div class="bg-card border border-border rounded-xl p-6 space-y-4">
       <div>
-        <label class="block text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">
-          {{ field.label }}{% if field.field.required %} <span class="text-red-400 normal-case font-sans">*</span>{% endif %}
-        </label>
-        {{ field }}
-        {% if field.help_text %}<p class="text-xs text-slate-600 mt-1">{{ field.help_text }}</p>{% endif %}
-        {% if field.errors %}<p class="text-xs text-red-400 mt-1">{{ field.errors.0 }}</p>{% endif %}
+        <h2 class="text-base font-bold text-slate-100">{% if object %}Edit SO-{{ object.order_number }}{% else %}New Sales Order{% endif %}</h2>
+        {% if not object %}<p class="text-xs text-slate-500 font-mono mt-1">Order number will be assigned automatically.</p>{% endif %}
       </div>
-      {% endif %}
+
+      {% for field in form %}
+        {% if field.name in 'customer_name,customer_email,customer_phone,notes' %}
+        <div>
+          <label class="block text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">
+            {{ field.label }}{% if field.field.required %} <span class="text-red-400 normal-case font-sans">*</span>{% endif %}
+          </label>
+          {{ field }}
+          {% if field.errors %}<p class="text-xs text-red-400 mt-1">{{ field.errors.0 }}</p>{% endif %}
+        </div>
+        {% endif %}
       {% endfor %}
 
+      <!-- EU Export checkbox -->
       <div class="border border-border rounded-lg p-4 flex items-start gap-3">
-        <input type="checkbox" name="is_eu_export" id="id_is_eu_export" {% if form.is_eu_export.value %}checked{% endif %}
+        <input type="checkbox" name="is_eu_export" id="id_is_eu_export"
+               {% if form.is_eu_export.value %}checked{% endif %}
                class="mt-0.5 w-4 h-4 accent-green cursor-pointer">
         <div>
           <label for="id_is_eu_export" class="text-sm text-slate-100 font-medium cursor-pointer">EU Export</label>
           <p class="text-xs text-slate-500 mt-0.5">Include EUDR compliance sections on the traceability certificate</p>
         </div>
       </div>
+    </div>
 
-      <div class="flex gap-3 pt-2">
-        <button type="submit" class="px-5 py-2 bg-green hover:bg-green-dim text-bg font-bold text-sm rounded-lg transition-colors">
-          {% if object %}Save Changes{% else %}Create Order{% endif %}
-        </button>
-        <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}{% url 'sales_orders:list' %}{% endif %}" class="px-5 py-2 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">Cancel</a>
+    <!-- Order details + export compliance — edit only -->
+    {% if object %}
+    <div class="bg-card border border-border rounded-xl p-6 space-y-4">
+      <div>
+        <h3 class="text-sm font-bold text-slate-300">Order & Export Details</h3>
+        <p class="text-xs text-slate-600 mt-0.5">Status, compliance references, and export documentation.</p>
       </div>
-    </form>
-  </div>
+
+      {% for field in form %}
+        {% if field.name in 'order_number,status,nxp_reference,certificate_of_origin_ref' %}
+        <div>
+          <label class="block text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">
+            {{ field.label }}
+          </label>
+          {{ field }}
+          {% if field.help_text %}<p class="text-xs text-slate-600 mt-1">{{ field.help_text }}</p>{% endif %}
+          {% if field.errors %}<p class="text-xs text-red-400 mt-1">{{ field.errors.0 }}</p>{% endif %}
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="flex gap-3">
+      <button type="submit" class="px-5 py-2 bg-green hover:bg-green-dim text-bg font-bold text-sm rounded-lg transition-colors">
+        {% if object %}Save Changes{% else %}Create Order{% endif %}
+      </button>
+      <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}{% url 'sales_orders:list' %}{% endif %}" class="px-5 py-2 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">Cancel</a>
+    </div>
+  </form>
 
 </div>
-
 {% endblock %}

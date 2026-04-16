@@ -12,6 +12,8 @@ urlpatterns = [
     path('<int:pk>/edit/', views.SalesOrderUpdateView.as_view(), name='update'),
     path('<int:pk>/delete/', views.SalesOrderDeleteView.as_view(), name='delete'),
     path('<int:pk>/link-farms/', views.SalesOrderLinkFarmsView.as_view(), name='link_farms'),
+    path('<int:pk>/items/add/', views.SalesOrderItemCreateView.as_view(), name='add_item'),
+    path('items/<int:item_pk>/delete/', views.SalesOrderItemDeleteView.as_view(), name='delete_item'),
 
     # Batches
     path('batches/', batch_views.BatchListView.as_view(), name='batch_list'),
