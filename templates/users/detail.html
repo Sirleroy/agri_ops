@@ -10,10 +10,12 @@
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
       Back to Users
     </a>
+    {% if request.user.is_org_admin %}
     <div class="flex gap-2">
       <a href="{% url 'users:update' profile.pk %}?next={{ request.path }}" class="px-4 py-2 bg-card border border-border rounded-lg text-sm text-slate-300 hover:text-slate-100 transition-colors">Edit</a>
       <button @click="openDeleteModal('{% url 'users:delete' profile.pk %}', '{{ profile.username|escapejs }}')" class="px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400 hover:text-red-300 transition-colors">Delete</button>
     </div>
+    {% endif %}
   </div>
 
   <div class="bg-card border border-border rounded-xl p-6 space-y-4">
@@ -28,8 +30,8 @@
         </p>
       </div>
       <div class="ml-auto flex gap-2">
-        {% if profile.role %}
-        <span class="px-3 py-1 rounded-lg text-xs font-mono font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20">{{ profile.get_role_display }}</span>
+        {% if profile.system_role %}
+        <span class="px-3 py-1 rounded-lg text-xs font-mono font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20">{{ profile.get_system_role_display }}</span>
         {% endif %}
         {% if profile.is_active %}
           <span class="px-3 py-1 rounded-lg text-xs font-mono font-semibold bg-green/10 text-green border border-green/20">Active</span>

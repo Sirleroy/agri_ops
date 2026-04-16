@@ -35,11 +35,13 @@ class ProductCreateView(OtherRevealMixin, AuditCreateMixin, StaffRequiredMixin, 
               'nafdac_registration_number', 'eu_novel_food_status', 'eu_novel_food_ref',
               'supplier', 'is_active']
     other_reveal_fields = ['category']
-    success_url = reverse_lazy('products:list')
 
     def form_valid(self, form):
         form.instance.company = self.request.user.company
         return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('products:detail', kwargs={'pk': self.object.pk})
 
 
 class ProductUpdateView(OtherRevealMixin, AuditUpdateMixin, StaffRequiredMixin, UpdateView):
@@ -49,7 +51,6 @@ class ProductUpdateView(OtherRevealMixin, AuditUpdateMixin, StaffRequiredMixin, 
               'nafdac_registration_number', 'eu_novel_food_status', 'eu_novel_food_ref',
               'supplier', 'is_active']
     other_reveal_fields = ['category']
-    success_url = reverse_lazy('products:list')
 
     def get_object(self):
         obj = super().get_object()
@@ -57,6 +58,12 @@ class ProductUpdateView(OtherRevealMixin, AuditUpdateMixin, StaffRequiredMixin, 
             from django.http import Http404
             raise Http404
         return obj
+
+    def get_success_url(self):
+        next_url = self.request.GET.get('next')
+        if next_url:
+            return next_url
+        return reverse_lazy('products:detail', kwargs={'pk': self.object.pk})
 
 
 class ProductDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):

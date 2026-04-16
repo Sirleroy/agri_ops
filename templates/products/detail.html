@@ -53,6 +53,30 @@
         <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Created</p>
         <p class="text-sm text-slate-200 font-mono">{{ product.created_at|date:"d M Y, H:i" }}</p>
       </div>
+      {% if product.hs_code %}
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">HS Code</p>
+        <p class="text-sm text-slate-200 font-mono">{{ product.hs_code }}</p>
+      </div>
+      {% endif %}
+      {% if product.nafdac_registration_number %}
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">NAFDAC Reg.</p>
+        <p class="text-sm text-slate-200 font-mono">{{ product.nafdac_registration_number }}</p>
+      </div>
+      {% endif %}
+      {% if product.eu_novel_food_status %}
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">EU Novel Food Status</p>
+        <p class="text-sm text-slate-200">{{ product.eu_novel_food_status }}</p>
+      </div>
+      {% if product.eu_novel_food_ref %}
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">EU Novel Food Ref.</p>
+        <p class="text-sm text-slate-200 font-mono">{{ product.eu_novel_food_ref }}</p>
+      </div>
+      {% endif %}
+      {% endif %}
       {% if product.description %}
       <div class="col-span-2">
         <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Description</p>

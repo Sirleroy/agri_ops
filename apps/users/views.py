@@ -34,7 +34,6 @@ class UserUpdateView(AuditUpdateMixin, OrgAdminRequiredMixin, UpdateView):
     template_name = 'users/form.html'
     fields = ['username', 'first_name', 'last_name', 'email',
               'job_title', 'phone', 'is_active']
-    success_url = reverse_lazy('users:list')
 
     def get_object(self):
         obj = super().get_object()
@@ -42,6 +41,12 @@ class UserUpdateView(AuditUpdateMixin, OrgAdminRequiredMixin, UpdateView):
             from django.http import Http404
             raise Http404
         return obj
+
+    def get_success_url(self):
+        next_url = self.request.GET.get('next')
+        if next_url:
+            return next_url
+        return reverse_lazy('users:detail', kwargs={'pk': self.object.pk})
 
 
 class UserSystemRoleUpdateView(AuditUpdateMixin, OrgAdminRequiredMixin, UpdateView):
