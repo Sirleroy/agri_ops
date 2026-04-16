@@ -160,6 +160,63 @@ def generate_certificate(batch):
     ]))
     story.append(farm_t)
 
+    # ── Compliance Documents ──────────────────────────────────
+    phyto_certs = list(batch.phytosanitary_certs.all())
+    quality_tests = list(batch.quality_tests.all())
+
+    if phyto_certs or quality_tests:
+        story.append(Paragraph("Compliance Documents", ParagraphStyle("s3cd", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceBefore=6*mm, spaceAfter=3*mm)))
+
+    if phyto_certs:
+        story.append(Paragraph("Phytosanitary Certificates (NAQS)", ParagraphStyle("s3ph", fontName="Helvetica", fontSize=9, textColor=SLATE, spaceBefore=2*mm, spaceAfter=2*mm)))
+        ph_data = [["Cert Number", "Issuing Office", "Issued", "Expires", "Status"]]
+        for c in phyto_certs:
+            ph_data.append([
+                c.certificate_number,
+                c.issuing_office or "—",
+                str(c.issued_date) if c.issued_date else "—",
+                str(c.expiry_date) if c.expiry_date else "—",
+                "✓ Current" if c.is_current else "Expired",
+            ])
+        ph_t = Table(ph_data, colWidths=[45*mm, 45*mm, 25*mm, 25*mm, 22*mm])
+        ph_t.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,0), DARK),
+            ("TEXTCOLOR", (0,0), (-1,0), WHITE),
+            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+            ("FONTSIZE", (0,0), (-1,-1), 8),
+            ("GRID", (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+            ("ROWBACKGROUNDS", (0,1), (-1,-1), [WHITE, colors.HexColor("#f8fafc")]),
+            ("TOPPADDING", (0,0), (-1,-1), 4),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+            ("LEFTPADDING", (0,0), (-1,-1), 4),
+        ]))
+        story.append(ph_t)
+
+    if quality_tests:
+        story.append(Paragraph("Quality Tests (MRL / Aflatoxin)", ParagraphStyle("s3qt", fontName="Helvetica", fontSize=9, textColor=SLATE, spaceBefore=4*mm, spaceAfter=2*mm)))
+        qt_data = [["Test Type", "Laboratory", "Ref", "Date", "Result"]]
+        for t in quality_tests:
+            qt_data.append([
+                t.get_test_type_display(),
+                t.lab_name or "—",
+                t.lab_certificate_ref or "—",
+                str(t.test_date) if t.test_date else "—",
+                "✓ Pass" if t.result == 'pass' else ("✗ Fail" if t.result == 'fail' else "Pending"),
+            ])
+        qt_t = Table(qt_data, colWidths=[40*mm, 45*mm, 35*mm, 25*mm, 17*mm])
+        qt_t.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,0), DARK),
+            ("TEXTCOLOR", (0,0), (-1,0), WHITE),
+            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+            ("FONTSIZE", (0,0), (-1,-1), 8),
+            ("GRID", (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+            ("ROWBACKGROUNDS", (0,1), (-1,-1), [WHITE, colors.HexColor("#f8fafc")]),
+            ("TOPPADDING", (0,0), (-1,-1), 4),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+            ("LEFTPADDING", (0,0), (-1,-1), 4),
+        ]))
+        story.append(qt_t)
+
     # ── Declaration (EU export only) ──────────────────────────
     if is_eu:
         story.append(Spacer(1, 6*mm))

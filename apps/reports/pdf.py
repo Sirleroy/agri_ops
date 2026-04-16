@@ -373,9 +373,75 @@ def generate_compliance_report(company, user, filters=None):
     else:
         story.append(Paragraph("No batches recorded.", st["body"]))
 
+    # ── Phytosanitary certs + quality tests per batch ─────────
+    story.append(Paragraph("6. Compliance Documentation per Batch", st["section"]))
+    from apps.sales_orders.quality import PhytosanitaryCertificate, BatchQualityTest
+    if batch_qs.exists():
+        for b in batch_qs[:30]:
+            phyto_certs = list(b.phytosanitary_certs.all())
+            quality_tests = list(b.quality_tests.all())
+            if not phyto_certs and not quality_tests:
+                continue
+            block = []
+            block.append(Paragraph(
+                f"Batch {b.batch_number}",
+                ParagraphStyle("bh2", fontName="Helvetica-Bold", fontSize=9, textColor=DARK, spaceBefore=4*mm, spaceAfter=2*mm)
+            ))
+            if phyto_certs:
+                ph_data = [["Cert Number", "Issuing Office", "Issued", "Expires", "Status"]]
+                for c in phyto_certs:
+                    ph_data.append([
+                        c.certificate_number,
+                        c.issuing_office or "—",
+                        str(c.issued_date) if c.issued_date else "—",
+                        str(c.expiry_date) if c.expiry_date else "—",
+                        "Current" if c.is_current else "Expired",
+                    ])
+                ph_t = Table(ph_data, colWidths=[45*mm, 45*mm, 25*mm, 25*mm, 22*mm])
+                ph_t.setStyle(TableStyle([
+                    ("BACKGROUND", (0,0), (-1,0), DARK),
+                    ("TEXTCOLOR", (0,0), (-1,0), WHITE),
+                    ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0,0), (-1,-1), 8),
+                    ("GRID", (0,0), (-1,-1), 0.3, SLATE_300),
+                    ("ROWBACKGROUNDS", (0,1), (-1,-1), [WHITE, colors.HexColor("#f8fafc")]),
+                    ("TOPPADDING", (0,0), (-1,-1), 3),
+                    ("BOTTOMPADDING", (0,0), (-1,-1), 3),
+                    ("LEFTPADDING", (0,0), (-1,-1), 4),
+                ]))
+                block.append(ph_t)
+            if quality_tests:
+                qt_data = [["Test Type", "Laboratory", "Ref", "Date", "Result"]]
+                for t in quality_tests:
+                    qt_data.append([
+                        t.get_test_type_display(),
+                        t.lab_name or "—",
+                        t.lab_certificate_ref or "—",
+                        str(t.test_date) if t.test_date else "—",
+                        "Pass" if t.result == 'pass' else ("Fail" if t.result == 'fail' else "Pending"),
+                    ])
+                qt_t = Table(qt_data, colWidths=[42*mm, 45*mm, 35*mm, 25*mm, 15*mm])
+                qt_t.setStyle(TableStyle([
+                    ("BACKGROUND", (0,0), (-1,0), DARK),
+                    ("TEXTCOLOR", (0,0), (-1,0), WHITE),
+                    ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0,0), (-1,-1), 8),
+                    ("GRID", (0,0), (-1,-1), 0.3, SLATE_300),
+                    ("ROWBACKGROUNDS", (0,1), (-1,-1), [WHITE, colors.HexColor("#f8fafc")]),
+                    ("TOPPADDING", (0,0), (-1,-1), 3),
+                    ("BOTTOMPADDING", (0,0), (-1,-1), 3),
+                    ("LEFTPADDING", (0,0), (-1,-1), 4),
+                ]))
+                block.append(qt_t)
+            from reportlab.platypus import KeepTogether
+            story.append(KeepTogether(block))
+            story.append(Spacer(1, 3*mm))
+    else:
+        story.append(Paragraph("No batches recorded.", st["body"]))
+
     # ── Sales orders ──────────────────────────────────────────
     sos = so_qs[:20]
-    story.append(Paragraph("6. Recent Sales Orders", st["section"]))
+    story.append(Paragraph("7. Recent Sales Orders", st["section"]))
     if sos.exists():
         so_data = [["Order Number", "Customer", "Status", "Order Date"]]
         for so in sos:
@@ -404,7 +470,7 @@ def generate_compliance_report(company, user, filters=None):
     # ── Declaration ───────────────────────────────────────────
     story.append(Spacer(1, 6*mm))
     story.append(HRFlowable(width="100%", thickness=0.5, color=SLATE_300, spaceAfter=4*mm))
-    story.append(Paragraph("7. Due Diligence Declaration", st["section"]))
+    story.append(Paragraph("8. Due Diligence Declaration", st["section"]))
     story.append(Paragraph(
         f"The operator <b>{company.name}</b> hereby declares that to the best of their knowledge, "
         "all commodities listed in this report have been sourced in compliance with the EU Deforestation "
