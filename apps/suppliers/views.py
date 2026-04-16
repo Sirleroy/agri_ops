@@ -291,7 +291,7 @@ class FarmerImportView(StaffRequiredMixin, View):
                 user=request.user,
                 action='import',
                 model_name='Farmer',
-                object_repr=f'{created_count} farmer{"s" if created_count != 1 else ""} — {csv_file.name}',
+                object_repr=f'{created_count} farmer{"s" if created_count != 1 else ""} — {csv_file.name}'[:255],
                 changes={
                     'created':    created_count,
                     'duplicates': duplicate_count,
@@ -703,7 +703,7 @@ class FarmImportView(StaffRequiredMixin, View):
                 user=request.user,
                 action='import',
                 model_name='Farm',
-                object_repr=f'{created} farm{"s" if created != 1 else ""} — {filename}',
+                object_repr=f'{created} farm{"s" if created != 1 else ""} — {filename}'[:255],
                 changes={
                     'created':    created,
                     'duplicates': result['duplicates'],

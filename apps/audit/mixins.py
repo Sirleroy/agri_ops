@@ -22,7 +22,7 @@ def log_action(request, action, instance, changes=None):
         action=action,
         model_name=instance.__class__.__name__,
         object_id=instance.pk,
-        object_repr=str(instance),
+        object_repr=str(instance)[:255],
         changes=changes,
         ip_address=get_client_ip(request),
     )
