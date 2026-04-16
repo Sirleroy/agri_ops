@@ -83,8 +83,8 @@
     <div data-row class="bg-card border border-border rounded-xl p-4">
       <div class="flex items-start justify-between gap-3 mb-3">
         <div class="min-w-0">
-          <a href="{% url 'inventory:detail' item.pk %}" class="font-semibold text-slate-100 hover:text-green transition-colors">{{ item.product.name }}</a>
-          <p class="text-xs text-slate-500 mt-0.5 font-mono">{{ item.warehouse_location|default:"No location" }}</p>
+          <a href="{% url 'inventory:detail' item.pk %}" class="block truncate font-semibold text-slate-100 hover:text-green transition-colors">{{ item.product.name }}</a>
+          <p class="text-xs text-slate-500 mt-0.5 font-mono truncate">{{ item.warehouse_location|default:"No location" }}</p>
         </div>
         {% if item.is_low_stock %}
           <span class="px-2 py-1 rounded-md text-xs font-mono font-semibold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 flex-shrink-0">Low Stock</span>
