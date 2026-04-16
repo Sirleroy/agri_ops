@@ -13,7 +13,8 @@ from apps.suppliers.models import Farm
 def generate_batch_number(company_name, commodity):
     """Generate a batch number like SOY-AKE-2026-0001"""
     from django.utils import timezone
-    from apps.sales_orders.models import Batch
+    from django.apps import apps
+    Batch = apps.get_model('sales_orders', 'Batch')
     prefix = commodity[:3].upper()
     company_code = ''.join(w[0] for w in company_name.split()[:2]).upper()
     year = timezone.now().year
