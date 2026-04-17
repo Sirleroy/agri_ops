@@ -301,41 +301,88 @@ class PublicTraceView(View):
 
     def _render(self, batch, farms):
         farm_rows = ""
-        for farm in farms:
+        farm_cards = ""
+        farms_list = list(farms)
+        farm_count = len(farms_list)
+
+        for farm in farms_list:
             status_color = "#22c55e" if farm.is_eudr_verified else "#f59e0b"
             status_text = "Verified" if farm.is_eudr_verified else "Pending"
             supplier_name = self._e(farm.supplier.name) if farm.supplier else '—'
             area = f"{self._e(farm.area_hectares)} ha" if farm.area_hectares else '—'
+            location = f"{self._e(farm.country)} / {self._e(farm.state_region)}"
+
+            # Desktop table rows
             farm_rows += f"""
             <tr>
-              <td style="padding:12px;border-bottom:1px solid #1e2d40;">{self._e(farm.name)}</td>
-              <td style="padding:12px;border-bottom:1px solid #1e2d40;">{supplier_name}</td>
-              <td style="padding:12px;border-bottom:1px solid #1e2d40;">{self._e(farm.country)} / {self._e(farm.state_region)}</td>
-              <td style="padding:12px;border-bottom:1px solid #1e2d40;">{area}</td>
-              <td style="padding:12px;border-bottom:1px solid #1e2d40;color:{status_color};">{status_text}</td>
+              <td class="td" data-label="Farm">{self._e(farm.name)}</td>
+              <td class="td" data-label="Supplier">{supplier_name}</td>
+              <td class="td" data-label="Location">{location}</td>
+              <td class="td" data-label="Area">{area}</td>
+              <td class="td" data-label="Compliance Status" style="color:{status_color};">{status_text}</td>
             </tr>"""
+
+            # Mobile cards
+            farm_cards += f"""
+            <div class="farm-card">
+              <div class="farm-card-name">{self._e(farm.name)}</div>
+              <div class="farm-card-grid">
+                <span class="farm-label">Supplier</span><span class="farm-value">{supplier_name}</span>
+                <span class="farm-label">Location</span><span class="farm-value">{location}</span>
+                <span class="farm-label">Area</span><span class="farm-value">{area}</span>
+                <span class="farm-label">Status</span><span class="farm-value" style="color:{status_color};">{status_text}</span>
+              </div>
+            </div>"""
+
+        so_line = (
+            f'<p class="meta">Sales Order: {html.escape(str(batch.sales_order.order_number))}</p>'
+            if batch.sales_order else ''
+        )
+        empty_row = '<tr><td colspan="5" style="padding:16px;color:#475569;text-align:center;">No farms linked to this batch.</td></tr>'
+        empty_card = '<p style="color:#475569;text-align:center;padding:16px 0;">No farms linked to this batch.</p>'
 
         return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trace: {batch.batch_number} — AgriOps</title>
+  <title>Trace: {html.escape(str(batch.batch_number))} — AgriOps</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    body {{ font-family: Georgia, serif; background: #080d14; color: #e2e8f0; margin: 0; padding: 24px; }}
+    *, *::before, *::after {{ box-sizing: border-box; }}
+    body {{ font-family: Georgia, serif; background: #080d14; color: #e2e8f0; margin: 0; padding: 16px; }}
     .container {{ max-width: 900px; margin: 0 auto; }}
-    .header {{ background: #131f2e; border: 1px solid #1e2d40; border-radius: 16px; padding: 32px; margin-bottom: 24px; }}
-    .badge {{ font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #22c55e; letter-spacing: 0.2em; margin-bottom: 12px; }}
-    h1 {{ font-family: 'Syne', sans-serif; font-size: 28px; color: #f8fafc; margin: 0 0 8px 0; }}
-    .meta {{ font-size: 13px; color: #64748b; }}
-    .card {{ background: #131f2e; border: 1px solid #1e2d40; border-radius: 12px; padding: 24px; margin-bottom: 16px; }}
-    .card h2 {{ font-family: 'Syne', sans-serif; font-size: 14px; color: #22c55e; letter-spacing: 0.1em; margin: 0 0 16px 0; text-transform: uppercase; }}
-    table {{ width: 100%; border-collapse: collapse; font-size: 13px; }}
-    th {{ text-align: left; padding: 10px 12px; color: #64748b; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; border-bottom: 1px solid #1e2d40; }}
-    td {{ color: #cbd5e1; }}
-    .footer {{ text-align: center; font-size: 11px; color: #334155; margin-top: 32px; font-family: 'JetBrains Mono', monospace; }}
-    .verified-badge {{ display: inline-block; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: #22c55e; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-family: 'JetBrains Mono', monospace; }}
+    .header {{ background: #131f2e; border: 1px solid #1e2d40; border-radius: 16px; padding: 24px; margin-bottom: 16px; }}
+    .badge {{ font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #22c55e; letter-spacing: 0.15em; margin-bottom: 10px; word-break: break-word; }}
+    h1 {{ font-family: 'Syne', sans-serif; font-size: clamp(20px, 5vw, 28px); color: #f8fafc; margin: 0 0 8px 0; word-break: break-word; }}
+    .meta {{ font-size: 13px; color: #64748b; margin: 4px 0; word-break: break-word; }}
+    .card {{ background: #131f2e; border: 1px solid #1e2d40; border-radius: 12px; padding: 20px; margin-bottom: 16px; overflow: hidden; }}
+    .card h2 {{ font-family: 'Syne', sans-serif; font-size: 13px; color: #22c55e; letter-spacing: 0.1em; margin: 0 0 16px 0; text-transform: uppercase; }}
+    .verified-badge {{ display: inline-flex; align-items: center; gap: 6px; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: #22c55e; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-family: 'JetBrains Mono', monospace; margin-top: 14px; }}
+
+    /* Desktop table */
+    .table-wrap {{ overflow-x: auto; -webkit-overflow-scrolling: touch; }}
+    table {{ width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }}
+    th {{ text-align: left; padding: 10px 12px; color: #64748b; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; border-bottom: 1px solid #1e2d40; white-space: nowrap; }}
+    .td {{ color: #cbd5e1; padding: 12px; border-bottom: 1px solid #1e2d40; word-break: break-word; vertical-align: top; }}
+
+    /* Mobile farm cards (hidden on desktop) */
+    .farm-cards {{ display: none; }}
+    .farm-card {{ background: #0d1520; border: 1px solid #1e2d40; border-radius: 10px; padding: 14px; margin-bottom: 10px; }}
+    .farm-card-name {{ font-family: 'Syne', sans-serif; font-size: 15px; color: #f1f5f9; font-weight: 700; margin-bottom: 10px; word-break: break-word; }}
+    .farm-card-grid {{ display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; align-items: baseline; }}
+    .farm-label {{ font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #475569; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }}
+    .farm-value {{ font-size: 13px; color: #cbd5e1; word-break: break-word; }}
+
+    .footer {{ text-align: center; font-size: 11px; color: #334155; margin-top: 28px; font-family: 'JetBrains Mono', monospace; line-height: 1.6; word-break: break-word; padding-bottom: 16px; }}
+
+    @media (max-width: 600px) {{
+      body {{ padding: 12px; }}
+      .header {{ padding: 18px; }}
+      .card {{ padding: 16px; }}
+      .table-wrap table {{ display: none; }}
+      .farm-cards {{ display: block; }}
+    }}
   </style>
 </head>
 <body>
@@ -344,32 +391,37 @@ class PublicTraceView(View):
     <div class="badge">AGRIOPS · SUPPLY CHAIN TRACEABILITY</div>
     <h1>Batch: {html.escape(str(batch.batch_number))}</h1>
     <p class="meta">Commodity: {html.escape(str(batch.commodity))} &nbsp;·&nbsp; Created: {batch.created_at.strftime('%d %B %Y')}</p>
-    {'<p class="meta">Sales Order: ' + html.escape(str(batch.sales_order.order_number)) + '</p>' if batch.sales_order else ''}
-    <div style="margin-top:16px;">
-      <span class="verified-badge">✓ Verified Supply Chain Record</span>
-    </div>
+    {so_line}
+    <div class="verified-badge">✓ Verified Supply Chain Record</div>
   </div>
 
   <div class="card">
-    <h2>Farm Traceability — {farms.count()} farms</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Farm</th>
-          <th>Supplier</th>
-          <th>Location</th>
-          <th>Area</th>
-          <th>Compliance Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {farm_rows if farm_rows else '<tr><td colspan="5" style="padding:12px;color:#475569;">No farms linked to this batch.</td></tr>'}
-      </tbody>
-    </table>
+    <h2>Farm Traceability — {farm_count} farm{'s' if farm_count != 1 else ''}</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Farm</th>
+            <th>Supplier</th>
+            <th>Location</th>
+            <th>Area</th>
+            <th>Compliance Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {farm_rows if farm_rows else empty_row}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="farm-cards">
+      {farm_cards if farm_cards else empty_card}
+    </div>
   </div>
 
   <div class="footer">
-    AgriOps · app.agriops.io · Agricultural Supply Chain Intelligence<br>
+    AgriOps &middot; app.agriops.io &middot; Agricultural Supply Chain Intelligence<br>
     This record was generated from verified supply chain data and is intended for EU buyer compliance under EUDR 2023/1115.
   </div>
 </div>
