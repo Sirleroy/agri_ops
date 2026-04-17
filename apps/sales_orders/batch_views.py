@@ -290,7 +290,7 @@ class PublicTraceView(View):
         cache.set(cache_key, hits + 1, timeout=3600)
 
         batch = get_object_or_404(Batch, public_token=token)
-        farms = batch.farms.select_related('supplier').all()
+        farms = list(batch.farms.select_related('supplier', 'verified_by').prefetch_related('certifications').all())
         return HttpResponse(
             self._render(batch, farms),
             content_type='text/html'
@@ -299,46 +299,113 @@ class PublicTraceView(View):
     def _e(self, value):
         return html.escape(str(value)) if value else '—'
 
+    def _centroid(self, geolocation):
+        if not geolocation:
+            return None
+        try:
+            coords = geolocation.get('coordinates', [[]])[0]
+            if not coords:
+                return None
+            lngs = [c[0] for c in coords]
+            lats = [c[1] for c in coords]
+            lat = sum(lats) / len(lats)
+            lng = sum(lngs) / len(lngs)
+            lat_str = f"{abs(lat):.5f}°{'N' if lat >= 0 else 'S'}"
+            lng_str = f"{abs(lng):.5f}°{'E' if lng >= 0 else 'W'}"
+            return f"{lat_str}, {lng_str}"
+        except (KeyError, IndexError, TypeError, ZeroDivisionError):
+            return None
+
     def _render(self, batch, farms):
+        farm_count = len(farms)
+
+        # ── Farm overview rows / cards ────────────────────────
         farm_rows = ""
         farm_cards = ""
-        farms_list = list(farms)
-        farm_count = len(farms_list)
-
-        for farm in farms_list:
+        for farm in farms:
             status_color = "#22c55e" if farm.is_eudr_verified else "#f59e0b"
-            status_text = "Verified" if farm.is_eudr_verified else "Pending"
+            status_text  = "Verified" if farm.is_eudr_verified else "Pending"
             supplier_name = self._e(farm.supplier.name) if farm.supplier else '—'
-            area = f"{self._e(farm.area_hectares)} ha" if farm.area_hectares else '—'
-            location = f"{self._e(farm.country)} / {self._e(farm.state_region)}"
+            area          = f"{self._e(farm.area_hectares)} ha" if farm.area_hectares else '—'
+            location      = f"{self._e(farm.country)} / {self._e(farm.state_region)}"
 
-            # Desktop table rows
             farm_rows += f"""
             <tr>
-              <td class="td" data-label="Farm">{self._e(farm.name)}</td>
-              <td class="td" data-label="Supplier">{supplier_name}</td>
-              <td class="td" data-label="Location">{location}</td>
-              <td class="td" data-label="Area">{area}</td>
-              <td class="td" data-label="Compliance Status" style="color:{status_color};">{status_text}</td>
+              <td class="td">{self._e(farm.name)}</td>
+              <td class="td">{supplier_name}</td>
+              <td class="td">{location}</td>
+              <td class="td">{area}</td>
+              <td class="td" style="color:{status_color};font-weight:600;">{status_text}</td>
             </tr>"""
 
-            # Mobile cards
             farm_cards += f"""
             <div class="farm-card">
               <div class="farm-card-name">{self._e(farm.name)}</div>
-              <div class="farm-card-grid">
-                <span class="farm-label">Supplier</span><span class="farm-value">{supplier_name}</span>
-                <span class="farm-label">Location</span><span class="farm-value">{location}</span>
-                <span class="farm-label">Area</span><span class="farm-value">{area}</span>
-                <span class="farm-label">Status</span><span class="farm-value" style="color:{status_color};">{status_text}</span>
+              <div class="ev-grid">
+                <span class="ev-label">Supplier</span><span class="ev-value">{supplier_name}</span>
+                <span class="ev-label">Location</span><span class="ev-value">{location}</span>
+                <span class="ev-label">Area</span><span class="ev-value">{area}</span>
+                <span class="ev-label">Status</span><span class="ev-value" style="color:{status_color};font-weight:600;">{status_text}</span>
               </div>
             </div>"""
+
+        # ── Verification evidence blocks ──────────────────────
+        evidence_html = ""
+        from datetime import date as _date
+        for farm in farms:
+            if not farm.is_eudr_verified:
+                continue
+            verifier  = self._e(farm.verified_by.get_full_name() or farm.verified_by.username) if farm.verified_by else '—'
+            v_date    = farm.verified_date.strftime('%d %b %Y') if farm.verified_date else '—'
+            v_expiry  = farm.verification_expiry.strftime('%d %b %Y') if farm.verification_expiry else '—'
+            centroid  = self._centroid(farm.geolocation) or '—'
+            ref_date  = farm.deforestation_reference_date.strftime('%d %b %Y') if farm.deforestation_reference_date else '—'
+            fvf = ('Signed ' + farm.fvf_consent_date.strftime('%d %b %Y')) if (farm.fvf_consent_given and farm.fvf_consent_date) else \
+                  ('Signed — date not recorded' if farm.fvf_consent_given else 'Not recorded')
+
+            certs_html = ""
+            for c in farm.certifications.all():
+                is_active   = not c.expiry_date or c.expiry_date >= _date.today()
+                exp_color   = "#22c55e" if is_active else "#f87171"
+                exp_text    = c.expiry_date.strftime('%d %b %Y') if c.expiry_date else '—'
+                issued_text = c.issued_date.strftime('%d %b %Y') if c.issued_date else '—'
+                certs_html += f"""
+                <div class="cert-row">
+                  <span class="cert-type">{self._e(c.get_cert_type_display())}</span>
+                  <div class="ev-grid">
+                    <span class="ev-label">Certifying body</span><span class="ev-value">{self._e(c.certifying_body)}</span>
+                    <span class="ev-label">Cert number</span><span class="ev-value">{self._e(c.certificate_number) if c.certificate_number else '—'}</span>
+                    <span class="ev-label">Issued</span><span class="ev-value">{issued_text}</span>
+                    <span class="ev-label">Expires</span><span class="ev-value" style="color:{exp_color};">{exp_text}</span>
+                  </div>
+                </div>"""
+
+            evidence_html += f"""
+            <div class="ev-block">
+              <div class="ev-farm-name">{self._e(farm.name)}</div>
+              <div class="ev-grid">
+                <span class="ev-label">Verified by</span><span class="ev-value">{verifier}</span>
+                <span class="ev-label">Verified date</span><span class="ev-value">{v_date}</span>
+                <span class="ev-label">Expiry</span><span class="ev-value">{v_expiry}</span>
+                <span class="ev-label">GPS centroid</span><span class="ev-value mono">{centroid}</span>
+                <span class="ev-label">Deforestation ref.</span><span class="ev-value">{ref_date}</span>
+                <span class="ev-label">FVF consent</span><span class="ev-value">{fvf}</span>
+              </div>
+              {('<div class="cert-section"><p class="cert-heading">Certifications</p>' + certs_html + '</div>') if certs_html else ''}
+            </div>"""
+
+        evidence_card = f"""
+  <div class="card">
+    <h2>Verification Evidence</h2>
+    <p class="ev-intro">The records below substantiate the Verified status shown in the farm table. Each entry was recorded in the AgriOps platform by a named operator and is retained for audit.</p>
+    {evidence_html}
+  </div>""" if evidence_html else ""
 
         so_line = (
             f'<p class="meta">Sales Order: {html.escape(str(batch.sales_order.order_number))}</p>'
             if batch.sales_order else ''
         )
-        empty_row = '<tr><td colspan="5" style="padding:16px;color:#475569;text-align:center;">No farms linked to this batch.</td></tr>'
+        empty_row  = '<tr><td colspan="5" style="padding:16px;color:#475569;text-align:center;">No farms linked to this batch.</td></tr>'
         empty_card = '<p style="color:#475569;text-align:center;padding:16px 0;">No farms linked to this batch.</p>'
 
         return f"""<!DOCTYPE html>
@@ -350,43 +417,64 @@ class PublicTraceView(View):
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after {{ box-sizing: border-box; }}
-    body {{ font-family: Georgia, serif; background: #080d14; color: #e2e8f0; margin: 0; padding: 16px; }}
+    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #080d14; color: #e2e8f0; margin: 0; padding: 16px; }}
     .container {{ max-width: 900px; margin: 0 auto; }}
+
+    /* Header */
     .header {{ background: #131f2e; border: 1px solid #1e2d40; border-radius: 16px; padding: 24px; margin-bottom: 16px; }}
     .badge {{ font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #22c55e; letter-spacing: 0.15em; margin-bottom: 10px; word-break: break-word; }}
-    h1 {{ font-family: 'Syne', sans-serif; font-size: clamp(20px, 5vw, 28px); color: #f8fafc; margin: 0 0 8px 0; word-break: break-word; }}
+    h1 {{ font-family: 'Syne', sans-serif; font-size: clamp(20px, 5vw, 28px); color: #f8fafc; margin: 0 0 8px 0; word-break: break-word; line-height: 1.2; }}
     .meta {{ font-size: 13px; color: #64748b; margin: 4px 0; word-break: break-word; }}
-    .card {{ background: #131f2e; border: 1px solid #1e2d40; border-radius: 12px; padding: 20px; margin-bottom: 16px; overflow: hidden; }}
-    .card h2 {{ font-family: 'Syne', sans-serif; font-size: 13px; color: #22c55e; letter-spacing: 0.1em; margin: 0 0 16px 0; text-transform: uppercase; }}
     .verified-badge {{ display: inline-flex; align-items: center; gap: 6px; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: #22c55e; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-family: 'JetBrains Mono', monospace; margin-top: 14px; }}
 
-    /* Desktop table */
+    /* Cards */
+    .card {{ background: #131f2e; border: 1px solid #1e2d40; border-radius: 12px; padding: 20px; margin-bottom: 16px; overflow: hidden; }}
+    .card h2 {{ font-family: 'Syne', sans-serif; font-size: 12px; color: #22c55e; letter-spacing: 0.12em; margin: 0 0 16px 0; text-transform: uppercase; }}
+
+    /* Farm overview table (desktop) */
     .table-wrap {{ overflow-x: auto; -webkit-overflow-scrolling: touch; }}
     table {{ width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }}
     th {{ text-align: left; padding: 10px 12px; color: #64748b; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; border-bottom: 1px solid #1e2d40; white-space: nowrap; }}
-    .td {{ color: #cbd5e1; padding: 12px; border-bottom: 1px solid #1e2d40; word-break: break-word; vertical-align: top; }}
+    .td {{ color: #cbd5e1; padding: 12px; border-bottom: 1px solid #1e2d40; word-break: break-word; vertical-align: top; font-size: 13px; }}
 
-    /* Mobile farm cards (hidden on desktop) */
+    /* Farm overview mobile cards */
     .farm-cards {{ display: none; }}
     .farm-card {{ background: #0d1520; border: 1px solid #1e2d40; border-radius: 10px; padding: 14px; margin-bottom: 10px; }}
     .farm-card-name {{ font-family: 'Syne', sans-serif; font-size: 15px; color: #f1f5f9; font-weight: 700; margin-bottom: 10px; word-break: break-word; }}
-    .farm-card-grid {{ display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; align-items: baseline; }}
-    .farm-label {{ font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #475569; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }}
-    .farm-value {{ font-size: 13px; color: #cbd5e1; word-break: break-word; }}
 
+    /* Shared label/value grid — used in farm cards AND evidence blocks */
+    .ev-grid {{ display: grid; grid-template-columns: max-content 1fr; gap: 5px 14px; align-items: baseline; }}
+    .ev-label {{ font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #475569; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }}
+    .ev-value {{ font-size: 13px; color: #cbd5e1; word-break: break-word; }}
+    .ev-value.mono {{ font-family: 'JetBrains Mono', monospace; font-size: 11px; }}
+
+    /* Verification evidence section */
+    .ev-intro {{ font-size: 12px; color: #475569; margin: -4px 0 16px 0; line-height: 1.5; }}
+    .ev-block {{ background: #0d1520; border: 1px solid #1e2d40; border-radius: 10px; padding: 14px; margin-bottom: 12px; }}
+    .ev-farm-name {{ font-family: 'Syne', sans-serif; font-size: 14px; color: #f1f5f9; font-weight: 700; margin-bottom: 10px; word-break: break-word; }}
+
+    /* Certifications within evidence */
+    .cert-section {{ margin-top: 12px; padding-top: 12px; border-top: 1px solid #1e2d40; }}
+    .cert-heading {{ font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #475569; text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 8px 0; }}
+    .cert-row {{ background: #131f2e; border: 1px solid #1e2d40; border-radius: 8px; padding: 10px; margin-bottom: 8px; }}
+    .cert-type {{ display: block; font-size: 12px; font-weight: 600; color: #94a3b8; margin-bottom: 6px; }}
+
+    /* Footer */
     .footer {{ text-align: center; font-size: 11px; color: #334155; margin-top: 28px; font-family: 'JetBrains Mono', monospace; line-height: 1.6; word-break: break-word; padding-bottom: 16px; }}
 
     @media (max-width: 600px) {{
       body {{ padding: 12px; }}
-      .header {{ padding: 18px; }}
-      .card {{ padding: 16px; }}
+      .header {{ padding: 18px; border-radius: 12px; }}
+      .card {{ padding: 16px; border-radius: 10px; }}
       .table-wrap table {{ display: none; }}
       .farm-cards {{ display: block; }}
+      .ev-grid {{ gap: 4px 10px; }}
     }}
   </style>
 </head>
 <body>
 <div class="container">
+
   <div class="header">
     <div class="badge">AGRIOPS · SUPPLY CHAIN TRACEABILITY</div>
     <h1>Batch: {html.escape(str(batch.batch_number))}</h1>
@@ -397,33 +485,26 @@ class PublicTraceView(View):
 
   <div class="card">
     <h2>Farm Traceability — {farm_count} farm{'s' if farm_count != 1 else ''}</h2>
-
     <div class="table-wrap">
       <table>
         <thead>
-          <tr>
-            <th>Farm</th>
-            <th>Supplier</th>
-            <th>Location</th>
-            <th>Area</th>
-            <th>Compliance Status</th>
-          </tr>
+          <tr><th>Farm</th><th>Supplier</th><th>Location</th><th>Area</th><th>Compliance Status</th></tr>
         </thead>
-        <tbody>
-          {farm_rows if farm_rows else empty_row}
-        </tbody>
+        <tbody>{farm_rows if farm_rows else empty_row}</tbody>
       </table>
     </div>
-
     <div class="farm-cards">
       {farm_cards if farm_cards else empty_card}
     </div>
   </div>
 
+  {evidence_card}
+
   <div class="footer">
     AgriOps &middot; app.agriops.io &middot; Agricultural Supply Chain Intelligence<br>
     This record was generated from verified supply chain data and is intended for EU buyer compliance under EUDR 2023/1115.
   </div>
+
 </div>
 </body>
 </html>"""

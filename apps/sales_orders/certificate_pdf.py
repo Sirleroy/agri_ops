@@ -37,6 +37,25 @@ def _p(text, style=None):
     return Paragraph(str(text) if text else "—", style)
 
 
+def _gps_centroid(geolocation):
+    """Return (lat, lng) centroid string from a GeoJSON Polygon, or None."""
+    if not geolocation:
+        return None
+    try:
+        coords = geolocation.get('coordinates', [[]])[0]
+        if not coords:
+            return None
+        lngs = [c[0] for c in coords]
+        lats = [c[1] for c in coords]
+        lat = sum(lats) / len(lats)
+        lng = sum(lngs) / len(lngs)
+        lat_str = f"{abs(lat):.5f}°{'N' if lat >= 0 else 'S'}"
+        lng_str = f"{abs(lng):.5f}°{'E' if lng >= 0 else 'W'}"
+        return f"{lat_str}, {lng_str}"
+    except (KeyError, IndexError, TypeError, ZeroDivisionError):
+        return None
+
+
 def _qr_image(url):
     """Generate QR code and return as ReportLab image."""
     from reportlab.platypus import Image
@@ -105,7 +124,7 @@ def generate_certificate(batch):
 
     # ── Supplier chain ────────────────────────────────────────
     # 174mm total: 46+34+55+39
-    farms = batch.farms.select_related('supplier').all()
+    farms = list(batch.farms.select_related('supplier', 'verified_by').prefetch_related('certifications').all())
     suppliers = {farm.supplier for farm in farms if farm.supplier}
     if suppliers:
         story.append(Paragraph("Supplier Chain", ParagraphStyle("s1b", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceBefore=6*mm, spaceAfter=3*mm)))
@@ -127,7 +146,7 @@ def generate_certificate(batch):
         story.append(sup_t)
 
     # ── Farm traceability ─────────────────────────────────────
-    story.append(Paragraph(f"Farm Traceability — {farms.count()} farms", ParagraphStyle("s2", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceBefore=6*mm, spaceAfter=3*mm)))
+    story.append(Paragraph(f"Farm Traceability — {len(farms)} farms", ParagraphStyle("s2", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceBefore=6*mm, spaceAfter=3*mm)))
 
     if is_eu:
         # 174mm: 32+28+28+16+14+22+34
@@ -180,6 +199,96 @@ def generate_certificate(batch):
         ("VALIGN",         (0,0), (-1,-1), "TOP"),
     ]))
     story.append(farm_t)
+
+    # ── Verification Evidence ─────────────────────────────────
+    verified_farms = [f for f in farms if f.is_eudr_verified]
+    if verified_farms:
+        story.append(Paragraph("Verification Evidence", ParagraphStyle(
+            "s_ve", fontName="Helvetica-Bold", fontSize=11, textColor=DARK,
+            spaceBefore=6*mm, spaceAfter=3*mm,
+        )))
+        story.append(Paragraph(
+            "The following records substantiate the Verified status shown in the Farm Traceability table above.",
+            ParagraphStyle("ve_intro", fontName="Helvetica", fontSize=8, textColor=SLATE, spaceAfter=3*mm),
+        ))
+
+        _LBL = ParagraphStyle("ve_lbl", fontName="Helvetica-Bold", fontSize=8, textColor=SLATE,   leading=11)
+        _VAL = ParagraphStyle("ve_val", fontName="Helvetica",      fontSize=8, textColor=DARK,    leading=11)
+        _GRN = ParagraphStyle("ve_grn", fontName="Helvetica-Bold", fontSize=8, textColor=GREEN,   leading=11)
+        _RED = ParagraphStyle("ve_red", fontName="Helvetica-Bold", fontSize=8, textColor=colors.HexColor("#f87171"), leading=11)
+
+        for farm in verified_farms:
+            # Farm name header row
+            story.append(Table(
+                [[Paragraph(farm.name, ParagraphStyle("ve_farm", fontName="Helvetica-Bold", fontSize=9, textColor=DARK, leading=12))]],
+                colWidths=[PAGE_W],
+                style=TableStyle([
+                    ("BACKGROUND",    (0,0), (-1,-1), colors.HexColor("#f1f5f9")),
+                    ("LEFTPADDING",   (0,0), (-1,-1), 6),
+                    ("TOPPADDING",    (0,0), (-1,-1), 5),
+                    ("BOTTOMPADDING", (0,0), (-1,-1), 5),
+                ]),
+            ))
+
+            # Verification details — 3 col layout: label / value / label / value
+            verifier = farm.verified_by.get_full_name() or farm.verified_by.username if farm.verified_by else "—"
+            v_date   = farm.verified_date.strftime("%d %b %Y") if farm.verified_date else "—"
+            v_expiry = farm.verification_expiry.strftime("%d %b %Y") if farm.verification_expiry else "—"
+            centroid = _gps_centroid(farm.geolocation) or "—"
+            ref_date = farm.deforestation_reference_date.strftime("%d %b %Y") if farm.deforestation_reference_date else "—"
+            fvf_consent = (
+                f"Signed {farm.fvf_consent_date.strftime('%d %b %Y')}" if farm.fvf_consent_given and farm.fvf_consent_date
+                else ("Signed — date not recorded" if farm.fvf_consent_given else "Not recorded")
+            )
+
+            # 174mm: 30+57+30+57
+            detail_data = [
+                [_p("Verified by",           _LBL), _p(verifier,  _VAL), _p("Verified date",  _LBL), _p(v_date,    _VAL)],
+                [_p("Expiry",                _LBL), _p(v_expiry,  _VAL), _p("GPS Centroid",   _LBL), _p(centroid,  _VAL)],
+                [_p("Deforestation ref.",    _LBL), _p(ref_date,  _VAL), _p("FVF Consent",    _LBL), _p(fvf_consent, _VAL)],
+            ]
+            detail_t = Table(detail_data, colWidths=[30*mm, 57*mm, 30*mm, 57*mm])
+            detail_t.setStyle(TableStyle([
+                ("GRID",          (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+                ("TOPPADDING",    (0,0), (-1,-1), 4),
+                ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+                ("LEFTPADDING",   (0,0), (-1,-1), 5),
+                ("VALIGN",        (0,0), (-1,-1), "TOP"),
+                ("ROWBACKGROUNDS",(0,0), (-1,-1), [WHITE, colors.HexColor("#f8fafc"), WHITE]),
+            ]))
+            story.append(detail_t)
+
+            # Certifications
+            certs = list(farm.certifications.all())
+            if certs:
+                cert_data = [[_p(h, _CELL_HDR) for h in ["Certification", "Certifying Body", "Cert Number", "Issued", "Expires"]]]
+                for c in certs:
+                    is_active = c.expiry_date is None or c.expiry_date >= date.today()
+                    cert_data.append([
+                        _p(c.get_cert_type_display()),
+                        _p(c.certifying_body),
+                        _p(c.certificate_number or "—"),
+                        _p(c.issued_date.strftime("%d %b %Y") if c.issued_date else "—"),
+                        Paragraph(
+                            c.expiry_date.strftime("%d %b %Y") if c.expiry_date else "—",
+                            _GRN if is_active else _RED,
+                        ),
+                    ])
+                # 174mm: 42+42+32+29+29
+                cert_t = Table(cert_data, colWidths=[42*mm, 42*mm, 32*mm, 29*mm, 29*mm])
+                cert_t.setStyle(TableStyle([
+                    ("BACKGROUND",     (0,0), (-1,0), DARK),
+                    ("FONTSIZE",       (0,0), (-1,-1), 8),
+                    ("GRID",           (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+                    ("ROWBACKGROUNDS", (0,1), (-1,-1), [WHITE, colors.HexColor("#f8fafc")]),
+                    ("TOPPADDING",     (0,0), (-1,-1), 4),
+                    ("BOTTOMPADDING",  (0,0), (-1,-1), 4),
+                    ("LEFTPADDING",    (0,0), (-1,-1), 5),
+                    ("VALIGN",         (0,0), (-1,-1), "TOP"),
+                ]))
+                story.append(cert_t)
+
+            story.append(Spacer(1, 3*mm))
 
     # ── Compliance Documents ──────────────────────────────────
     phyto_certs   = list(batch.phytosanitary_certs.all())
