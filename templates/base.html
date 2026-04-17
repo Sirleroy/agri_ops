@@ -119,6 +119,39 @@
       margin-top: 0.25rem;
       border-top: 1px solid rgba(30,45,64,0.9);
     }
+
+    /* ── Page transitions ───────────────────────────────────────────────── */
+    /* View Transitions API — Chrome 111+, Edge 111+, Safari 18.2+.
+       Falls back to instant navigation on Firefox / older browsers.      */
+    @view-transition { navigation: auto; }
+
+    /* Suppress the full-page root cross-fade — only <main> animates */
+    ::view-transition-old(root),
+    ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+
+    @keyframes vt-in  { from { opacity: 0; transform: translateY(10px); } }
+    @keyframes vt-out { to   { opacity: 0; } }
+    ::view-transition-new(page) { animation: vt-in  200ms ease-out; }
+    ::view-transition-old(page) { animation: vt-out 140ms ease-in  forwards; }
+
+    /* Tag <main> as the animated element */
+    main { view-transition-name: page; }
+
+    /* Navigation progress bar — visible on all browsers */
+    #nav-bar {
+      position: fixed; top: 0; left: 0;
+      height: 2px; width: 0;
+      background: #22c55e;
+      z-index: 9999;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.1s ease;
+    }
+    html.nav-loading #nav-bar {
+      opacity: 1;
+      width: 80%;
+      transition: width 3s ease-out, opacity 0.1s ease;
+    }
   </style>
 
   {% block extra_head %}{% endblock %}
@@ -162,6 +195,8 @@
     this.deleteModal = true;
   }
 }" @keydown.escape.window="deleteModal = false">
+
+  <div id="nav-bar" aria-hidden="true"></div>
 
   <div class="flex h-screen overflow-hidden">
 
@@ -585,6 +620,28 @@
         toggle();
       });
     });
+  </script>
+
+  <script>
+    /* Navigation progress bar */
+    (function () {
+      function startNav() {
+        document.documentElement.classList.add('nav-loading');
+      }
+      document.addEventListener('click', function (e) {
+        var a = e.target.closest('a[href]');
+        if (!a) return;
+        var href = a.getAttribute('href') || '';
+        if (!href || href[0] === '#' || /^(javascript|mailto|tel):/.test(href) ||
+            a.target === '_blank' || e.metaKey || e.ctrlKey || e.shiftKey) return;
+        startNav();
+      });
+      document.addEventListener('submit', function (e) {
+        /* Skip download forms — they don't navigate away */
+        if (e.target.hasAttribute('data-download')) return;
+        startNav();
+      });
+    })();
   </script>
 
 </body>
