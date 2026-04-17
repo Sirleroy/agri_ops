@@ -51,7 +51,7 @@ class SalesOrderDetailView(StaffRequiredMixin, DetailView):
 class SalesOrderCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = SalesOrder
     template_name = 'sales_orders/form.html'
-    fields = ['customer_name', 'customer_email', 'customer_phone', 'is_eu_export', 'notes']
+    fields = ['customer_name', 'customer_email', 'customer_phone', 'is_eu_export', 'nxp_reference', 'notes']
 
     def form_valid(self, form):
         company = self.request.user.company

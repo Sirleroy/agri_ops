@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load humanize %}
 {% block title %}{{ product.name }} — AgriOps{% endblock %}
 {% block page_title %}{{ product.name }}{% endblock %}
 
@@ -47,7 +48,7 @@
       </div>
       <div>
         <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Unit Price</p>
-        <p class="text-sm text-slate-200 font-mono">₦{{ product.unit_price }}</p>
+        <p class="text-sm text-slate-200 font-mono">₦{{ product.unit_price|intcomma }}</p>
       </div>
       <div>
         <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Created</p>

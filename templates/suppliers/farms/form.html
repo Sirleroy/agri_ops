@@ -44,10 +44,34 @@
             <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">
               {{ field.label }}{% if field.field.required %} *{% endif %}
             </label>
+            {% if field.name == 'farmer' %}
+            <div x-data="{
+                  search: '',
+                  init() {
+                    this.$nextTick(() => {
+                      const sel = this.$el.querySelector('select');
+                      const opts = Array.from(sel.options);
+                      this.$watch('search', v => {
+                        const q = v.toLowerCase();
+                        opts.forEach(o => {
+                          o.hidden = o.value !== '' && !o.text.toLowerCase().includes(q);
+                        });
+                      });
+                    });
+                  }
+                }">
+              <input type="text" x-model="search" placeholder="Search farmers…"
+                class="w-full bg-surface border border-border rounded-t-lg px-4 py-2 text-sm text-slate-100 outline-none placeholder-slate-600 focus:border-green transition-colors border-b-0">
+              <div class="[&>select]:w-full [&>select]:bg-surface [&>select]:border [&>select]:border-border [&>select]:rounded-b-lg [&>select]:rounded-t-none [&>select]:px-4 [&>select]:py-3 [&>select]:text-sm [&>select]:text-slate-100 [&>select]:outline-none">
+                {{ field }}
+              </div>
+            </div>
+            {% else %}
             <div class="[&>select]:w-full [&>select]:bg-surface [&>select]:border [&>select]:border-border [&>select]:rounded-lg [&>select]:px-4 [&>select]:py-3 [&>select]:text-sm [&>select]:text-slate-100 [&>select]:outline-none
                         [&>input]:w-full [&>input]:bg-surface [&>input]:border [&>input]:border-border [&>input]:rounded-lg [&>input]:px-4 [&>input]:py-3 [&>input]:text-sm [&>input]:text-slate-100 [&>input]:outline-none [&>input]:placeholder-slate-600">
               {{ field }}
             </div>
+            {% endif %}
             {% if field.errors %}
               <p class="mt-1 text-xs font-mono text-red-400">{{ field.errors.0 }}</p>
             {% endif %}

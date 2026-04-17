@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load humanize %}
 {% block title %}Products — AgriOps{% endblock %}
 {% block page_title %}Products{% endblock %}
 
@@ -43,7 +44,7 @@
           </td>
           <td class="px-5 py-3 text-slate-400">{{ product.supplier.name|default:"—" }}</td>
           <td class="px-5 py-3 text-slate-400">{{ product.get_unit_display }}</td>
-          <td class="px-5 py-3 text-slate-200 font-mono">₦{{ product.unit_price }}</td>
+          <td class="px-5 py-3 text-slate-200 font-mono">₦{{ product.unit_price|intcomma }}</td>
           <td class="px-5 py-3">
             {% if product.is_active %}
               <span class="px-2 py-1 rounded-md text-xs font-mono font-semibold bg-green/10 text-green border border-green/20">Active</span>
