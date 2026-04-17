@@ -57,7 +57,7 @@ class PurchaseOrderDetailView(StaffRequiredMixin, DetailView):
                 ).only('pk', 'product_id')
             }
             for item in items:
-                item._inventory_pk = inv_map.get(item.product_id)
+                item.inventory_pk = inv_map.get(item.product_id)
         return context
 
 

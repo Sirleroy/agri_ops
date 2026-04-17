@@ -155,8 +155,8 @@
             <td class="px-5 py-3 text-slate-200 font-mono font-semibold">₦{{ item.total_price }}</td>
             {% if order.status == 'received' %}
             <td class="px-5 py-3 text-right">
-              {% if item._inventory_pk %}
-              <a href="{% url 'inventory:detail' item._inventory_pk %}"
+              {% if item.inventory_pk %}
+              <a href="{% url 'inventory:detail' item.inventory_pk %}"
                  class="text-xs font-mono text-slate-500 hover:text-green transition-colors whitespace-nowrap">
                 Stock →
               </a>
