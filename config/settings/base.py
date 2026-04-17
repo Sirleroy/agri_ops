@@ -156,6 +156,9 @@ SESSION_COOKIE_AGE          = 28800  # 8 hours
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# ── Password reset link expiry ────────────────────────────────
+PASSWORD_RESET_TIMEOUT = 86400  # 24 hours (Django default is 3 days)
+
 # ── django-axes — brute force protection ─────────────────────
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = 1  # hours

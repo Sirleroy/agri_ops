@@ -50,6 +50,9 @@ class Inventory(models.Model):
         verbose_name_plural = 'Inventories'
         ordering = ['product']
         unique_together = ['company', 'product', 'warehouse_location']
+        indexes = [
+            models.Index(fields=['company', 'product'], name='inv_company_product_idx'),
+        ]
 
     @property
     def is_low_stock(self):

@@ -53,6 +53,11 @@ class Batch(models.Model):
     class Meta:
         ordering = ['-created_at']
         verbose_name_plural = 'Batches'
+        indexes = [
+            models.Index(fields=['company', '-created_at'], name='batch_company_created_idx'),
+            models.Index(fields=['company', 'commodity'], name='batch_company_commodity_idx'),
+            models.Index(fields=['is_locked'], name='batch_locked_idx'),
+        ]
 
     def __str__(self):
         return self.batch_number

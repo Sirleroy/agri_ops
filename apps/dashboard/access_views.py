@@ -155,12 +155,16 @@ def _send_welcome_email(user, set_password_url, company):
       </div>
     </div>
     """
-    msg = EmailMultiAlternatives(subject, body_text, settings.DEFAULT_FROM_EMAIL, [user.email])
-    msg.attach_alternative(body_html, "text/html")
-    msg.send(fail_silently=True)
+    import threading
+    def _do_send():
+        msg = EmailMultiAlternatives(subject, body_text, settings.DEFAULT_FROM_EMAIL, [user.email])
+        msg.attach_alternative(body_html, "text/html")
+        msg.send(fail_silently=True)
+    threading.Thread(target=_do_send, daemon=True).start()
 
 
 def _notify_founder(name, email, company, username, commodity=''):
+    import threading
     from django.core.mail import EmailMultiAlternatives
     founder_email = getattr(settings, 'FOUNDER_EMAIL', '')
     if not founder_email:
@@ -176,5 +180,7 @@ def _notify_founder(name, email, company, username, commodity=''):
         f"Username: {username}\n\n"
         f"View access requests: https://app.agriops.io/admin/dashboard/accessrequest/\n"
     )
-    msg = EmailMultiAlternatives(subject, body_text, settings.DEFAULT_FROM_EMAIL, [founder_email])
-    msg.send(fail_silently=True)
+    def _do_send():
+        msg = EmailMultiAlternatives(subject, body_text, settings.DEFAULT_FROM_EMAIL, [founder_email])
+        msg.send(fail_silently=True)
+    threading.Thread(target=_do_send, daemon=True).start()

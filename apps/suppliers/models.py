@@ -258,6 +258,12 @@ class Farm(models.Model):
 
     class Meta:
         ordering = ['name']
+        indexes = [
+            models.Index(fields=['company', 'is_eudr_verified'], name='farm_company_eudr_idx'),
+            models.Index(fields=['company', 'commodity'], name='farm_company_commodity_idx'),
+            models.Index(fields=['company', 'deforestation_risk_status'], name='farm_company_risk_idx'),
+            models.Index(fields=['company', 'supplier'], name='farm_company_supplier_idx'),
+        ]
 
     def __str__(self):
         return f"{self.name} — {self.supplier.name}"

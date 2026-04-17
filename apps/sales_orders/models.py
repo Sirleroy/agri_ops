@@ -58,6 +58,10 @@ class SalesOrder(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['company', '-order_date'], name='so_company_date_idx'),
+            models.Index(fields=['company', 'status'], name='so_company_status_idx'),
+        ]
 
     def __str__(self):
         return f"SO-{self.order_number} — {self.customer_name} ({self.get_status_display()})"

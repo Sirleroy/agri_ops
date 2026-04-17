@@ -42,6 +42,10 @@ class PurchaseOrder(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['company', '-order_date'], name='po_company_date_idx'),
+            models.Index(fields=['company', 'status'], name='po_company_status_idx'),
+        ]
 
     def __str__(self):
         return f"PO-{self.order_number} — {self.supplier} ({self.get_status_display()})"

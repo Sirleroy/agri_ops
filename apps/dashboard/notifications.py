@@ -12,14 +12,21 @@ SITE_URL = getattr(settings, 'SITE_URL', 'https://app.agriops.io')
 
 
 def _send(subject, body_text, body_html, recipient_list):
-    msg = EmailMultiAlternatives(
-        subject=subject,
-        body=body_text,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        to=recipient_list,
-    )
-    msg.attach_alternative(body_html, "text/html")
-    msg.send(fail_silently=False)
+    """Send email in a daemon thread so the request is never blocked by SMTP."""
+    import threading
+
+    def _do_send():
+        msg = EmailMultiAlternatives(
+            subject=subject,
+            body=body_text,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=recipient_list,
+        )
+        msg.attach_alternative(body_html, "text/html")
+        msg.send(fail_silently=True)
+
+    t = threading.Thread(target=_do_send, daemon=True)
+    t.start()
 
 
 def _e(value):
