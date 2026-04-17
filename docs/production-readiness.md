@@ -14,7 +14,7 @@ Last reviewed: 2026-04-17. Status reflects the current `main` branch.
 | Area | Status | Detail |
 |---|---|---|
 | Input sanitisation | ✅ | Django ORM prevents SQL injection. All user input validated through forms at system boundaries. `\|escapejs` applied on Alpine.js attribute interpolation. |
-| Error boundaries | ⚠️ | Django 404/500 handlers exist. No custom branded error pages yet — users see Django's default on server error. Low priority until first external demo. |
+| Error boundaries | ✅ | Custom branded 404, 403, and 500 pages. Self-contained HTML (no base.html dependency) — render correctly even if context processors or DB are unavailable. |
 | Hardcoded secrets | ✅ | `python-decouple` throughout. No secrets in codebase. All credentials via environment variables. |
 | Token storage | ✅ | Main app uses session auth — no localStorage tokens. DRF API uses SimpleJWT for external consumers only. |
 | Session expiry | ✅ | `SESSION_COOKIE_AGE = 28800` (8 hours). Ops dashboard: 2 hours. |
@@ -70,7 +70,7 @@ Pre-existing indexes on `AuditLog`:
 
 | Gap | Severity | Plan |
 |---|---|---|
-| No custom 404/500 error pages | Low | Add before first external demo — branding only, no functional impact |
+| ~~No custom 404/500 error pages~~ | ✅ Closed 2026-04-17 | |
 | Sync Django password reset email (via `django.contrib.auth`) | Low | Built-in view — cannot wrap in thread without overriding. SMTP latency on password reset is acceptable. |
 | No startup validation of email/SMTP vars | Info | Email fails silently (`fail_silently=True`) so a missing SMTP config won't crash the app — it just won't send. Acceptable until email is a critical user flow. |
 

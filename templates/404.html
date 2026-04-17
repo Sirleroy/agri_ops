@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>404 — Page Not Found · AgriOps</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0a0f1a;
+      color: #e2e8f0;
+      font-family: Georgia, serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .container { max-width: 480px; width: 100%; text-align: center; }
+    .badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: #22c55e;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .code {
+      font-family: 'Syne', sans-serif;
+      font-size: 96px;
+      font-weight: 800;
+      color: #1e2d40;
+      line-height: 1;
+      margin-bottom: 8px;
+      user-select: none;
+    }
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: #f8fafc;
+      margin-bottom: 12px;
+    }
+    p {
+      font-size: 14px;
+      color: #64748b;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+    .actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      background: #22c55e;
+      color: #0a0f1a;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 10px 24px;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .btn-primary:hover { background: #16a34a; }
+    .btn-secondary {
+      background: transparent;
+      color: #64748b;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      padding: 10px 24px;
+      border-radius: 8px;
+      border: 1px solid #1e2d40;
+      text-decoration: none;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .btn-secondary:hover { color: #e2e8f0; border-color: #334155; }
+    .footer {
+      margin-top: 48px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #334155;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <p class="badge">AgriOps · Supply Chain Intelligence</p>
+    <div class="code">404</div>
+    <h1>Page not found</h1>
+    <p>The page you're looking for doesn't exist or may have been moved.<br>
+       If you followed a link, it may be outdated.</p>
+    <div class="actions">
+      <a href="/dashboard/" class="btn-primary">Go to Dashboard</a>
+      <a href="javascript:history.back()" class="btn-secondary">Go Back</a>
+    </div>
+    <p class="footer">app.agriops.io</p>
+  </div>
+</body>
+</html>
