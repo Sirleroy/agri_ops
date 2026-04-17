@@ -291,7 +291,7 @@
         <div class="flex items-center justify-between py-1.5 border-b border-border last:border-0">
           <div>
             <a href="{% url 'suppliers:farm_detail' farm.pk %}" class="text-sm text-slate-200 hover:text-green transition-colors">{{ farm.name }}</a>
-            <p class="text-xs text-slate-500 mt-0.5">{{ farm.supplier.name }}</p>
+            {% if farm.supplier %}<p class="text-xs text-slate-500 mt-0.5">{{ farm.supplier.name }}</p>{% endif %}
           </div>
           <span class="expiry-badge text-xs font-mono text-orange-400 flex-shrink-0 ml-2" data-expiry="{{ farm.verification_expiry|date:'Y-m-d' }}"></span>
         </div>

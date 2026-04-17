@@ -166,7 +166,7 @@ class Farm(models.Model):
     ]
 
     company        = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='farms')
-    supplier       = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='farms')
+    supplier       = models.ForeignKey(Supplier, null=True, blank=True, on_delete=models.SET_NULL, related_name='farms')
     name           = models.CharField(max_length=255)
     farmer         = models.ForeignKey(Farmer, null=True, blank=True, on_delete=models.SET_NULL, related_name='farms')
     farmer_name    = models.CharField(max_length=255, blank=True)

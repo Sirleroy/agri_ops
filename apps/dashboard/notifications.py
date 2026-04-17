@@ -109,7 +109,7 @@ def send_eudr_expiry_warning(farm, recipient_emails):
     body_text = (
         f"EUDR Verification Expiry Warning\n\n"
         f"Farm: {farm.name}\n"
-        f"Supplier: {farm.supplier.name}\n"
+        f"Supplier: {farm.supplier.name if farm.supplier else '—'}\n"
         f"Commodity: {farm.commodity}\n"
         f"Expiry Date: {farm.verification_expiry}\n"
         f"Days Remaining: {days_left}\n\n"
@@ -137,7 +137,7 @@ def send_eudr_expiry_warning(farm, recipient_emails):
           </tr>
           <tr>
             <td style="padding: 8px 12px; color: #64748b; font-weight: bold;">Supplier</td>
-            <td style="padding: 8px 12px; color: #1e293b;">{_e(farm.supplier.name)}</td>
+            <td style="padding: 8px 12px; color: #1e293b;">{_e(farm.supplier.name) if farm.supplier else '—'}</td>
           </tr>
           <tr style="background: #f8fafc;">
             <td style="padding: 8px 12px; color: #64748b; font-weight: bold;">Commodity</td>

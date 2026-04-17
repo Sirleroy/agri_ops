@@ -9,7 +9,7 @@
   </a>
   <div class="bg-card border border-border rounded-xl p-6">
     <h2 class="text-base font-bold text-slate-100 mb-1">Add Certification</h2>
-    <p class="text-xs text-slate-500 font-mono mb-5">Farm: {{ farm.name }} · {{ farm.supplier.name }}</p>
+    <p class="text-xs text-slate-500 font-mono mb-5">Farm: {{ farm.name }}{% if farm.supplier %} · {{ farm.supplier.name }}{% endif %}</p>
     <form method="post" class="space-y-4">
       {% csrf_token %}
       {% for field in form %}

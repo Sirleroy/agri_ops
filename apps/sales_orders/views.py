@@ -45,19 +45,21 @@ class SalesOrderDetailView(StaffRequiredMixin, DetailView):
         # Narrow farm list to suppliers that appear in this order's line items.
         # Falls back to all company farms if no products have a linked supplier.
         supplier_pks = {item.product.supplier_id for item in items if item.product.supplier_id}
+        all_farms = Farm.objects.filter(
+            company=self.request.user.company,
+        ).select_related('supplier').order_by('name')
         if supplier_pks:
-            context['available_farms'] = Farm.objects.filter(
-                company=self.request.user.company,
-                supplier_id__in=supplier_pks,
-            ).select_related('supplier').order_by('name')
+            context['matched_farms'] = [f for f in all_farms if f.supplier_id in supplier_pks]
+            context['direct_farms']  = [f for f in all_farms if not f.supplier_id]
             context['farm_filter_suppliers'] = sorted(
                 {item.product.supplier.name for item in items if item.product.supplier}
             )
         else:
-            context['available_farms'] = Farm.objects.filter(
-                company=self.request.user.company,
-            ).select_related('supplier').order_by('name')
+            context['matched_farms'] = []
+            context['direct_farms']  = list(all_farms)
             context['farm_filter_suppliers'] = []
+        # keep available_farms for the all-farms fallback used by batch form
+        context['available_farms'] = all_farms
         return context
 
 

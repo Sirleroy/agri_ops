@@ -373,7 +373,7 @@ class OpsReportView(StaffRequiredMixin, View):
         for farm in qs:
             writer.writerow([
                 farm.name,
-                farm.supplier.name,
+                farm.supplier.name if farm.supplier else '—',
                 farm.farmer_name or '—',
                 farm.commodity,
                 farm.country,

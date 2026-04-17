@@ -95,7 +95,7 @@
            class="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-white/[0.03] transition-colors group border border-transparent hover:border-border">
           <div>
             <p class="text-sm text-slate-100 group-hover:text-green transition-colors font-medium">{{ farm.name }}</p>
-            <p class="text-xs text-slate-500 font-mono">{{ farm.supplier.name }} · {{ farm.commodity }}{% if farm.area_hectares %} · {{ farm.area_hectares }} ha{% endif %}</p>
+            <p class="text-xs text-slate-500 font-mono">{% if farm.supplier %}{{ farm.supplier.name }} · {% endif %}{{ farm.commodity }}{% if farm.area_hectares %} · {{ farm.area_hectares }} ha{% endif %}</p>
           </div>
           <div class="flex items-center gap-2">
             {% if farm.compliance_status == 'compliant' %}

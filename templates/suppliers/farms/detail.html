@@ -41,8 +41,10 @@
       <div>
         <dt class="text-xs text-slate-500 font-mono mb-1">Supplier</dt>
         <dd class="text-slate-100">
+          {% if farm.supplier %}
           <a href="{% url 'suppliers:detail' farm.supplier.pk %}"
              class="hover:text-green transition-colors">{{ farm.supplier.name }}</a>
+          {% else %}—{% endif %}
         </dd>
       </div>
       <div>

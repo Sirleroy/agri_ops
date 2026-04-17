@@ -50,7 +50,7 @@
             class="w-4 h-4 accent-green flex-shrink-0">
           <div class="flex-1 min-w-0">
             <p class="text-sm text-slate-200 font-medium truncate">{{ farm.name }}</p>
-            <p class="text-xs text-slate-500 font-mono truncate">{{ farm.supplier.name }} · {{ farm.commodity }}{% if farm.area_hectares %} · {{ farm.area_hectares }} ha{% endif %}</p>
+            <p class="text-xs text-slate-500 font-mono truncate">{% if farm.supplier %}{{ farm.supplier.name }} · {% endif %}{{ farm.commodity }}{% if farm.area_hectares %} · {{ farm.area_hectares }} ha{% endif %}</p>
           </div>
           {% if farm.compliance_status == 'compliant' %}
             <span class="text-xs font-mono text-green flex-shrink-0">✓ Verified</span>

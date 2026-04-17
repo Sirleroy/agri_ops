@@ -259,41 +259,41 @@
     <form method="post" action="{% url 'sales_orders:link_farms' order.pk %}">
       {% csrf_token %}
 
-      {% if available_farms %}
+      {% if matched_farms or direct_farms %}
       <input type="text" x-model="farmSearch" placeholder="Search farms…"
         class="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-green outline-none transition-colors mb-3">
       {% endif %}
 
-      <div class="space-y-1.5 mb-4 max-h-64 overflow-y-auto pr-1">
-        {% for farm in available_farms %}
-        <label
-          data-farm-search="{{ farm.name|lower|escapejs }} {{ farm.supplier.name|lower|escapejs }} {{ farm.commodity|lower|escapejs }}"
-          x-show="!farmSearch || $el.dataset.farmSearch.includes(farmSearch.toLowerCase())"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-transparent hover:border-border hover:bg-white/[0.02] cursor-pointer transition-colors">
-          <input type="checkbox" name="farm_pks" value="{{ farm.pk }}"
-            {% if linked_batch and farm in linked_batch.farms.all %}checked{% endif %}
-            class="w-4 h-4 accent-green rounded flex-shrink-0">
-          <div class="flex-1 min-w-0">
-            <p class="text-sm text-slate-200 font-medium truncate">{{ farm.name }}</p>
-            <p class="text-xs text-slate-500 font-mono">{{ farm.supplier.name }} · {{ farm.commodity }}{% if farm.area_hectares %} · {{ farm.area_hectares }} ha{% endif %}</p>
-          </div>
-          {% if farm.compliance_status == 'compliant' %}
-            <span class="text-xs font-mono text-green flex-shrink-0">✓ Verified</span>
-          {% elif farm.compliance_status == 'disqualified' %}
-            <span class="text-xs font-mono text-red-400 flex-shrink-0">Disqualified</span>
-          {% else %}
-            <span class="text-xs font-mono text-slate-500 flex-shrink-0">Pending</span>
-          {% endif %}
-        </label>
-        {% empty %}
+      <div class="space-y-1.5 mb-4 max-h-72 overflow-y-auto pr-1">
+
+        {% if matched_farms %}
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest px-1 pb-1">
+          {% for name in farm_filter_suppliers %}{{ name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+        </p>
+        {% for farm in matched_farms %}
+        {% include 'sales_orders/_farm_checkbox.html' %}
+        {% endfor %}
+        {% endif %}
+
+        {% if direct_farms %}
+        {% if matched_farms %}
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest px-1 pt-2 pb-1">Direct farms</p>
+        {% endif %}
+        {% for farm in direct_farms %}
+        {% include 'sales_orders/_farm_checkbox.html' %}
+        {% endfor %}
+        {% endif %}
+
+        {% if not matched_farms and not direct_farms %}
         <div class="py-6 text-center">
-          <p class="text-sm text-slate-500 mb-2">No farms found for the suppliers in this order.</p>
+          <p class="text-sm text-slate-500 mb-2">No farms registered yet.</p>
           <a href="{% url 'suppliers:farm_create' %}" class="text-xs text-green hover:text-green-dim transition-colors font-mono">Register a farm →</a>
         </div>
-        {% endfor %}
+        {% endif %}
+
       </div>
 
-      {% if available_farms %}
+      {% if matched_farms or direct_farms %}
       <button type="submit"
         class="w-full bg-green hover:bg-green-dim text-bg font-bold text-sm py-2.5 rounded-lg transition-colors">
         {% if linked_batch %}Update Linked Farms{% else %}Link Farms to This Order{% endif %}

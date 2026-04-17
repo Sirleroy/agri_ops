@@ -117,7 +117,7 @@
               <p class="text-xs text-slate-500 mt-0.5">{{ farm.farmer.full_name }}</p>
             {% endif %}
           </td>
-          <td class="px-4 py-3 text-slate-300">{{ farm.supplier.name }}</td>
+          <td class="px-4 py-3 text-slate-300">{{ farm.supplier.name|default:"—" }}</td>
           <td class="px-4 py-3 text-slate-300">{{ farm.commodity }}</td>
           <td class="px-4 py-3">
             {% if farm.deforestation_risk_status == 'low' %}
@@ -185,7 +185,7 @@
         <div class="min-w-0">
           <a href="{% url 'suppliers:farm_detail' farm.pk %}" class="block truncate font-medium text-slate-100 hover:text-green transition-colors">{{ farm.name }}</a>
           {% if farm.farmer %}<p class="text-xs text-slate-500 mt-0.5 truncate">{{ farm.farmer.full_name }}</p>{% endif %}
-          <p class="text-xs text-slate-600 mt-0.5 truncate">{{ farm.supplier.name }}</p>
+          {% if farm.supplier %}<p class="text-xs text-slate-600 mt-0.5 truncate">{{ farm.supplier.name }}</p>{% endif %}
         </div>
         <div class="flex flex-col items-end gap-1 flex-shrink-0">
           {% if farm.compliance_status == 'compliant' %}

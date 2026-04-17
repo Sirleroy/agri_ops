@@ -1,0 +1,19 @@
+<label
+  data-farm-search="{{ farm.name|lower|escapejs }} {{ farm.supplier.name|lower|escapejs }} {{ farm.commodity|lower|escapejs }}"
+  x-show="!farmSearch || $el.dataset.farmSearch.includes(farmSearch.toLowerCase())"
+  class="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-transparent hover:border-border hover:bg-white/[0.02] cursor-pointer transition-colors">
+  <input type="checkbox" name="farm_pks" value="{{ farm.pk }}"
+    {% if linked_batch and farm in linked_batch.farms.all %}checked{% endif %}
+    class="w-4 h-4 accent-green rounded flex-shrink-0">
+  <div class="flex-1 min-w-0">
+    <p class="text-sm text-slate-200 font-medium truncate">{{ farm.name }}</p>
+    <p class="text-xs text-slate-500 font-mono">{% if farm.supplier %}{{ farm.supplier.name }} · {% endif %}{{ farm.commodity }}{% if farm.area_hectares %} · {{ farm.area_hectares }} ha{% endif %}</p>
+  </div>
+  {% if farm.compliance_status == 'compliant' %}
+    <span class="text-xs font-mono text-green flex-shrink-0">✓ Verified</span>
+  {% elif farm.compliance_status == 'disqualified' %}
+    <span class="text-xs font-mono text-red-400 flex-shrink-0">Disqualified</span>
+  {% else %}
+    <span class="text-xs font-mono text-slate-500 flex-shrink-0">Pending</span>
+  {% endif %}
+</label>
