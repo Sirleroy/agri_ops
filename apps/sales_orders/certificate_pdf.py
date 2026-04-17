@@ -21,6 +21,21 @@ SLATE   = colors.HexColor("#64748b")
 WHITE   = colors.white
 LIGHT   = colors.HexColor("#f8fafc")
 
+# A4 usable width: 210mm − 18mm left − 18mm right = 174mm
+PAGE_W = 174 * mm
+
+# Reusable paragraph styles for table cells (enables text wrapping)
+_CELL      = ParagraphStyle("cell",      fontName="Helvetica",      fontSize=8, textColor=colors.HexColor("#cbd5e1"), leading=11)
+_CELL_BOLD = ParagraphStyle("cell_bold", fontName="Helvetica-Bold", fontSize=8, textColor=colors.HexColor("#64748b"), leading=11)
+_CELL_HDR  = ParagraphStyle("cell_hdr",  fontName="Helvetica-Bold", fontSize=8, textColor=WHITE,                     leading=11)
+_CELL_URL  = ParagraphStyle("cell_url",  fontName="Helvetica",      fontSize=7, textColor=colors.HexColor("#94a3b8"), leading=10, wordWrap='CJK')
+
+
+def _p(text, style=None):
+    """Wrap a value in a Paragraph so ReportLab reflows it inside the cell."""
+    style = style or _CELL
+    return Paragraph(str(text) if text else "—", style)
+
 
 def _qr_image(url):
     """Generate QR code and return as ReportLab image."""
@@ -49,6 +64,7 @@ def generate_certificate(batch):
     is_eu = getattr(batch.sales_order, 'is_eu_export', False)
 
     # ── Header ────────────────────────────────────────────────
+    # 174mm total: text block 134mm + QR 40mm
     header_data = [[
         [
             Paragraph("AGRIOPS", ParagraphStyle("ag", fontName="Helvetica-Bold", fontSize=9, textColor=GREEN)),
@@ -58,55 +74,55 @@ def generate_certificate(batch):
         ],
         _qr_image(batch.trace_url)
     ]]
-    header_t = Table(header_data, colWidths=[130*mm, 40*mm])
+    header_t = Table(header_data, colWidths=[134*mm, 40*mm])
     header_t.setStyle(TableStyle([("VALIGN", (0,0), (-1,-1), "TOP"), ("ALIGN", (1,0), (1,0), "RIGHT")]))
     story.append(header_t)
     story.append(HRFlowable(width="100%", thickness=1.5, color=GREEN, spaceAfter=6*mm, spaceBefore=4*mm))
 
     # ── Operator ──────────────────────────────────────────────
+    # 174mm total: label 44mm + value 130mm
     story.append(Paragraph("Operator", ParagraphStyle("s", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceBefore=4*mm, spaceAfter=3*mm)))
     qty_str = f"{batch.quantity_kg:,.3f} kg" if batch.quantity_kg else "Not specified"
     op_data = [
-        ["Company", batch.company.name],
-        ["Country", batch.company.country],
-        ["Sales Order", batch.sales_order.order_number if batch.sales_order else "—"],
-        ["Quantity (net mass)", qty_str],
-        ["Certificate Date", str(date.today())],
-        ["Public Trace URL", batch.trace_url],
+        [_p("Company",          _CELL_BOLD), _p(batch.company.name)],
+        [_p("Country",          _CELL_BOLD), _p(batch.company.country)],
+        [_p("Sales Order",      _CELL_BOLD), _p(batch.sales_order.order_number if batch.sales_order else "—")],
+        [_p("Quantity (net mass)", _CELL_BOLD), _p(qty_str)],
+        [_p("Certificate Date", _CELL_BOLD), _p(str(date.today()))],
+        [_p("Public Trace URL", _CELL_BOLD), _p(batch.trace_url, _CELL_URL)],
     ]
-    op_t = Table(op_data, colWidths=[45*mm, 130*mm])
+    op_t = Table(op_data, colWidths=[44*mm, 130*mm])
     op_t.setStyle(TableStyle([
-        ("FONTNAME", (0,0), (0,-1), "Helvetica-Bold"),
-        ("FONTSIZE", (0,0), (-1,-1), 9),
-        ("TEXTCOLOR", (0,0), (0,-1), SLATE),
-        ("GRID", (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
-        ("TOPPADDING", (0,0), (-1,-1), 4),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 4),
-        ("LEFTPADDING", (0,0), (-1,-1), 6),
+        ("FONTSIZE",       (0,0), (-1,-1), 9),
+        ("GRID",           (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+        ("TOPPADDING",     (0,0), (-1,-1), 5),
+        ("BOTTOMPADDING",  (0,0), (-1,-1), 5),
+        ("LEFTPADDING",    (0,0), (-1,-1), 6),
+        ("VALIGN",         (0,0), (-1,-1), "TOP"),
         ("ROWBACKGROUNDS", (0,0), (-1,-1), [colors.HexColor("#f8fafc"), WHITE]),
     ]))
     story.append(op_t)
 
     # ── Supplier chain ────────────────────────────────────────
+    # 174mm total: 46+34+55+39
     farms = batch.farms.select_related('supplier').all()
     suppliers = {farm.supplier for farm in farms if farm.supplier}
     if suppliers:
         story.append(Paragraph("Supplier Chain", ParagraphStyle("s1b", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceBefore=6*mm, spaceAfter=3*mm)))
-        sup_data = [["Supplier", "Country / City", "Address", "Email"]]
+        sup_data = [[_p("Supplier", _CELL_HDR), _p("Country / City", _CELL_HDR), _p("Address", _CELL_HDR), _p("Email", _CELL_HDR)]]
         for sup in sorted(suppliers, key=lambda s: s.name):
             location = f"{sup.country or '—'} / {sup.city or '—'}"
-            sup_data.append([sup.name, location, sup.address or "—", sup.email or "—"])
-        sup_t = Table(sup_data, colWidths=[45*mm, 35*mm, 55*mm, 40*mm])
+            sup_data.append([_p(sup.name), _p(location), _p(sup.address or "—"), _p(sup.email or "—")])
+        sup_t = Table(sup_data, colWidths=[46*mm, 34*mm, 55*mm, 39*mm])
         sup_t.setStyle(TableStyle([
-            ("BACKGROUND", (0,0), (-1,0), DARK),
-            ("TEXTCOLOR", (0,0), (-1,0), WHITE),
-            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-            ("FONTSIZE", (0,0), (-1,-1), 8),
-            ("GRID", (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+            ("BACKGROUND",     (0,0), (-1,0), DARK),
+            ("FONTSIZE",       (0,0), (-1,-1), 8),
+            ("GRID",           (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
             ("ROWBACKGROUNDS", (0,1), (-1,-1), [WHITE, colors.HexColor("#f8fafc")]),
-            ("TOPPADDING", (0,0), (-1,-1), 4),
-            ("BOTTOMPADDING", (0,0), (-1,-1), 4),
-            ("LEFTPADDING", (0,0), (-1,-1), 4),
+            ("TOPPADDING",     (0,0), (-1,-1), 5),
+            ("BOTTOMPADDING",  (0,0), (-1,-1), 5),
+            ("LEFTPADDING",    (0,0), (-1,-1), 5),
+            ("VALIGN",         (0,0), (-1,-1), "TOP"),
         ]))
         story.append(sup_t)
 
@@ -114,54 +130,59 @@ def generate_certificate(batch):
     story.append(Paragraph(f"Farm Traceability — {farms.count()} farms", ParagraphStyle("s2", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceBefore=6*mm, spaceAfter=3*mm)))
 
     if is_eu:
-        farm_data = [["Farm", "Supplier", "Location", "Area", "Harvest", "Ref. Date", "EUDR"]]
+        # 174mm: 32+28+28+16+14+22+34
+        farm_headers = [_p(h, _CELL_HDR) for h in ["Farm", "Supplier", "Location", "Area", "Harvest", "Ref. Date", "EUDR"]]
+        farm_col_w   = [32*mm, 28*mm, 28*mm, 16*mm, 14*mm, 22*mm, 34*mm]
     else:
-        farm_data = [["Farm", "Supplier", "Location", "Area", "Harvest", "Ref. Date"]]
+        # 174mm: 38+36+36+18+18+28
+        farm_headers = [_p(h, _CELL_HDR) for h in ["Farm", "Supplier", "Location", "Area", "Harvest", "Ref. Date"]]
+        farm_col_w   = [38*mm, 36*mm, 36*mm, 18*mm, 18*mm, 28*mm]
 
+    farm_data = [farm_headers]
     for farm in farms:
         ref_date = str(farm.deforestation_reference_date) if farm.deforestation_reference_date else "—"
-        harvest = str(farm.harvest_year) if farm.harvest_year else "—"
+        harvest  = str(farm.harvest_year) if farm.harvest_year else "—"
+        location = f"{farm.country} / {farm.state_region or '—'}"
+        area     = f"{farm.area_hectares} ha" if farm.area_hectares else "—"
         row = [
-            farm.name,
-            farm.supplier.name if farm.supplier else "—",
-            f"{farm.country} / {farm.state_region or '—'}",
-            f"{farm.area_hectares} ha" if farm.area_hectares else "—",
-            harvest,
-            ref_date,
+            _p(farm.name),
+            _p(farm.supplier.name if farm.supplier else "—"),
+            _p(location),
+            _p(area),
+            _p(harvest),
+            _p(ref_date),
         ]
         if is_eu:
             if farm.is_disqualified:
-                eudr_status = "✗ Disqualified"
+                eudr_text = "✗ Disqualified"
+                eudr_style = ParagraphStyle("eudr_bad", fontName="Helvetica", fontSize=8, textColor=colors.HexColor("#f87171"), leading=11)
             elif farm.is_eudr_verified:
-                eudr_status = "✓ Verified"
+                eudr_text = "✓ Verified"
+                eudr_style = ParagraphStyle("eudr_ok", fontName="Helvetica", fontSize=8, textColor=GREEN, leading=11)
             else:
-                eudr_status = "Pending"
-            row.append(eudr_status)
+                eudr_text = "Pending"
+                eudr_style = _CELL
+            row.append(Paragraph(eudr_text, eudr_style))
         farm_data.append(row)
 
-    empty_cols = [""] * (7 if is_eu else 6)
     if len(farm_data) == 1:
-        farm_data.append(["No farms linked"] + empty_cols[1:])
+        farm_data.append([_p("No farms linked")] + [_p("") for _ in range(len(farm_headers) - 1)])
 
-    if is_eu:
-        farm_t = Table(farm_data, colWidths=[35*mm, 35*mm, 35*mm, 17*mm, 15*mm, 22*mm, 16*mm])
-    else:
-        farm_t = Table(farm_data, colWidths=[40*mm, 40*mm, 40*mm, 20*mm, 20*mm, 25*mm])
+    farm_t = Table(farm_data, colWidths=farm_col_w)
     farm_t.setStyle(TableStyle([
-        ("BACKGROUND", (0,0), (-1,0), DARK),
-        ("TEXTCOLOR", (0,0), (-1,0), WHITE),
-        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-        ("FONTSIZE", (0,0), (-1,-1), 8),
-        ("GRID", (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+        ("BACKGROUND",     (0,0), (-1,0), DARK),
+        ("FONTSIZE",       (0,0), (-1,-1), 8),
+        ("GRID",           (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
         ("ROWBACKGROUNDS", (0,1), (-1,-1), [WHITE, colors.HexColor("#f8fafc")]),
-        ("TOPPADDING", (0,0), (-1,-1), 4),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 4),
-        ("LEFTPADDING", (0,0), (-1,-1), 4),
+        ("TOPPADDING",     (0,0), (-1,-1), 5),
+        ("BOTTOMPADDING",  (0,0), (-1,-1), 5),
+        ("LEFTPADDING",    (0,0), (-1,-1), 5),
+        ("VALIGN",         (0,0), (-1,-1), "TOP"),
     ]))
     story.append(farm_t)
 
     # ── Compliance Documents ──────────────────────────────────
-    phyto_certs = list(batch.phytosanitary_certs.all())
+    phyto_certs   = list(batch.phytosanitary_certs.all())
     quality_tests = list(batch.quality_tests.all())
 
     if phyto_certs or quality_tests:
@@ -169,51 +190,56 @@ def generate_certificate(batch):
 
     if phyto_certs:
         story.append(Paragraph("Phytosanitary Certificates (NAQS)", ParagraphStyle("s3ph", fontName="Helvetica", fontSize=9, textColor=SLATE, spaceBefore=2*mm, spaceAfter=2*mm)))
-        ph_data = [["Cert Number", "Issuing Office", "Issued", "Expires", "Status"]]
+        # 174mm: 46+46+26+26+30
+        ph_data = [[_p(h, _CELL_HDR) for h in ["Cert Number", "Issuing Office", "Issued", "Expires", "Status"]]]
         for c in phyto_certs:
+            status_text  = "✓ Current" if c.is_current else "Expired"
+            status_style = ParagraphStyle("ps_ok", fontName="Helvetica", fontSize=8, textColor=GREEN, leading=11) if c.is_current else _CELL
             ph_data.append([
-                c.certificate_number,
-                c.issuing_office or "—",
-                str(c.issued_date) if c.issued_date else "—",
-                str(c.expiry_date) if c.expiry_date else "—",
-                "✓ Current" if c.is_current else "Expired",
+                _p(c.certificate_number),
+                _p(c.issuing_office or "—"),
+                _p(str(c.issued_date) if c.issued_date else "—"),
+                _p(str(c.expiry_date) if c.expiry_date else "—"),
+                Paragraph(status_text, status_style),
             ])
-        ph_t = Table(ph_data, colWidths=[45*mm, 45*mm, 25*mm, 25*mm, 22*mm])
+        ph_t = Table(ph_data, colWidths=[46*mm, 46*mm, 26*mm, 26*mm, 30*mm])
         ph_t.setStyle(TableStyle([
-            ("BACKGROUND", (0,0), (-1,0), DARK),
-            ("TEXTCOLOR", (0,0), (-1,0), WHITE),
-            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-            ("FONTSIZE", (0,0), (-1,-1), 8),
-            ("GRID", (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+            ("BACKGROUND",     (0,0), (-1,0), DARK),
+            ("FONTSIZE",       (0,0), (-1,-1), 8),
+            ("GRID",           (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
             ("ROWBACKGROUNDS", (0,1), (-1,-1), [WHITE, colors.HexColor("#f8fafc")]),
-            ("TOPPADDING", (0,0), (-1,-1), 4),
-            ("BOTTOMPADDING", (0,0), (-1,-1), 4),
-            ("LEFTPADDING", (0,0), (-1,-1), 4),
+            ("TOPPADDING",     (0,0), (-1,-1), 5),
+            ("BOTTOMPADDING",  (0,0), (-1,-1), 5),
+            ("LEFTPADDING",    (0,0), (-1,-1), 5),
+            ("VALIGN",         (0,0), (-1,-1), "TOP"),
         ]))
         story.append(ph_t)
 
     if quality_tests:
         story.append(Paragraph("Quality Tests (MRL / Aflatoxin)", ParagraphStyle("s3qt", fontName="Helvetica", fontSize=9, textColor=SLATE, spaceBefore=4*mm, spaceAfter=2*mm)))
-        qt_data = [["Test Type", "Laboratory", "Ref", "Date", "Result"]]
+        # 174mm: 42+46+36+26+24
+        qt_data = [[_p(h, _CELL_HDR) for h in ["Test Type", "Laboratory", "Ref", "Date", "Result"]]]
         for t in quality_tests:
+            result_text  = "✓ Pass" if t.result == 'pass' else ("✗ Fail" if t.result == 'fail' else "Pending")
+            result_style = ParagraphStyle("rs_ok", fontName="Helvetica", fontSize=8, textColor=GREEN, leading=11) if t.result == 'pass' else (
+                           ParagraphStyle("rs_bad", fontName="Helvetica", fontSize=8, textColor=colors.HexColor("#f87171"), leading=11) if t.result == 'fail' else _CELL)
             qt_data.append([
-                t.get_test_type_display(),
-                t.lab_name or "—",
-                t.lab_certificate_ref or "—",
-                str(t.test_date) if t.test_date else "—",
-                "✓ Pass" if t.result == 'pass' else ("✗ Fail" if t.result == 'fail' else "Pending"),
+                _p(t.get_test_type_display()),
+                _p(t.lab_name or "—"),
+                _p(t.lab_certificate_ref or "—"),
+                _p(str(t.test_date) if t.test_date else "—"),
+                Paragraph(result_text, result_style),
             ])
-        qt_t = Table(qt_data, colWidths=[40*mm, 45*mm, 35*mm, 25*mm, 17*mm])
+        qt_t = Table(qt_data, colWidths=[42*mm, 46*mm, 36*mm, 26*mm, 24*mm])
         qt_t.setStyle(TableStyle([
-            ("BACKGROUND", (0,0), (-1,0), DARK),
-            ("TEXTCOLOR", (0,0), (-1,0), WHITE),
-            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-            ("FONTSIZE", (0,0), (-1,-1), 8),
-            ("GRID", (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+            ("BACKGROUND",     (0,0), (-1,0), DARK),
+            ("FONTSIZE",       (0,0), (-1,-1), 8),
+            ("GRID",           (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
             ("ROWBACKGROUNDS", (0,1), (-1,-1), [WHITE, colors.HexColor("#f8fafc")]),
-            ("TOPPADDING", (0,0), (-1,-1), 4),
-            ("BOTTOMPADDING", (0,0), (-1,-1), 4),
-            ("LEFTPADDING", (0,0), (-1,-1), 4),
+            ("TOPPADDING",     (0,0), (-1,-1), 5),
+            ("BOTTOMPADDING",  (0,0), (-1,-1), 5),
+            ("LEFTPADDING",    (0,0), (-1,-1), 5),
+            ("VALIGN",         (0,0), (-1,-1), "TOP"),
         ]))
         story.append(qt_t)
 
@@ -231,15 +257,18 @@ def generate_certificate(batch):
         ))
 
         story.append(Spacer(1, 8*mm))
-        sig_data = [["Authorised Signatory", "Date"], [" " * 50, str(date.today())]]
-        sig_t = Table(sig_data, colWidths=[100*mm, 75*mm])
+        # 174mm: 100+74
+        sig_data = [
+            [_p("Authorised Signatory", _CELL_BOLD), _p("Date", _CELL_BOLD)],
+            [_p(" " * 50), _p(str(date.today()))],
+        ]
+        sig_t = Table(sig_data, colWidths=[100*mm, 74*mm])
         sig_t.setStyle(TableStyle([
-            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-            ("FONTSIZE", (0,0), (-1,-1), 8),
-            ("TEXTCOLOR", (0,0), (-1,0), SLATE),
-            ("LINEBELOW", (0,1), (0,1), 0.5, DARK),
-            ("TOPPADDING", (0,0), (-1,-1), 4),
+            ("FONTSIZE",      (0,0), (-1,-1), 8),
+            ("LINEBELOW",     (0,1), (0,1), 0.5, DARK),
+            ("TOPPADDING",    (0,0), (-1,-1), 4),
             ("BOTTOMPADDING", (0,0), (-1,-1), 12),
+            ("VALIGN",        (0,0), (-1,-1), "TOP"),
         ]))
         story.append(sig_t)
 
