@@ -34,7 +34,7 @@ class SalesOrderDetailView(StaffRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        items = list(self.object.items.select_related('product'))
+        items = list(self.object.items.select_related('product', 'product__supplier'))
         context['items'] = items
         context['order_total'] = sum(item.total_price for item in items)
         context['linked_batch'] = self.object.batches.first()
@@ -42,9 +42,22 @@ class SalesOrderDetailView(StaffRequiredMixin, DetailView):
             company=self.request.user.company, is_active=True
         ).order_by('name')
         from apps.suppliers.models import Farm
-        context['available_farms'] = Farm.objects.filter(
-            company=self.request.user.company
-        ).select_related('supplier').order_by('name')
+        # Narrow farm list to suppliers that appear in this order's line items.
+        # Falls back to all company farms if no products have a linked supplier.
+        supplier_pks = {item.product.supplier_id for item in items if item.product.supplier_id}
+        if supplier_pks:
+            context['available_farms'] = Farm.objects.filter(
+                company=self.request.user.company,
+                supplier_id__in=supplier_pks,
+            ).select_related('supplier').order_by('name')
+            context['farm_filter_suppliers'] = sorted(
+                {item.product.supplier.name for item in items if item.product.supplier}
+            )
+        else:
+            context['available_farms'] = Farm.objects.filter(
+                company=self.request.user.company,
+            ).select_related('supplier').order_by('name')
+            context['farm_filter_suppliers'] = []
         return context
 
 

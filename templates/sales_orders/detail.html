@@ -232,18 +232,25 @@
   </div>
 
   <!-- Farm Traceability -->
-  <div class="bg-card border border-border rounded-xl p-6">
-    <div class="flex items-center justify-between mb-4">
-      <div>
+  <div class="bg-card border border-border rounded-xl p-6" x-data="{ farmSearch: '' }">
+    <div class="flex items-start justify-between mb-4 gap-3">
+      <div class="min-w-0">
         <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Farm Traceability</p>
-        <p class="text-xs text-slate-600 mt-1">
-          {% if not items %}Add line items first — commodity is derived from your products.
-          {% else %}Link the farms that supplied this order.{% endif %}
+        {% if not items %}
+        <p class="text-xs text-slate-600 mt-1">Add line items first — farms are matched from your products' suppliers.</p>
+        {% elif farm_filter_suppliers %}
+        <p class="text-xs text-slate-500 mt-1">
+          Showing farms from
+          <span class="text-slate-300">{% for name in farm_filter_suppliers %}{{ name }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+          — the supplier{{ farm_filter_suppliers|length|pluralize }} in this order.
         </p>
+        {% else %}
+        <p class="text-xs text-slate-600 mt-1">Link the farms that supplied this order.</p>
+        {% endif %}
       </div>
       {% if linked_batch %}
       {% with farm_count=linked_batch.farms.count %}
-      <span class="px-2 py-1 rounded text-xs font-mono bg-green/10 text-green border border-green/20">{{ farm_count }} farm{{ farm_count|pluralize }} linked</span>
+      <span class="px-2 py-1 rounded text-xs font-mono bg-green/10 text-green border border-green/20 flex-shrink-0">{{ farm_count }} farm{{ farm_count|pluralize }} linked</span>
       {% endwith %}
       {% endif %}
     </div>
@@ -251,12 +258,21 @@
     {% if items %}
     <form method="post" action="{% url 'sales_orders:link_farms' order.pk %}">
       {% csrf_token %}
-      <div class="space-y-2 mb-4 max-h-64 overflow-y-auto pr-1">
+
+      {% if available_farms %}
+      <input type="text" x-model="farmSearch" placeholder="Search farms…"
+        class="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:border-green outline-none transition-colors mb-3">
+      {% endif %}
+
+      <div class="space-y-1.5 mb-4 max-h-64 overflow-y-auto pr-1">
         {% for farm in available_farms %}
-        <label class="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-transparent hover:border-border hover:bg-white/[0.02] cursor-pointer transition-colors">
+        <label
+          data-farm-search="{{ farm.name|lower|escapejs }} {{ farm.supplier.name|lower|escapejs }} {{ farm.commodity|lower|escapejs }}"
+          x-show="!farmSearch || $el.dataset.farmSearch.includes(farmSearch.toLowerCase())"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-transparent hover:border-border hover:bg-white/[0.02] cursor-pointer transition-colors">
           <input type="checkbox" name="farm_pks" value="{{ farm.pk }}"
             {% if linked_batch and farm in linked_batch.farms.all %}checked{% endif %}
-            class="w-4 h-4 accent-green rounded">
+            class="w-4 h-4 accent-green rounded flex-shrink-0">
           <div class="flex-1 min-w-0">
             <p class="text-sm text-slate-200 font-medium truncate">{{ farm.name }}</p>
             <p class="text-xs text-slate-500 font-mono">{{ farm.supplier.name }} · {{ farm.commodity }}{% if farm.area_hectares %} · {{ farm.area_hectares }} ha{% endif %}</p>
@@ -270,9 +286,13 @@
           {% endif %}
         </label>
         {% empty %}
-        <p class="text-sm text-slate-500 py-4 text-center">No farms registered yet. <a href="{% url 'suppliers:farm_create' %}" class="text-green hover:text-green-dim transition-colors">Add a farm →</a></p>
+        <div class="py-6 text-center">
+          <p class="text-sm text-slate-500 mb-2">No farms found for the suppliers in this order.</p>
+          <a href="{% url 'suppliers:farm_create' %}" class="text-xs text-green hover:text-green-dim transition-colors font-mono">Register a farm →</a>
+        </div>
         {% endfor %}
       </div>
+
       {% if available_farms %}
       <button type="submit"
         class="w-full bg-green hover:bg-green-dim text-bg font-bold text-sm py-2.5 rounded-lg transition-colors">
