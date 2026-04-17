@@ -17,7 +17,7 @@ from reportlab.lib.enums import TA_CENTER
 
 DARK    = colors.HexColor("#0a0f1a")
 GREEN   = colors.HexColor("#22c55e")
-SLATE   = colors.HexColor("#64748b")
+SLATE   = colors.HexColor("#334155")
 WHITE   = colors.white
 LIGHT   = colors.HexColor("#f8fafc")
 
@@ -25,10 +25,11 @@ LIGHT   = colors.HexColor("#f8fafc")
 PAGE_W = 174 * mm
 
 # Reusable paragraph styles for table cells (enables text wrapping)
-_CELL      = ParagraphStyle("cell",      fontName="Helvetica",      fontSize=8, textColor=colors.HexColor("#cbd5e1"), leading=11)
-_CELL_BOLD = ParagraphStyle("cell_bold", fontName="Helvetica-Bold", fontSize=8, textColor=colors.HexColor("#64748b"), leading=11)
+# All text colors chosen for legibility on white paper
+_CELL      = ParagraphStyle("cell",      fontName="Helvetica",      fontSize=8, textColor=colors.HexColor("#1e293b"), leading=11)
+_CELL_BOLD = ParagraphStyle("cell_bold", fontName="Helvetica-Bold", fontSize=8, textColor=colors.HexColor("#334155"), leading=11)
 _CELL_HDR  = ParagraphStyle("cell_hdr",  fontName="Helvetica-Bold", fontSize=8, textColor=WHITE,                     leading=11)
-_CELL_URL  = ParagraphStyle("cell_url",  fontName="Helvetica",      fontSize=7, textColor=colors.HexColor("#94a3b8"), leading=10, wordWrap='CJK')
+_CELL_URL  = ParagraphStyle("cell_url",  fontName="Helvetica",      fontSize=7, textColor=colors.HexColor("#475569"), leading=10, wordWrap='CJK')
 
 
 def _p(text, style=None):
@@ -212,8 +213,8 @@ def generate_certificate(batch):
             ParagraphStyle("ve_intro", fontName="Helvetica", fontSize=8, textColor=SLATE, spaceAfter=3*mm),
         ))
 
-        _LBL = ParagraphStyle("ve_lbl", fontName="Helvetica-Bold", fontSize=8, textColor=SLATE,   leading=11)
-        _VAL = ParagraphStyle("ve_val", fontName="Helvetica",      fontSize=8, textColor=DARK,    leading=11)
+        _LBL = ParagraphStyle("ve_lbl", fontName="Helvetica-Bold", fontSize=8, textColor=colors.HexColor("#334155"), leading=11)
+        _VAL = ParagraphStyle("ve_val", fontName="Helvetica",      fontSize=8, textColor=colors.HexColor("#1e293b"), leading=11)
         _GRN = ParagraphStyle("ve_grn", fontName="Helvetica-Bold", fontSize=8, textColor=GREEN,   leading=11)
         _RED = ParagraphStyle("ve_red", fontName="Helvetica-Bold", fontSize=8, textColor=colors.HexColor("#f87171"), leading=11)
 
