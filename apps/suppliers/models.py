@@ -333,10 +333,11 @@ class FarmImportLog(models.Model):
     errors        = models.PositiveIntegerField(default=0)
     warning_count = models.PositiveIntegerField(default=0)
     auto_corrected = models.PositiveIntegerField(default=0)
-    error_detail   = models.JSONField(default=list)
-    blocked_detail = models.JSONField(default=list)
-    warning_detail = models.JSONField(default=list)
-    created_at    = models.DateTimeField(auto_now_add=True)
+    error_detail       = models.JSONField(default=list)
+    blocked_detail     = models.JSONField(default=list)
+    warning_detail     = models.JSONField(default=list)
+    transformation_log = models.JSONField(default=list)
+    created_at         = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['-created_at']

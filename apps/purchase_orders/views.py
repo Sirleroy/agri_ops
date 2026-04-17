@@ -41,6 +41,23 @@ class PurchaseOrderDetailView(StaffRequiredMixin, DetailView):
         context['products'] = Product.objects.filter(
             company=self.request.user.company, is_active=True
         ).order_by('name')
+        # For received POs: attach _inventory_pk to each item so the template
+        # can link directly to the inventory record that holds its stock.
+        # mark_received always uses warehouse_location='' so there is at most
+        # one matching record per product.
+        if self.object.status == 'received':
+            from apps.inventory.models import Inventory
+            product_ids = [item.product_id for item in items]
+            inv_map = {
+                inv.product_id: inv.pk
+                for inv in Inventory.objects.filter(
+                    company=self.request.user.company,
+                    product_id__in=product_ids,
+                    warehouse_location='',
+                ).only('pk', 'product_id')
+            }
+            for item in items:
+                item._inventory_pk = inv_map.get(item.product_id)
         return context
 
 

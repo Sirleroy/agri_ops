@@ -29,7 +29,10 @@ class FarmerListView(StaffRequiredMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        qs = Farmer.objects.filter(company=self.request.user.company)
+        from django.db.models import Count
+        qs = Farmer.objects.filter(company=self.request.user.company).annotate(
+            farm_count=Count('farms')
+        )
         qs, _ = _farmer_filter_qs(qs, self.request.GET)
         return qs
 
@@ -68,7 +71,6 @@ class FarmerCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, Cr
     model = Farmer
     template_name = 'suppliers/farmers/form.html'
     form_class = FarmerForm
-    success_url = reverse_lazy('suppliers:farmer_list')
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -79,12 +81,20 @@ class FarmerCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, Cr
         form.instance.company = self.request.user.company
         return super().form_valid(form)
 
+    def get_success_url(self):
+        return reverse_lazy('suppliers:farmer_detail', kwargs={'pk': self.object.pk})
+
 
 class FarmerUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = Farmer
     template_name = 'suppliers/farmers/form.html'
     form_class = FarmerForm
-    success_url = reverse_lazy('suppliers:farmer_list')
+
+    def get_success_url(self):
+        next_url = self.request.POST.get('next') or self.request.GET.get('next')
+        if next_url:
+            return next_url
+        return reverse_lazy('suppliers:farmer_detail', kwargs={'pk': self.object.pk})
 
     def get_object(self):
         obj = super().get_object()

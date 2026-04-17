@@ -41,11 +41,13 @@ class SupplierCreateView(OtherRevealMixin, AuditCreateMixin, StaffRequiredMixin,
     fields = ['name', 'category', 'contact_person', 'phone', 'email',
               'country', 'city', 'address', 'is_active']
     other_reveal_fields = ['category']
-    success_url = reverse_lazy('suppliers:list')
 
     def form_valid(self, form):
         form.instance.company = self.request.user.company
         return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('suppliers:detail', kwargs={'pk': self.object.pk})
 
 
 class SupplierUpdateView(OtherRevealMixin, AuditUpdateMixin, StaffRequiredMixin, UpdateView):
@@ -54,7 +56,12 @@ class SupplierUpdateView(OtherRevealMixin, AuditUpdateMixin, StaffRequiredMixin,
     fields = ['name', 'category', 'contact_person', 'phone', 'email',
               'country', 'city', 'address', 'is_active']
     other_reveal_fields = ['category']
-    success_url = reverse_lazy('suppliers:list')
+
+    def get_success_url(self):
+        next_url = self.request.POST.get('next') or self.request.GET.get('next')
+        if next_url:
+            return next_url
+        return reverse_lazy('suppliers:detail', kwargs={'pk': self.object.pk})
 
     def get_object(self):
         obj = super().get_object()

@@ -88,19 +88,28 @@
     </div>
   </div>
 
-  <!-- Certificate download -->
+  <!-- Batch strip -->
   {% if linked_batch %}
-  <a href="{% url 'sales_orders:batch_certificate' linked_batch.pk %}"
-     class="flex items-center justify-between w-full bg-green/10 border border-green/30 hover:bg-green/20 rounded-xl px-5 py-4 transition-colors group">
-    <div class="flex items-center gap-3">
-      <svg class="w-5 h-5 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+  {% with farm_count=linked_batch.farms.count %}
+  <div class="flex gap-2">
+    <a href="{% url 'sales_orders:batch_detail' linked_batch.pk %}"
+       class="flex items-center gap-3 flex-1 bg-card border border-border hover:border-slate-500 rounded-xl px-5 py-4 transition-colors group">
+      <svg class="w-5 h-5 text-slate-500 group-hover:text-slate-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
       <div>
-        <p class="text-sm font-bold text-green">Download Traceability Certificate</p>
-        <p class="text-xs text-green/70 font-mono">Batch {{ linked_batch.batch_number }} · {{ linked_batch.farms.count }} farm{{ linked_batch.farms.count|pluralize }} linked</p>
+        <p class="text-sm font-bold text-slate-200 group-hover:text-slate-100 transition-colors">{{ linked_batch.batch_number }}</p>
+        <p class="text-xs text-slate-500 font-mono">{{ farm_count }} farm{{ farm_count|pluralize }} linked</p>
       </div>
-    </div>
-    <svg class="w-4 h-4 text-green/60 group-hover:text-green transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-  </a>
+    </a>
+    <a href="{% url 'sales_orders:batch_certificate' linked_batch.pk %}"
+       class="flex items-center gap-3 bg-green/10 border border-green/30 hover:bg-green/20 rounded-xl px-5 py-4 transition-colors group">
+      <svg class="w-5 h-5 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+      <div>
+        <p class="text-sm font-bold text-green">Certificate</p>
+        <p class="text-xs text-green/70 font-mono">Download PDF</p>
+      </div>
+    </a>
+  </div>
+  {% endwith %}
   {% endif %}
 
   <!-- Line Items -->
@@ -122,15 +131,17 @@
     <div x-show="addOpen" x-transition.opacity
          class="px-5 py-4 border-b border-border bg-white/[0.02]">
       <form method="post" action="{% url 'sales_orders:add_item' order.pk %}"
-            class="flex flex-wrap items-end gap-3">
+            class="flex flex-wrap items-end gap-3"
+            x-data="{ unitPrice: '' }">
         {% csrf_token %}
         <div class="flex-1 min-w-[180px]">
           <label class="block text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Product</label>
           <select name="product" required
-            class="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-green outline-none transition-colors">
+            class="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-green outline-none transition-colors"
+            @change="unitPrice = $event.target.selectedOptions[0].dataset.price || ''">
             <option value="">Select product…</option>
             {% for product in products %}
-            <option value="{{ product.pk }}">{{ product.name }} ({{ product.get_unit_display }})</option>
+            <option value="{{ product.pk }}" data-price="{{ product.unit_price }}">{{ product.name }} ({{ product.get_unit_display }})</option>
             {% endfor %}
           </select>
         </div>
@@ -142,6 +153,8 @@
         <div class="w-32">
           <label class="block text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Unit Price (₦)</label>
           <input type="number" name="unit_price" min="0" step="0.01" placeholder="0.00" required
+            :value="unitPrice"
+            @change="unitPrice = $event.target.value"
             class="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-green outline-none transition-colors">
         </div>
         <button type="submit"
@@ -228,7 +241,9 @@
         </p>
       </div>
       {% if linked_batch %}
-      <span class="px-2 py-1 rounded text-xs font-mono bg-green/10 text-green border border-green/20">{{ linked_batch.farms.count }} farm{{ linked_batch.farms.count|pluralize }} linked</span>
+      {% with farm_count=linked_batch.farms.count %}
+      <span class="px-2 py-1 rounded text-xs font-mono bg-green/10 text-green border border-green/20">{{ farm_count }} farm{{ farm_count|pluralize }} linked</span>
+      {% endwith %}
       {% endif %}
     </div>
 

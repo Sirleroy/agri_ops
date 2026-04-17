@@ -89,7 +89,7 @@
           <td class="px-5 py-3 text-slate-400 font-mono text-xs hidden sm:table-cell">{{ farmer.village|default:"—" }}</td>
           <td class="px-5 py-3 text-slate-400 font-mono text-xs hidden sm:table-cell">{{ farmer.lga|default:"—" }}</td>
           <td class="px-5 py-3 text-slate-400">{{ farmer.phone|default:"—" }}</td>
-          <td class="px-5 py-3 text-slate-400 font-mono text-xs">{{ farmer.farms.count }}</td>
+          <td class="px-5 py-3 text-slate-400 font-mono text-xs">{{ farmer.farm_count }}</td>
           <td class="px-5 py-3">
             <div class="flex items-center gap-2 justify-end">
               <a href="{% url 'suppliers:farmer_update' farmer.pk %}" class="text-slate-500 hover:text-slate-100 transition-colors" title="Edit">

@@ -24,7 +24,6 @@
         <tr class="border-b border-border bg-white/[0.02]">
           <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Order No.</th>
           <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Supplier</th>
-          <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Company</th>
           <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Status</th>
           <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Order Date</th>
           <th class="text-left px-5 py-3 text-xs font-mono text-slate-500 uppercase tracking-widest">Expected</th>
@@ -40,8 +39,9 @@
           <td class="px-5 py-3 font-semibold text-slate-100">
             <a href="{% url 'purchase_orders:detail' order.pk %}" class="hover:text-green transition-colors font-mono">PO-{{ order.order_number }}</a>
           </td>
-          <td class="px-5 py-3 text-slate-400">{{ order.supplier.name|default:"—" }}</td>
-          <td class="px-5 py-3 text-slate-400">{{ order.company.name }}</td>
+          <td class="px-5 py-3 text-slate-400">
+            {% if order.supplier %}<a href="{% url 'suppliers:detail' order.supplier.pk %}" class="hover:text-slate-100 transition-colors">{{ order.supplier.name }}</a>{% else %}—{% endif %}
+          </td>
           <td class="px-5 py-3">
             <span class="px-2 py-1 rounded-md text-xs font-mono font-semibold
               {% if order.status == 'received' %}bg-green/10 text-green border border-green/20
@@ -69,7 +69,7 @@
         </tr>
         {% empty %}
         <tr data-empty>
-          <td colspan="7" class="px-5 py-16 text-center">
+          <td colspan="6" class="px-5 py-16 text-center">
             <svg class="w-10 h-10 text-slate-700 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
             <p class="text-slate-500 text-sm mb-4">No purchase orders yet.</p>
             <a href="{% url 'purchase_orders:create' %}" class="inline-flex items-center gap-2 bg-green hover:bg-green-dim text-bg text-xs font-bold px-4 py-2 rounded-lg transition-colors">

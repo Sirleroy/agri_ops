@@ -23,7 +23,9 @@
     <div class="p-6 space-y-4">
       <div class="flex items-start justify-between">
         <div>
-          <h2 class="text-xl font-black text-slate-100">{{ item.product.name }}</h2>
+          <h2 class="text-xl font-black text-slate-100">
+            <a href="{% url 'products:detail' item.product.pk %}" class="hover:text-green transition-colors">{{ item.product.name }}</a>
+          </h2>
           <p class="text-xs font-mono text-slate-500 mt-1">{{ item.lot_number|default:"No lot number" }}</p>
         </div>
         {% if item.is_low_stock %}
