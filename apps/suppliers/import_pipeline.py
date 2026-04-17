@@ -233,18 +233,14 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                             'reason': f"Overlaps with existing farm '{overlapping.name}' ({overlapping.supplier.name})"})
             continue
 
-        # Completeness warnings — non-blocking but flagged for the operator
+        # Completeness warnings (commodity checked after farmer resolution below)
         row_warnings = []
         if not farmer_label:
             row_warnings.append("No farmer name found — check 'First Name' and 'Last Name' columns.")
         if not lga:
             row_warnings.append("LGA missing — add an 'LGA' column or fill it in after import.")
-        if commodity == 'Unknown':
-            row_warnings.append("Commodity not in file — set a Default Commodity above, or add a 'Commodity' column.")
         if area and area > 200:
             row_warnings.append(f"Declared area ({area} ha) is unusually large — verify this is correct.")
-        if row_warnings:
-            warnings.append({'row': row, 'name': name, 'issues': row_warnings})
 
         linked_farmer = None
         if first_name:
@@ -280,6 +276,17 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                         lga=lga,
                     )
                 farmer_cache[cache_key] = linked_farmer
+
+        # Fall back to farmer's registered crops if commodity is still unknown
+        if commodity == 'Unknown' and linked_farmer and linked_farmer.crops:
+            first_crop = linked_farmer.crops.split(',')[0].strip()
+            if first_crop:
+                commodity = normalise_commodity(first_crop)
+
+        if commodity == 'Unknown':
+            row_warnings.append("Commodity not in file — set a Default Commodity above, or add a 'Commodity' column.")
+        if row_warnings:
+            warnings.append({'row': row, 'name': name, 'issues': row_warnings})
 
         to_create.append(Farm(
             company=company,

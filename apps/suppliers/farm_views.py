@@ -279,6 +279,20 @@ class FarmDetailView(StaffRequiredMixin, DetailView):
         return context
 
 
+def _farmer_crops_json(company):
+    """Return a JSON-safe dict of {farmer_pk: first_crop} for use in the farm form."""
+    import json
+    from .models import Farmer
+    farmers = Farmer.objects.filter(company=company).values('pk', 'crops')
+    data = {}
+    for f in farmers:
+        if f['crops']:
+            first = f['crops'].split(',')[0].strip()
+            if first:
+                data[str(f['pk'])] = first
+    return json.dumps(data)
+
+
 class FarmCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = Farm
     template_name = 'suppliers/farms/form.html'
@@ -289,6 +303,11 @@ class FarmCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, Crea
         kwargs = super().get_form_kwargs()
         kwargs['company'] = self.request.user.company
         return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['farmer_crops_json'] = _farmer_crops_json(self.request.user.company)
+        return context
 
     def form_valid(self, form):
         form.instance.company = self.request.user.company
@@ -312,6 +331,11 @@ class FarmUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, Upda
         kwargs = super().get_form_kwargs()
         kwargs['company'] = self.request.user.company
         return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['farmer_crops_json'] = _farmer_crops_json(self.request.user.company)
+        return context
 
 
 class FarmDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):

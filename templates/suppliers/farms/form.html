@@ -312,6 +312,19 @@ document.addEventListener('DOMContentLoaded', function () {
       setStatus('Invalid GeoJSON', '#f87171');
     }
   });
+
+  /* Auto-fill commodity from farmer's registered crops when a farmer is selected */
+  const farmerCrops = {{ farmer_crops_json }};
+  const farmerSel   = document.getElementById('id_farmer');
+  const commodityIn = document.getElementById('id_commodity');
+  if (farmerSel && commodityIn) {
+    farmerSel.addEventListener('change', function () {
+      const crop = farmerCrops[this.value];
+      if (crop && !commodityIn.value.trim()) {
+        commodityIn.value = crop;
+      }
+    });
+  }
 });
 </script>
 {% endblock %}
