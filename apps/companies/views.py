@@ -1,7 +1,7 @@
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from .models import Company
-from apps.users.permissions import OrgAdminRequiredMixin, StaffRequiredMixin
+from apps.users.permissions import OrgAdminRequiredMixin, StaffRequiredMixin, DatePickerMixin
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin
 
 
@@ -27,7 +27,7 @@ class CompanyDetailView(StaffRequiredMixin, DetailView):
         return obj
 
 
-class CompanyCreateView(AuditCreateMixin, OrgAdminRequiredMixin, CreateView):
+class CompanyCreateView(DatePickerMixin, AuditCreateMixin, OrgAdminRequiredMixin, CreateView):
     model = Company
     template_name = 'companies/form.html'
     fields = ['name', 'country', 'city', 'address', 'phone', 'email',
@@ -35,7 +35,7 @@ class CompanyCreateView(AuditCreateMixin, OrgAdminRequiredMixin, CreateView):
     success_url = reverse_lazy('companies:list')
 
 
-class CompanyUpdateView(AuditUpdateMixin, OrgAdminRequiredMixin, UpdateView):
+class CompanyUpdateView(DatePickerMixin, AuditUpdateMixin, OrgAdminRequiredMixin, UpdateView):
     model = Company
     template_name = 'companies/form.html'
     fields = ['name', 'country', 'city', 'address', 'phone', 'email',

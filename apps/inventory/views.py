@@ -4,7 +4,7 @@ from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404, redirect
 from decimal import Decimal, InvalidOperation
 from .models import Inventory
-from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin
+from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin, log_action
 
 
@@ -31,7 +31,7 @@ class InventoryDetailView(StaffRequiredMixin, DetailView):
         return obj
 
 
-class InventoryCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
+class InventoryCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = Inventory
     template_name = 'inventory/form.html'
     fields = ['product', 'quantity', 'warehouse_location', 'low_stock_threshold',
@@ -45,7 +45,7 @@ class InventoryCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
         return reverse_lazy('inventory:detail', kwargs={'pk': self.object.pk})
 
 
-class InventoryUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
+class InventoryUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = Inventory
     template_name = 'inventory/form.html'
     fields = ['product', 'quantity', 'warehouse_location', 'low_stock_threshold',
