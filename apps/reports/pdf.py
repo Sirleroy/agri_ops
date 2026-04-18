@@ -433,7 +433,6 @@ def generate_compliance_report(company, user, filters=None):
                     ("LEFTPADDING", (0,0), (-1,-1), 4),
                 ]))
                 block.append(qt_t)
-            from reportlab.platypus import KeepTogether
             story.append(KeepTogether(block))
             story.append(Spacer(1, 3*mm))
     else:
