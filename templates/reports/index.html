@@ -55,108 +55,216 @@
   <!-- ── EUDR & Compliance tab ──────────────────────────────── -->
   <div x-show="tab === 'eudr'" x-cloak class="space-y-4">
 
-    <div class="bg-card border border-border rounded-xl p-4 sm:p-6">
-      <div class="mb-5">
-        <p class="text-sm font-bold text-slate-100 mb-1">EUDR Compliance Report</p>
-        <p class="text-xs text-slate-500">
-          Full PDF traceability report — farms, suppliers, purchase orders, sales orders, and EU due diligence declaration.
-          Scope by buyer or specific sales order for per-contract submissions.
-        </p>
-      </div>
+    <div class="bg-card border border-border rounded-xl overflow-hidden">
 
-      <!-- Full report -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-4 border-t border-border">
-        <div>
-          <p class="text-xs font-mono text-slate-400 uppercase tracking-widest mb-0.5">Full Report</p>
-          <p class="text-xs text-slate-600">All farms, suppliers, and orders — no filters applied</p>
+      <!-- Card header -->
+      <div class="px-6 pt-6 pb-4">
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-lg bg-green/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <svg class="w-4 h-4 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-bold text-slate-100 mb-1">EUDR Compliance Report</p>
+            <p class="text-xs text-slate-500">
+              Full PDF traceability report — farms, suppliers, purchase orders, sales orders, and EU due diligence declaration.
+              Scope by buyer or specific sales order for per-contract submissions.
+            </p>
+          </div>
         </div>
-        <a href="{% url 'reports:eudr' %}"
-           class="self-start flex items-center gap-2 bg-green hover:bg-green-dim text-bg font-bold text-xs px-5 py-2.5 rounded-lg transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-          </svg>
-          Download PDF
-        </a>
       </div>
 
-      <!-- Filter by date -->
-      <div class="py-4 border-t border-border">
-        <p class="text-xs font-mono text-slate-400 uppercase tracking-widest mb-3">Filter by Date Range</p>
-        <form method="get" action="{% url 'reports:eudr' %}" class="flex flex-col sm:flex-row sm:items-center gap-2" data-download>
-          <input type="date" name="from" style="width:auto"
-                 class="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
-          <span class="text-xs text-slate-600 hidden sm:inline">to</span>
-          <input type="date" name="to" style="width:auto"
-                 class="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
-          <button type="submit"
-                  class="flex items-center justify-center gap-1.5 bg-surface border border-border hover:border-green text-xs text-slate-300 px-4 py-1.5 rounded-lg transition-colors font-mono">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            Download →
-          </button>
-        </form>
-      </div>
+      <div class="divide-y divide-border">
 
-      <!-- Filter by buyer (customer) -->
-      <div class="py-4 border-t border-border">
-        <p class="text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">Filter by Buyer</p>
-        <p class="text-xs text-slate-600 mb-3">
-          Scopes the report to a single buyer — farms linked via batches to their orders only.
-          Required for per-contract EU due diligence submissions.
-        </p>
-        {% if customers %}
-        <form method="get" action="{% url 'reports:eudr' %}" class="flex flex-col sm:flex-row sm:items-center gap-2" data-download>
-          <select name="customer" style="width:auto"
-                  class="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
-            <option value="">Select buyer…</option>
-            {% for c in customers %}
-            <option value="{{ c }}">{{ c }}</option>
-            {% endfor %}
-          </select>
-          <button type="submit"
-                  class="flex items-center justify-center gap-1.5 bg-surface border border-border hover:border-green text-xs text-slate-300 px-4 py-1.5 rounded-lg transition-colors font-mono">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            Download →
-          </button>
-        </form>
-        {% else %}
-        <p class="text-xs text-slate-600">No sales orders yet — buyers will appear here once orders are recorded.</p>
-        {% endif %}
-      </div>
+        <!-- Full report -->
+        <div class="px-6 py-5">
+          <div class="flex items-start gap-3 mb-4">
+            <div class="w-6 h-6 rounded bg-green/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg class="w-3.5 h-3.5 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+            </div>
+            <div>
+              <p class="text-xs font-mono text-slate-300 font-bold uppercase tracking-widest mb-0.5">Full Report</p>
+              <p class="text-xs text-slate-500">All farms, suppliers, and orders — no filters applied.</p>
+            </div>
+          </div>
+          {% if request.user.is_manager_or_above %}
+          <div x-data="{ loading: false }">
+            <form method="get" action="{% url 'reports:eudr' %}"
+                  @submit="loading = true; setTimeout(() => { loading = false }, 12000)">
+              <button type="submit"
+                      :disabled="loading"
+                      :class="loading ? 'opacity-60 cursor-wait' : 'hover:bg-green-dim'"
+                      class="flex items-center gap-2 bg-green text-bg font-bold text-xs px-5 py-2.5 rounded-lg transition-colors">
+                <svg x-show="!loading" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <svg x-show="loading" x-cloak class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                <span x-text="loading ? 'Generating…' : 'Download PDF'">Download PDF</span>
+              </button>
+            </form>
+          </div>
+          {% else %}
+          <p class="text-xs font-mono text-slate-600">Download requires Manager or above.</p>
+          {% endif %}
+        </div>
 
-      <!-- Filter by sales order -->
-      <div class="py-4 border-t border-border">
-        <p class="text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">Filter by Sales Order</p>
-        <p class="text-xs text-slate-600 mb-3">Single-transaction report — for one specific order reference.</p>
-        {% if sales_orders %}
-        <form method="get" action="{% url 'reports:eudr' %}" class="flex flex-col sm:flex-row sm:items-center gap-2" data-download>
-          <select name="order" style="width:auto"
-                  class="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
-            <option value="">Select sales order…</option>
-            {% for so in sales_orders %}
-            <option value="{{ so.order_number }}">{{ so.order_number }} — {{ so.customer_name }} ({{ so.order_date }})</option>
-            {% endfor %}
-          </select>
-          <button type="submit"
-                  class="flex items-center justify-center gap-1.5 bg-surface border border-border hover:border-green text-xs text-slate-300 px-4 py-1.5 rounded-lg transition-colors font-mono">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            Download →
-          </button>
-        </form>
-        {% else %}
-        <p class="text-xs text-slate-600">No sales orders yet — they will appear here once orders are recorded.</p>
-        {% endif %}
-      </div>
+        <!-- Filter by date -->
+        <div class="px-6 py-5">
+          <div class="flex items-start gap-3 mb-4">
+            <div class="w-6 h-6 rounded bg-blue-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <div>
+              <p class="text-xs font-mono text-slate-300 font-bold uppercase tracking-widest mb-0.5">Filter by Date Range</p>
+              <p class="text-xs text-slate-500">Scope the report to orders placed within a specific period.</p>
+            </div>
+          </div>
+          {% if request.user.is_manager_or_above %}
+          <div x-data="{ loading: false }">
+            <form method="get" action="{% url 'reports:eudr' %}"
+                  class="flex flex-col sm:flex-row sm:items-center gap-2"
+                  @submit="loading = true; setTimeout(() => { loading = false }, 12000)">
+              <input type="date" name="from" style="width:auto"
+                     class="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
+              <span class="text-xs text-slate-600 hidden sm:inline">to</span>
+              <input type="date" name="to" style="width:auto"
+                     class="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
+              <button type="submit"
+                      :disabled="loading"
+                      :class="loading ? 'opacity-60 cursor-wait' : 'hover:border-blue-400 hover:text-blue-300'"
+                      class="flex items-center justify-center gap-1.5 bg-surface border border-border text-xs text-slate-300 px-4 py-1.5 rounded-lg transition-colors font-mono">
+                <svg x-show="!loading" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <svg x-show="loading" x-cloak class="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                <span x-text="loading ? 'Generating…' : 'Download →'">Download →</span>
+              </button>
+            </form>
+          </div>
+          {% else %}
+          <p class="text-xs font-mono text-slate-600">Download requires Manager or above.</p>
+          {% endif %}
+        </div>
 
+        <!-- Filter by buyer (customer) -->
+        <div class="px-6 py-5">
+          <div class="flex items-start gap-3 mb-4">
+            <div class="w-6 h-6 rounded bg-purple-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+              </svg>
+            </div>
+            <div>
+              <p class="text-xs font-mono text-slate-300 font-bold uppercase tracking-widest mb-0.5">Filter by Buyer</p>
+              <p class="text-xs text-slate-500">Scopes the report to a single buyer — farms linked via batches to their orders only. Required for per-contract EU due diligence submissions.</p>
+            </div>
+          </div>
+          {% if request.user.is_manager_or_above %}
+          {% if customers %}
+          <div x-data="{ loading: false }">
+            <form method="get" action="{% url 'reports:eudr' %}"
+                  class="flex flex-col sm:flex-row sm:items-center gap-2"
+                  @submit="loading = true; setTimeout(() => { loading = false }, 12000)">
+              <select name="customer" style="width:auto"
+                      class="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
+                <option value="">Select buyer…</option>
+                {% for c in customers %}
+                <option value="{{ c }}">{{ c }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit"
+                      :disabled="loading"
+                      :class="loading ? 'opacity-60 cursor-wait' : 'hover:border-purple-400 hover:text-purple-300'"
+                      class="flex items-center justify-center gap-1.5 bg-surface border border-border text-xs text-slate-300 px-4 py-1.5 rounded-lg transition-colors font-mono">
+                <svg x-show="!loading" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <svg x-show="loading" x-cloak class="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                <span x-text="loading ? 'Generating…' : 'Download →'">Download →</span>
+              </button>
+            </form>
+          </div>
+          {% else %}
+          <p class="text-xs text-slate-600">No sales orders yet — buyers will appear here once orders are recorded.</p>
+          {% endif %}
+          {% else %}
+          <p class="text-xs font-mono text-slate-600">Download requires Manager or above.</p>
+          {% endif %}
+        </div>
+
+        <!-- Filter by sales order -->
+        <div class="px-6 py-5">
+          <div class="flex items-start gap-3 mb-4">
+            <div class="w-6 h-6 rounded bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+              </svg>
+            </div>
+            <div>
+              <p class="text-xs font-mono text-slate-300 font-bold uppercase tracking-widest mb-0.5">Filter by Sales Order</p>
+              <p class="text-xs text-slate-500">Single-transaction report — for one specific order reference.</p>
+            </div>
+          </div>
+          {% if request.user.is_manager_or_above %}
+          {% if sales_orders %}
+          <div x-data="{ loading: false }">
+            <form method="get" action="{% url 'reports:eudr' %}"
+                  class="flex flex-col sm:flex-row sm:items-center gap-2"
+                  @submit="loading = true; setTimeout(() => { loading = false }, 12000)">
+              <select name="order" style="width:auto"
+                      class="flex-1 bg-surface border border-border rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono focus:outline-none focus:border-green">
+                <option value="">Select sales order…</option>
+                {% for so in sales_orders %}
+                <option value="{{ so.order_number }}">{{ so.order_number }} — {{ so.customer_name }} ({{ so.order_date }})</option>
+                {% endfor %}
+              </select>
+              <button type="submit"
+                      :disabled="loading"
+                      :class="loading ? 'opacity-60 cursor-wait' : 'hover:border-amber-400 hover:text-amber-300'"
+                      class="flex items-center justify-center gap-1.5 bg-surface border border-border text-xs text-slate-300 px-4 py-1.5 rounded-lg transition-colors font-mono">
+                <svg x-show="!loading" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <svg x-show="loading" x-cloak class="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                <span x-text="loading ? 'Generating…' : 'Download →'">Download →</span>
+              </button>
+            </form>
+          </div>
+          {% else %}
+          <p class="text-xs text-slate-600">No sales orders yet — they will appear here once orders are recorded.</p>
+          {% endif %}
+          {% else %}
+          <p class="text-xs font-mono text-slate-600">Download requires Manager or above.</p>
+          {% endif %}
+        </div>
+
+      </div>
     </div>
 
     <!-- EUDR coverage note -->
@@ -188,10 +296,7 @@
   <!-- ── Operations tab ─────────────────────────────────────── -->
   <div x-show="tab === 'ops'" x-cloak class="space-y-4">
 
-    <p class="text-xs text-slate-500">
-      Internal operational reports — not tied to EU compliance. Download as CSV for use in spreadsheets or
-      accounting tools.
-    </p>
+    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Internal operational reports — download as CSV for use in spreadsheets or accounting tools.</p>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
@@ -209,7 +314,7 @@
             <p class="text-xs text-slate-500 mt-0.5">PO volume, received count, and delivery rate per supplier</p>
           </div>
         </div>
-        <form method="get" action="{% url 'reports:ops' %}" class="space-y-3" data-download>
+        <form method="get" action="{% url 'reports:ops' %}" class="space-y-3">
           <input type="hidden" name="type" value="suppliers">
           <div class="flex items-center gap-2">
             <input type="date" name="from"
@@ -243,7 +348,7 @@
             <p class="text-xs text-slate-500 mt-0.5">All sales orders with customer, status, and total value</p>
           </div>
         </div>
-        <form method="get" action="{% url 'reports:ops' %}" class="space-y-3" data-download>
+        <form method="get" action="{% url 'reports:ops' %}" class="space-y-3">
           <input type="hidden" name="type" value="sales">
           <div class="flex items-center gap-2">
             <input type="date" name="from"
@@ -277,7 +382,7 @@
             <p class="text-xs text-slate-500 mt-0.5">Current stock levels, lot numbers, quality grades, and low-stock flags</p>
           </div>
         </div>
-        <form method="get" action="{% url 'reports:ops' %}" class="space-y-3" data-download>
+        <form method="get" action="{% url 'reports:ops' %}" class="space-y-3">
           <input type="hidden" name="type" value="inventory">
           <p class="text-xs text-slate-600">Point-in-time snapshot — date filter not applicable</p>
           <button type="submit"
@@ -305,7 +410,7 @@
             <p class="text-xs text-slate-500 mt-0.5">All POs with supplier, status, expected delivery, and value</p>
           </div>
         </div>
-        <form method="get" action="{% url 'reports:ops' %}" class="space-y-3" data-download>
+        <form method="get" action="{% url 'reports:ops' %}" class="space-y-3">
           <input type="hidden" name="type" value="purchase-orders">
           <div class="flex items-center gap-2">
             <input type="date" name="from"
@@ -342,7 +447,7 @@
             </p>
           </div>
         </div>
-        <form method="get" action="{% url 'reports:ops' %}" data-download>
+        <form method="get" action="{% url 'reports:ops' %}">
           <input type="hidden" name="type" value="farms">
           <button type="submit"
                   class="flex items-center gap-2 bg-surface border border-border hover:border-purple-400 text-xs text-slate-300 hover:text-purple-300 px-5 py-2 rounded-lg transition-colors font-mono">

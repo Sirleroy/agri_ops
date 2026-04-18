@@ -1,10 +1,14 @@
 import csv
 from datetime import timedelta
-from django.http import HttpResponse, Http404
+from django.contrib import messages
+from django.http import HttpResponse, Http404, HttpResponseRedirect
+from django.urls import reverse
 from django.views import View
 from django.views.generic import TemplateView
 from django.utils import timezone
-from apps.users.permissions import StaffRequiredMixin
+from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin
+from apps.audit.models import AuditLog
+from apps.audit.mixins import get_client_ip
 from .pdf import generate_compliance_report
 
 
@@ -119,7 +123,7 @@ class ReportsLandingView(StaffRequiredMixin, TemplateView):
         })
 
 
-class EUDRReportView(StaffRequiredMixin, View):
+class EUDRReportView(ManagerRequiredMixin, View):
     def get(self, request):
         company = request.user.company
         if not company:
@@ -146,19 +150,23 @@ class EUDRReportView(StaffRequiredMixin, View):
             if 'label' not in filters:
                 filters['label'] = f"Customer_{customer_name.replace(' ', '_')}"
 
+        date_error = False
         if date_from:
             try:
                 from datetime import date
                 filters['date_from'] = date.fromisoformat(date_from)
             except ValueError:
-                pass
-
+                date_error = True
         if date_to:
             try:
                 from datetime import date
                 filters['date_to'] = date.fromisoformat(date_to)
             except ValueError:
-                pass
+                date_error = True
+
+        if date_error:
+            messages.error(request, 'Invalid date — use YYYY-MM-DD format (or use the date picker).')
+            return HttpResponseRedirect(reverse('reports:landing') + '?tab=eudr')
 
         buffer = generate_compliance_report(company, request.user, filters=filters)
 
@@ -171,6 +179,22 @@ class EUDRReportView(StaffRequiredMixin, View):
             f"{company.name.replace(' ', '_')}_"
             f"{label}_"
             f"{timezone.now().strftime('%Y%m%d')}.pdf"
+        )
+
+        AuditLog.objects.create(
+            company=company,
+            user=request.user,
+            action='download',
+            model_name='EUDRReport',
+            object_repr=filename[:255],
+            changes={
+                'label': label,
+                'customer': customer_name or None,
+                'order': order_number or None,
+                'date_from': date_from or None,
+                'date_to': date_to or None,
+            },
+            ip_address=get_client_ip(request),
         )
 
         response = HttpResponse(buffer, content_type='application/pdf')
@@ -209,7 +233,23 @@ class OpsReportView(StaffRequiredMixin, View):
         if not handler:
             raise Http404("Unknown report type.")
 
-        return handler(request, company, date_from, date_to)
+        response = handler(request, company, date_from, date_to)
+
+        AuditLog.objects.create(
+            company=company,
+            user=request.user,
+            action='download',
+            model_name='OpsReport',
+            object_repr=self.REPORT_TYPES.get(report_type, report_type),
+            changes={
+                'type': report_type,
+                'date_from': date_from or None,
+                'date_to': date_to or None,
+            },
+            ip_address=get_client_ip(request),
+        )
+
+        return response
 
     # ── Helpers ───────────────────────────────────────────────
 

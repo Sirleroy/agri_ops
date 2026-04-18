@@ -276,7 +276,7 @@ def generate_compliance_report(company, user, filters=None):
     elif filters.get('customer_name'):
         # Scope to a single buyer: filter SOs, then resolve farms via Batch links
         so_qs = so_qs.filter(customer_name=filters['customer_name'])
-        from apps.sales_orders.models import Batch
+        from apps.sales_orders.batch import Batch
         farm_ids = (
             Batch.objects
             .filter(company=company, sales_order__in=so_qs)
@@ -322,7 +322,7 @@ def generate_compliance_report(company, user, filters=None):
         story.append(Paragraph("No purchase orders recorded.", st["body"]))
 
     # ── Batch / DDS summary ───────────────────────────────────
-    from apps.sales_orders.models import Batch
+    from apps.sales_orders.batch import Batch
     batch_qs = Batch.objects.filter(company=company).select_related('sales_order').prefetch_related('farms').order_by('-created_at')
     if filters.get('sales_order'):
         batch_qs = batch_qs.filter(sales_order=filters['sales_order'])
