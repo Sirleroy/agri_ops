@@ -319,21 +319,26 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                     raw_centroid[0], raw_centroid[1],
                     proc_centroid[0], proc_centroid[1],
                 )
+            vertex_reduction_pct = (
+                round((1 - proc_vertices / raw_vertices) * 100)
+                if raw_vertices > 0 else 0
+            )
             transformations.append({
                 'row': row, 'farm': name, 'field': 'geometry',
                 'from': None, 'to': None,
                 'reason': 'geometry_normalised' if geom_was_corrected else 'geometry_clean',
                 'detail': {
-                    'had_elevation':        had_elevation,
-                    'had_duplicates':       raw_vertices > proc_vertices,
-                    'topology_repaired':    not raw_is_valid,
-                    'topology_valid':       raw_is_valid or True,  # always true post-repair
-                    'vertex_count_before':  raw_vertices,
-                    'vertex_count_after':   proc_vertices,
-                    'area_before_m2':       area_before_m2,
-                    'area_after_m2':        area_after_m2,
-                    'area_delta_pct':       area_delta_pct,
-                    'centroid_shift_m':     centroid_shift_m,
+                    'had_elevation':          had_elevation,
+                    'had_duplicates':         raw_vertices > proc_vertices,
+                    'topology_repaired':      not raw_is_valid,
+                    'topology_valid':         raw_is_valid or True,
+                    'vertex_count_before':    raw_vertices,
+                    'vertex_count_after':     proc_vertices,
+                    'vertex_reduction_pct':   vertex_reduction_pct,
+                    'area_before_m2':         area_before_m2,
+                    'area_after_m2':          area_after_m2,
+                    'area_delta_pct':         area_delta_pct,
+                    'centroid_shift_m':       centroid_shift_m,
                     'simplification_tolerance': simplification_tolerance,
                 },
             })
