@@ -7,7 +7,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.utils import timezone
-from django.db.models import Count
+from django.db.models import Count, Sum
 from django.db.models.functions import TruncDate
 
 from django_otp.plugins.otp_totp.models import TOTPDevice
@@ -20,7 +20,7 @@ from apps.companies.models import Company
 from apps.inventory.models import Inventory
 from apps.sales_orders.models import SalesOrder
 from apps.purchase_orders.models import PurchaseOrder
-from apps.suppliers.models import Supplier, Farm, Farmer
+from apps.suppliers.models import Supplier, Farm, Farmer, FarmImportLog
 from apps.users.models import CustomUser
 from .models import OpsEventLog
 
@@ -155,6 +155,46 @@ def ops_dashboard(request):
         .distinct()
     )
 
+    # ── Data quality impact (from FarmImportLog) ─────────────────────────────
+    live_logs = FarmImportLog.objects.filter(dry_run=False)
+    agg = live_logs.aggregate(
+        total_ingested=Sum('total'),
+        total_created=Sum('created'),
+        total_auto_corrected=Sum('auto_corrected'),
+        total_warnings=Sum('warning_count'),
+        total_errors=Sum('errors'),
+        total_blocked=Sum('blocked'),
+        import_sessions=Count('id'),
+    )
+    total_ingested      = agg['total_ingested']      or 0
+    total_created       = agg['total_created']       or 0
+    total_auto_corrected= agg['total_auto_corrected'] or 0
+    total_warnings      = agg['total_warnings']       or 0
+    total_rejected      = (agg['total_errors'] or 0) + (agg['total_blocked'] or 0)
+    import_sessions     = agg['import_sessions']      or 0
+
+    # Sum transformation event counts from JSON arrays (small dataset — fine in Python)
+    total_transformations = sum(
+        len(log.transformation_log)
+        for log in live_logs.only('transformation_log')
+        if log.transformation_log
+    )
+
+    pct_normalised = round(total_auto_corrected / total_created * 100, 1) if total_created else 0
+    pct_flagged    = round(total_warnings       / total_created * 100, 1) if total_created else 0
+    pct_rejected   = round(total_rejected       / total_ingested * 100, 1) if total_ingested else 0
+
+    if total_created > 0:
+        impact_narrative = (
+            f"AgriOps has ingested {total_ingested:,} farm records across "
+            f"{import_sessions} import session{'s' if import_sessions != 1 else ''} — "
+            f"{pct_normalised}% of saved records were automatically normalised before human review, "
+            f"with {total_transformations:,} field-level transformation event"
+            f"{'s' if total_transformations != 1 else ''} logged, attributable, and auditable."
+        )
+    else:
+        impact_narrative = None
+
     context = {
         'total_tenants':  Company.objects.count(),
         'active_tenants': active_company_ids.count(),
@@ -167,6 +207,18 @@ def ops_dashboard(request):
         'total_inventory': Inventory.objects.count(),
         'recent_audit':   AuditLog.objects.select_related('user').order_by('-timestamp')[:10],
         'recent_events':  OpsEventLog.objects.select_related('user').order_by('-timestamp')[:10],
+        # impact stats
+        'impact': {
+            'total_ingested':       total_ingested,
+            'total_created':        total_created,
+            'total_auto_corrected': total_auto_corrected,
+            'total_transformations':total_transformations,
+            'import_sessions':      import_sessions,
+            'pct_normalised':       pct_normalised,
+            'pct_flagged':          pct_flagged,
+            'pct_rejected':         pct_rejected,
+        },
+        'impact_narrative': impact_narrative,
     }
     return render(request, 'ops_dashboard/dashboard.html', context)
 
