@@ -522,15 +522,26 @@ class FarmForm(forms.ModelForm):
                 )
 
         # Layer 4: spatial overlap
+        # On edit, only check if the polygon was actually changed — farms that
+        # already exist in the DB with overlapping boundaries (e.g. imported in
+        # the same batch) should not block unrelated metadata edits.
         if geojson and self.company:
-            overlapping = _find_overlapping_farm(geojson, self.company, exclude_pk=exclude_pk)
-            if overlapping:
-                raise forms.ValidationError(
-                    f"This farm boundary overlaps with '{overlapping.name}' "
-                    f"({overlapping.supplier.name}). Overlapping boundaries produce "
-                    "inaccurate area totals and invalid compliance records. "
-                    "Adjust the boundary before saving."
+            geometry_changed = True
+            if exclude_pk and self.instance and self.instance.geolocation:
+                import json
+                geometry_changed = (
+                    json.dumps(geojson, sort_keys=True)
+                    != json.dumps(self.instance.geolocation, sort_keys=True)
                 )
+            if geometry_changed:
+                overlapping = _find_overlapping_farm(geojson, self.company, exclude_pk=exclude_pk)
+                if overlapping:
+                    raise forms.ValidationError(
+                        f"This farm boundary overlaps with '{overlapping.name}' "
+                        f"({overlapping.supplier.name}). Overlapping boundaries produce "
+                        "inaccurate area totals and invalid compliance records. "
+                        "Adjust the boundary before saving."
+                    )
 
         return cleaned_data
 

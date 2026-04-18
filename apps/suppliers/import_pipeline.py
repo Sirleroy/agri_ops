@@ -148,6 +148,7 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
     transformations = []  # auditable normalisation events
     auto_corrected = 0
     farmer_cache   = {}  # (first_name_lower, last_name_lower, village_lower, lga_lower) -> Farmer
+    batch_shapes   = []  # (shape, name) — intra-batch overlap guard
 
     for i, feature in enumerate(features):
         row = i + 1
@@ -232,6 +233,21 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
             blocked.append({'row': row, 'name': name,
                             'reason': f"Overlaps with existing farm '{overlapping.name}' ({overlapping.supplier.name})"})
             continue
+
+        # Intra-batch overlap: check against farms already accepted in this run
+        from .forms import _geojson_to_shape
+        new_shape = _geojson_to_shape(geometry) if geometry else None
+        if new_shape:
+            intra_clash = next(
+                (n for s, n in batch_shapes
+                 if s.intersection(new_shape).area > 0),
+                None,
+            )
+            if intra_clash:
+                blocked.append({'row': row, 'name': name,
+                                'reason': f"Overlaps with '{intra_clash}' in this same file"})
+                continue
+            batch_shapes.append((new_shape, name))
 
         # Completeness warnings (commodity checked after farmer resolution below)
         row_warnings = []
