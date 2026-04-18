@@ -50,7 +50,7 @@
                 {% if log.dry_run %}
                 <span class="px-2 py-0.5 rounded text-xs font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20">DRY RUN</span>
                 {% endif %}
-                {% if log.error_detail or log.blocked_detail or log.warning_detail %}
+                {% if log.error_detail or log.blocked_detail or log.warning_detail or log.transformation_log %}
                 <button @click="open = !open"
                   class="flex items-center gap-1 text-xs font-mono text-slate-500 hover:text-slate-200 transition-colors px-2 py-1 rounded border border-transparent hover:border-border">
                   <span x-text="open ? 'Hide' : 'Details'">Details</span>
@@ -60,7 +60,7 @@
               </div>
             </td>
           </tr>
-          {% if log.error_detail or log.blocked_detail or log.warning_detail %}
+          {% if log.error_detail or log.blocked_detail or log.warning_detail or log.transformation_log %}
           <tr x-show="open" x-cloak>
             <td colspan="11" class="px-0 pb-3">
               <div class="mx-3 rounded-lg border border-border bg-surface/60 divide-y divide-border/50">
@@ -110,6 +110,51 @@
                       <span class="text-slate-600 shrink-0">Row {{ w.row }}</span>
                       <span class="text-slate-300">{{ w.name }}</span>
                       <span class="text-amber-300/80">{{ w.issues|join:", " }}</span>
+                    </li>
+                    {% endfor %}
+                  </ul>
+                </div>
+                {% endif %}
+
+                {% if log.transformation_log %}
+                <div class="px-4 py-3">
+                  <p class="text-xs font-mono text-cyan-400 uppercase tracking-widest mb-3">
+                    {{ log.transformation_log|length }} Normalisation{{ log.transformation_log|length|pluralize }}
+                  </p>
+                  <ul class="space-y-2">
+                    {% for t in log.transformation_log %}
+                    <li class="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3 text-xs font-mono">
+                      {# Row + farm name #}
+                      <div class="flex items-center gap-2 shrink-0">
+                        <span class="text-slate-600 w-10 shrink-0">Row {{ t.row }}</span>
+                        <span class="text-slate-300 truncate max-w-[160px]" title="{{ t.farm }}">{{ t.farm }}</span>
+                      </div>
+                      {# Field badge #}
+                      <span class="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-mono border
+                        {% if t.field == 'lga' %}bg-violet-500/10 text-violet-300 border-violet-500/20
+                        {% elif t.field == 'commodity' %}bg-cyan-500/10 text-cyan-300 border-cyan-500/20
+                        {% elif t.field == 'geometry' %}bg-blue-500/10 text-blue-300 border-blue-500/20
+                        {% elif t.field == 'farmer' %}bg-green/10 text-green border-green/20
+                        {% else %}bg-slate-500/10 text-slate-400 border-slate-500/20{% endif %}">
+                        {{ t.field }}
+                      </span>
+                      {# From → To (hidden for geometry and farmer_merged) #}
+                      {% if t.from and t.to and t.reason != 'farmer_merged' and t.reason != 'geometry_normalised' %}
+                      <span class="flex items-center gap-1.5 min-w-0">
+                        <span class="text-slate-500 truncate max-w-[100px]" title="{{ t.from }}">{{ t.from }}</span>
+                        <span class="text-slate-600 shrink-0">→</span>
+                        <span class="text-slate-200 truncate max-w-[100px]" title="{{ t.to }}">{{ t.to }}</span>
+                      </span>
+                      {% endif %}
+                      {# Reason chip #}
+                      <span class="shrink-0 text-[10px] font-mono text-slate-500">
+                        {% if t.reason == 'fuzzy_match' %}LGA fuzzy-matched
+                        {% elif t.reason == 'canonical_name' %}canonical name
+                        {% elif t.reason == 'geometry_normalised' %}geometry repaired
+                        {% elif t.reason == 'farmer_merged' %}linked to existing farmer
+                        {% elif t.reason == 'farmer_crop_fallback' %}from farmer profile
+                        {% else %}{{ t.reason }}{% endif %}
+                      </span>
                     </li>
                     {% endfor %}
                   </ul>
