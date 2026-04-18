@@ -43,6 +43,10 @@ AgriOps is a secure, multi-tenant SaaS platform for agricultural SMEs and cooper
 | [ADR 003](adr/003-tenant-isolation-strategy.md) | Tenant isolation strategy |
 | [ADR 004](adr/004-geolocation-jsonfield-over-postgis.md) | GeoJSON over PostGIS for farm geolocation |
 | [ADR 005](adr/005-eudr-farm-model-separation.md) | Farm model separation from Supplier |
+| [ADR 006](adr/006-ops-event-log-separation.md) | Separate OpsEventLog from tenant AuditLog |
+| [ADR 007](adr/007-totp-over-ip-restriction.md) | TOTP over IP restriction for ops dashboard |
+| [ADR 008](adr/008-cloudflare-email-routing-interim.md) | Cloudflare Email Routing as interim MX |
+| [ADR 009](adr/009-production-hardening-indexes-async-email-env-validation.md) | Production hardening — DB indexes, async email, env validation |
 
 ---
 
@@ -83,4 +87,4 @@ See [ROADMAP.md](ROADMAP.md) for the full phase-by-phase build plan.
 
 ---
 
-*Built by [Sirleroy](https://github.com/Sirleroy/agri_ops) · Phase 4.11 complete · April 2026*
+*Built by [Sirleroy](https://github.com/Sirleroy/agri_ops) · Phase 4.12 complete · April 2026*

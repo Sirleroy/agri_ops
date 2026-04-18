@@ -182,6 +182,16 @@ Specific issues corrected silently before validation — you do not need to fix 
 | Numeric phone exported as scientific notation (e.g. `9.088E9`) | Coerced to integer string before E.164 normalisation |
 | Mixed-case GeoJSON property keys (`FIRST NAME`, `First Name`, etc.) | Normalised to lowercase before field mapping — no reformatting needed |
 
+**Warnings — accepted but flagged for review**
+
+Some issues do not block an import but are surfaced as warnings because they require a human decision:
+
+| Warning | What it means |
+|---|---|
+| LGA matched at low confidence | The LGA was fuzzy-matched but the match is below 90% confidence. The correct value has been applied — verify it is accurate before completing EUDR verification. |
+| Commodity is not an EUDR Annex I product | The commodity recorded (e.g. Sesame, Groundnut) is outside the six regulated commodities (Cattle, Cocoa, Coffee, Palm Oil, Soybeans, Wood, Rubber). Standard EUDR due-diligence rules do not apply to this farm — confirm the commodity is correct before filing any compliance reports. |
+| Declared area unusually large | Farm area exceeds 200 ha — likely a geometry error rather than a real farm boundary. Review the polygon before committing. |
+
 **Hard validation errors** (polygon cannot import — action required)
 
 | Error | What it means | Fix |
@@ -192,8 +202,40 @@ Specific issues corrected silently before validation — you do not need to fix 
 | Duplicate farm name | A farm with this name already exists under this supplier | Check for double-entry; rename if a different plot |
 | Overlaps existing farm | Boundary shares area with a farm already in the system | Review both farms — adjust if a mapping error |
 
-**Upload history**
-Every import attempt is saved. See the **Recent Uploads** table at the bottom of the import page, or click **View all →** for the full history with expandable error detail.
+**Upload history and Transformation Log**
+
+Every import attempt is saved. See the **Recent Uploads** table at the bottom of the import page, or click **View all →** for the full history with expandable detail rows.
+
+Click **Details** on any import row to expand the full audit panel. It shows four sections when relevant:
+
+- **Errors** — rows that were rejected, with the reason
+- **Overlap blocked** — rows that would have overlapped an existing farm
+- **Warnings** — rows that were accepted but need operator review (low-confidence LGA, non-EUDR commodity, large area)
+- **Transformation records** — a complete log of every normalisation or validation event for every farm in that import
+
+The Transformation Log is the chain of custody for your farm data. For each farm and field it records:
+
+| Event type | What it means |
+|---|---|
+| `geometry validated — clean` | Polygon passed all checks without any modification — stored exactly as received |
+| `geometry normalised` | Polygon was corrected before storage. The detail line shows exactly what ran: 3D→2D, duplicate vertices removed, topology repaired, vertex count before/after, area change %, centroid shift in metres |
+| `LGA fuzzy-matched` | LGA name was corrected. The detail line shows the match confidence score. Low confidence matches are also surfaced as warnings |
+| `canonical name` | Commodity spelling was corrected to the controlled vocabulary (e.g. "soy bean" → "Soybeans") |
+| `source area vs computed` | The device-reported AREA value was compared against the polygon we computed. Shows device value, computed area in ha, inferred unit (m² or ha), and the delta % |
+| `linked to existing farmer` | A matching farmer record was found in the registry and linked to this farm |
+| `new farmer created` | No matching farmer found — a new record was created from the import data |
+| `from farmer profile` | Commodity was missing in the file but filled from the farmer's registered crops |
+
+This log is the answer to the compliance question: *"What exactly happened to this farm's data between the GPS device and your database?"* Every correction is recorded with quantitative evidence — not just that something changed, but by how much.
+
+### Field officer provenance
+
+When farms are imported from a GeoJSON file, the import pipeline automatically extracts two provenance fields that are critical for EUDR accountability:
+
+- **Field Officer** — the name of the person who physically mapped the farm. Recognised from any of these property names in the file: `Field Officer Name`, `Field Officer`, `Officer Name`, `Surveyor`, `Mapped By`. Shown on the farm detail page under the Mapping Date.
+- **Mapping Date** — the date the boundary was recorded. Recognised from: `Mapping Date`, `Survey Date`, `Date Mapped`.
+
+These fields can also be set or corrected manually on the farm edit page. For EUDR Section 6 compliance, both should be filled in before a farm is marked as verified — they establish who is accountable for the boundary data and confirm it was captured within the relevant period.
 
 ### Exporting farm data
 
@@ -390,4 +432,4 @@ Go to **Company** in the sidebar to update:
 
 ---
 
-*AgriOps · [app.agriops.io](https://app.agriops.io) · Version 1.2 · April 2026*
+*AgriOps · [app.agriops.io](https://app.agriops.io) · Version 1.3 · April 2026*

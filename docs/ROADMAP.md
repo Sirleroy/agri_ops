@@ -156,6 +156,23 @@ Shipped April 2026. Closed the last gaps in the end-to-end field officer workflo
 
 ---
 
+## Phase 4.12 — Pipeline Transparency Audit ✅ Complete
+
+Shipped April 2026. Driven by a rigorous real-data analysis comparing a raw SW Maps GeoJSON export (James Farm, Ahmad Farm) against AgriOps-processed output. Every gap between "what the device recorded" and "what reached the database" was identified and made auditable.
+
+- **Geometry invariant guarantee** — every farm polygon now emits a transformation event regardless of whether it was corrected. `geometry_normalised` if the pipeline made changes; `geometry_clean` if the polygon passed without modification. No polygon can reach the registry without an explicit audit record ✅
+- **Geometry detail metrics** — each geometry event records exactly what ran: 3D→2D strip, duplicate vertex collapse, topology repair, vertex count before/after, area delta %, centroid shift in metres ✅
+- **LGA confidence tiering** — fuzzy LGA matches below 0.90 confidence correct the value (a wrong LGA is worse than no match) but surface an operator warning for human review. Above 0.90, silent correction is appropriate ✅
+- **Source area comparison** — device-reported `AREA` property (from SW Maps and similar apps) compared against independently computed polygon area. Unit (m² vs ha) inferred by whichever interpretation produces the smaller delta. Delta and unit inference logged as an auditable transformation event ✅
+- **EUDR commodity scope check** — at import time, any commodity outside EUDR Annex I (Cattle, Cocoa, Coffee, Palm Oil, Soybeans, Wood, Rubber) surfaces a warning: standard EUDR due-diligence rules do not apply. Operator makes a conscious decision at source, not at report generation ✅
+- **Field officer provenance** — `mapped_by_name` (the field officer string from the GeoJSON file) now parsed from all common property names, stored on the farm record, and surfaced on the farm detail page as "Field Officer". Satisfies EUDR Section 6 accountability requirement for who mapped the data and when ✅
+- **Import history UI expanded** — amber `area` field badge; `geometry_clean` and `area_source_comparison` reason labels; area delta sub-line with amber highlight at >5% deviation; section header updated from "Normalisations" to "Transformation records" to cover both corrections and validations ✅
+- **Stale warning erasure bug neutralised** — `row_warnings = []` was initialised mid-loop, silently wiping LGA confidence and EUDR scope warnings on every import before they reached the operator. Removed ✅
+
+**Outcome:** The import pipeline is no longer a silent uploader. Every farm in the registry has a reconstructable chain of custody — what geometry arrived, what was corrected, what the device reported vs what was computed, who mapped it and when, and what the system chose not to change. This is the answer to the compliance question: *"Can you show me exactly what happened to this polygon between the GPS device and your database?"*
+
+---
+
 ## Phase 5 — Buyer Portal 🔄 Planned
 - buyers.agriops.io — separate authenticated surface for EU buyers
 - Available inventory catalogue per operator
@@ -206,4 +223,4 @@ Trade shows: Biofach, SIAL Paris, Fi Europe.
 
 ---
 
-*Last updated: 14 April 2026*
+*Last updated: 18 April 2026*
