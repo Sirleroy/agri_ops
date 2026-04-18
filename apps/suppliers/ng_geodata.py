@@ -310,6 +310,8 @@ _COMMODITY_MAP = {
     'soybeans':     'Soybeans',
     'soya beans':   'Soybeans',
     'soya bean':    'Soybeans',
+    'soyabeans':    'Soybeans',
+    'soyabean':     'Soybeans',
     # Cocoa
     'cocoa':        'Cocoa',
     'cacao':        'Cocoa',

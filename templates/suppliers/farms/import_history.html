@@ -123,38 +123,66 @@
                   </p>
                   <ul class="space-y-2">
                     {% for t in log.transformation_log %}
-                    <li class="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3 text-xs font-mono">
-                      {# Row + farm name #}
-                      <div class="flex items-center gap-2 shrink-0">
-                        <span class="text-slate-600 w-10 shrink-0">Row {{ t.row }}</span>
-                        <span class="text-slate-300 truncate max-w-[160px]" title="{{ t.farm }}">{{ t.farm }}</span>
+                    <li class="flex flex-col gap-1 text-xs font-mono py-0.5">
+                      <div class="flex flex-wrap sm:flex-nowrap sm:items-center gap-1 sm:gap-3">
+                        {# Row + farm name #}
+                        <div class="flex items-center gap-2 shrink-0">
+                          <span class="text-slate-600 w-10 shrink-0">Row {{ t.row }}</span>
+                          <span class="text-slate-300 truncate max-w-[160px]" title="{{ t.farm }}">{{ t.farm }}</span>
+                        </div>
+                        {# Field badge #}
+                        <span class="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-mono border
+                          {% if t.field == 'lga' %}bg-violet-500/10 text-violet-300 border-violet-500/20
+                          {% elif t.field == 'commodity' %}bg-cyan-500/10 text-cyan-300 border-cyan-500/20
+                          {% elif t.field == 'geometry' %}bg-blue-500/10 text-blue-300 border-blue-500/20
+                          {% elif t.field == 'farmer' %}bg-green/10 text-green border-green/20
+                          {% else %}bg-slate-500/10 text-slate-400 border-slate-500/20{% endif %}">
+                          {{ t.field }}
+                        </span>
+                        {# From → To (shown for lga, commodity, farmer events) #}
+                        {% if t.from and t.to and t.reason not in 'geometry_normalised' %}
+                        <span class="flex items-center gap-1.5 min-w-0">
+                          <span class="text-slate-500 truncate max-w-[100px]" title="{{ t.from }}">{{ t.from }}</span>
+                          <span class="text-slate-600 shrink-0">→</span>
+                          <span class="text-slate-200 truncate max-w-[120px]" title="{{ t.to }}">{{ t.to }}</span>
+                        </span>
+                        {% endif %}
+                        {# Reason chip #}
+                        <span class="shrink-0 text-[10px] font-mono text-slate-500">
+                          {% if t.reason == 'fuzzy_match' %}LGA fuzzy-matched
+                          {% elif t.reason == 'canonical_name' %}canonical name
+                          {% elif t.reason == 'geometry_normalised' %}geometry normalised
+                          {% elif t.reason == 'farmer_merged' %}linked to existing farmer
+                          {% elif t.reason == 'farmer_created' %}new farmer created
+                          {% elif t.reason == 'farmer_crop_fallback' %}from farmer profile
+                          {% else %}{{ t.reason }}{% endif %}
+                        </span>
                       </div>
-                      {# Field badge #}
-                      <span class="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-mono border
-                        {% if t.field == 'lga' %}bg-violet-500/10 text-violet-300 border-violet-500/20
-                        {% elif t.field == 'commodity' %}bg-cyan-500/10 text-cyan-300 border-cyan-500/20
-                        {% elif t.field == 'geometry' %}bg-blue-500/10 text-blue-300 border-blue-500/20
-                        {% elif t.field == 'farmer' %}bg-green/10 text-green border-green/20
-                        {% else %}bg-slate-500/10 text-slate-400 border-slate-500/20{% endif %}">
-                        {{ t.field }}
-                      </span>
-                      {# From → To (hidden for geometry and farmer_merged) #}
-                      {% if t.from and t.to and t.reason != 'farmer_merged' and t.reason != 'geometry_normalised' %}
-                      <span class="flex items-center gap-1.5 min-w-0">
-                        <span class="text-slate-500 truncate max-w-[100px]" title="{{ t.from }}">{{ t.from }}</span>
-                        <span class="text-slate-600 shrink-0">→</span>
-                        <span class="text-slate-200 truncate max-w-[100px]" title="{{ t.to }}">{{ t.to }}</span>
-                      </span>
+                      {# Detail line — geometry metrics #}
+                      {% if t.detail and t.field == 'geometry' %}
+                      <div class="ml-12 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] font-mono text-slate-500">
+                        {% if t.detail.had_elevation %}<span class="text-blue-400/70">3D→2D</span>{% endif %}
+                        {% if t.detail.had_duplicates %}<span class="text-blue-400/70">dupes removed</span>{% endif %}
+                        {% if t.detail.topology_repaired %}<span class="text-amber-400/80">topology repaired</span>{% endif %}
+                        {% if t.detail.vertex_count_before %}<span>{{ t.detail.vertex_count_before }}→{{ t.detail.vertex_count_after }} vertices</span>{% endif %}
+                        {% if t.detail.area_delta_pct is not None %}<span>area Δ {{ t.detail.area_delta_pct }}%</span>{% endif %}
+                        {% if t.detail.centroid_shift_m is not None %}<span>centroid shift {{ t.detail.centroid_shift_m }}m</span>{% endif %}
+                      </div>
                       {% endif %}
-                      {# Reason chip #}
-                      <span class="shrink-0 text-[10px] font-mono text-slate-500">
-                        {% if t.reason == 'fuzzy_match' %}LGA fuzzy-matched
-                        {% elif t.reason == 'canonical_name' %}canonical name
-                        {% elif t.reason == 'geometry_normalised' %}geometry repaired
-                        {% elif t.reason == 'farmer_merged' %}linked to existing farmer
-                        {% elif t.reason == 'farmer_crop_fallback' %}from farmer profile
-                        {% else %}{{ t.reason }}{% endif %}
-                      </span>
+                      {# Detail line — LGA confidence #}
+                      {% if t.detail and t.field == 'lga' and t.detail.confidence %}
+                      <div class="ml-12 text-[10px] font-mono text-slate-500">
+                        match confidence {{ t.detail.confidence }}
+                      </div>
+                      {% endif %}
+                      {# Detail line — farmer resolution #}
+                      {% if t.detail and t.field == 'farmer' %}
+                      <div class="ml-12 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] font-mono text-slate-500">
+                        <span>{{ t.detail.match_method }}</span>
+                        {% if t.detail.match_fields %}<span>matched on {{ t.detail.match_fields|join:", " }}</span>{% endif %}
+                        {% if t.detail.match_count > 1 %}<span class="text-amber-400/80">{{ t.detail.match_count }} candidates — first used</span>{% endif %}
+                      </div>
+                      {% endif %}
                     </li>
                     {% endfor %}
                   </ul>

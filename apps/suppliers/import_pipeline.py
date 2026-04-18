@@ -118,6 +118,76 @@ def parse_file_to_features(geojson_file):
     return [], 'File must be a GeoJSON (.geojson, .json), WKT CSV (.csv), or ZIP export.'
 
 
+def _geom_vertex_count(geojson):
+    """Count total vertices in a GeoJSON Polygon / MultiPolygon (including Z)."""
+    if not geojson:
+        return 0
+    coords = geojson.get('coordinates', [])
+    geo_type = geojson.get('type', '')
+    try:
+        if geo_type == 'Polygon':
+            return sum(len(ring) for ring in coords)
+        if geo_type == 'MultiPolygon':
+            return sum(len(ring) for poly in coords for ring in poly)
+    except Exception:
+        pass
+    return 0
+
+
+def _geom_centroid(geojson):
+    """
+    Return (lat, lon) centroid of the outer ring of a GeoJSON Polygon / MultiPolygon.
+    Handles both 2D [lon, lat] and 3D [lon, lat, elev] coordinates.
+    Returns None if computation fails.
+    """
+    if not geojson:
+        return None
+    try:
+        geo_type = geojson.get('type', '')
+        coords   = geojson.get('coordinates', [])
+        if geo_type == 'Polygon' and coords:
+            ring = coords[0]
+        elif geo_type == 'MultiPolygon' and coords and coords[0]:
+            ring = coords[0][0]
+        else:
+            return None
+        lons = [c[0] for c in ring]
+        lats = [c[1] for c in ring]
+        return (sum(lats) / len(lats), sum(lons) / len(lons))
+    except Exception:
+        return None
+
+
+def _haversine_m(lat1, lon1, lat2, lon2):
+    """Approximate distance in metres between two lat/lon points."""
+    import math
+    R = 6_371_009
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = (math.sin(dlat / 2) ** 2
+         + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2))
+         * math.sin(dlon / 2) ** 2)
+    return round(2 * R * math.asin(min(1.0, math.sqrt(a))), 2)
+
+
+def _parse_mapping_date(raw):
+    """
+    Parse a mapping date string from various field-app export formats.
+    Tries ISO (YYYY-MM-DD) then DD/MM/YYYY then MM/DD/YYYY.
+    Returns a datetime.date or None on failure.
+    """
+    import datetime
+    if not raw or not str(raw).strip():
+        return None
+    s = str(raw).strip()
+    for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y', '%d-%m-%Y', '%Y/%m/%d'):
+        try:
+            return datetime.datetime.strptime(s, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
 def run_farm_geojson_import(company, supplier, features, default_commodity='', dry_run=False):
     """
     Core GeoJSON import pipeline — called by both the web view and the API endpoint.
@@ -125,10 +195,13 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
     Returns a result dict: {total, created, duplicates, blocked, errors, error_detail,
                             blocked_detail, warnings, transformations, dry_run}
 
-    transformations is a list of auditable normalisation events — one entry per
-    field change applied silently during import (LGA fuzzy-match, geometry repair,
-    commodity canonicalisation, farmer record merge). Stored in FarmImportLog so
-    the origin of every stored value is explainable under audit.
+    transformations is a list of auditable normalisation events.  Each entry has:
+      row, farm, field, from, to, reason
+    and an optional 'detail' dict with quantitative evidence:
+      geometry  → vertex counts, area delta %, centroid shift (m), topology flag
+      lga       → fuzzy-match confidence score
+      farmer    → match_method, match_fields, match_count (ambiguity signal)
+    Stored in FarmImportLog so every stored value is explainable under audit.
     """
     from django import forms as django_forms
     from django.db import transaction
@@ -182,27 +255,97 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
         commodity_raw = _s(props.get('commodity')) or default_commodity or 'Unknown'
         commodity     = normalise_commodity(commodity_raw)
 
-        # Track geometry auto-correction (3D→2D, dedup, close ring, simplify, buffer(0) repair)
+        # ── Provenance metadata ──────────────────────────────────────────────
+        field_officer = _s(
+            props.get('field officer name') or props.get('field_officer_name') or
+            props.get('field officer')      or props.get('officer name') or
+            props.get('officer')            or props.get('surveyor') or
+            props.get('mapped by')          or props.get('mapped_by_name')
+        )
+        mapping_date_raw = _s(
+            props.get('mapping date') or props.get('mapping_date') or
+            props.get('survey date')  or props.get('survey_date') or
+            props.get('date mapped')  or props.get('date_mapped')
+        )
+        mapping_date_parsed = _parse_mapping_date(mapping_date_raw)
+
+        # ── Geometry normalisation with quantified metrics ────────────────────
         raw_geometry = geometry
+        raw_vertices = _geom_vertex_count(raw_geometry)
+        raw_centroid = _geom_centroid(raw_geometry)
+
+        # Detect elevation before stripping — any coordinate with 3 values
+        had_elevation = False
+        if raw_geometry and raw_geometry.get('coordinates'):
+            try:
+                outer = raw_geometry['coordinates'][0]
+                if raw_geometry.get('type') == 'MultiPolygon':
+                    outer = raw_geometry['coordinates'][0][0]
+                had_elevation = any(len(c) >= 3 for c in outer)
+            except Exception:
+                pass
+
+        # Check topology validity of raw geometry before repair
+        raw_is_valid = True
+        if raw_geometry:
+            try:
+                from shapely.geometry import shape as _shp
+                raw_is_valid = _shp(raw_geometry).is_valid
+            except Exception:
+                pass
+
         if geometry:
             geometry = normalize_field_gps_geometry(geometry)
 
-        # ── Transformation events ────────────────────────────────────────────
-        # LGA canonicalization: fuzzy-matched if the resolved value differs from raw input
-        lga_was_corrected = bool(lga_raw) and lga.strip().lower() != lga_raw.strip().lower()
-        if lga_was_corrected:
-            transformations.append({
-                'row': row, 'farm': name, 'field': 'lga',
-                'from': lga_raw, 'to': lga, 'reason': 'fuzzy_match',
-            })
-
         geom_was_corrected = bool(raw_geometry) and geometry != raw_geometry
         if geom_was_corrected:
+            proc_vertices = _geom_vertex_count(geometry)
+            proc_centroid = _geom_centroid(geometry)
+
+            # Area before/after in m² — use the same spherical formula as _compute_area_ha
+            area_before_m2 = round(_compute_area_ha(raw_geometry) * 10_000, 1) if _compute_area_ha(raw_geometry) else None
+            area_after_m2  = round(_compute_area_ha(geometry)     * 10_000, 1) if _compute_area_ha(geometry)     else None
+            area_delta_pct = None
+            if area_before_m2 and area_after_m2 and area_before_m2 > 0:
+                area_delta_pct = round(abs(area_after_m2 - area_before_m2) / area_before_m2 * 100, 2)
+
+            centroid_shift_m = None
+            if raw_centroid and proc_centroid:
+                centroid_shift_m = _haversine_m(
+                    raw_centroid[0], raw_centroid[1],
+                    proc_centroid[0], proc_centroid[1],
+                )
+
             transformations.append({
                 'row': row, 'farm': name, 'field': 'geometry',
                 'from': None, 'to': None, 'reason': 'geometry_normalised',
+                'detail': {
+                    'had_elevation':      had_elevation,
+                    'had_duplicates':     raw_vertices > proc_vertices,
+                    'topology_repaired':  not raw_is_valid,
+                    'vertex_count_before': raw_vertices,
+                    'vertex_count_after':  proc_vertices,
+                    'area_before_m2':     area_before_m2,
+                    'area_after_m2':      area_after_m2,
+                    'area_delta_pct':     area_delta_pct,
+                    'centroid_shift_m':   centroid_shift_m,
+                },
             })
 
+        # ── LGA canonicalisation with fuzzy-match confidence ─────────────────
+        lga_was_corrected = bool(lga_raw) and lga.strip().lower() != lga_raw.strip().lower()
+        if lga_was_corrected:
+            import difflib as _difflib
+            confidence = round(
+                _difflib.SequenceMatcher(None, lga_raw.strip().lower(), lga.strip().lower()).ratio(), 3
+            )
+            transformations.append({
+                'row': row, 'farm': name, 'field': 'lga',
+                'from': lga_raw, 'to': lga, 'reason': 'fuzzy_match',
+                'detail': {'confidence': confidence},
+            })
+
+        # ── Commodity controlled-vocabulary enforcement ───────────────────────
         commodity_was_corrected = (
             commodity_raw.strip().lower() != commodity.strip().lower()
             and commodity != 'Unknown'
@@ -273,23 +416,41 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                 linked_farmer = farmer_cache[cache_key]
                 # farmer was already resolved this import — no new transformation event
             else:
+                # Build query progressively, tracking which fields are used
                 q = Farmer.objects.filter(
                     company=company,
                     first_name__iexact=first_name,
                     last_name__iexact=last_name,
                 )
+                match_fields = ['first_name', 'last_name']
                 if village:
                     q = q.filter(village__iexact=village)
+                    match_fields.append('village')
                 if lga:
                     q = q.filter(lga__iexact=lga)
+                    match_fields.append('lga')
+
+                match_count   = q.count()
                 linked_farmer = q.first()
+
                 if linked_farmer is not None:
+                    method = 'ambiguous_exact' if match_count > 1 else 'exact'
                     transformations.append({
                         'row': row, 'farm': name, 'field': 'farmer',
                         'from': farmer_label,
                         'to': f"pk={linked_farmer.pk} ({linked_farmer.full_name})",
                         'reason': 'farmer_merged',
+                        'detail': {
+                            'match_method': method,
+                            'match_fields': match_fields,
+                            'match_count':  match_count,
+                        },
                     })
+                    if match_count > 1:
+                        row_warnings.append(
+                            f"Farmer name '{farmer_label}' matched {match_count} existing records — "
+                            f"first match (pk={linked_farmer.pk}) used. Verify identity manually."
+                        )
                 elif not dry_run:
                     linked_farmer = Farmer.objects.create(
                         company=company,
@@ -299,6 +460,17 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                         village=village,
                         lga=lga,
                     )
+                    transformations.append({
+                        'row': row, 'farm': name, 'field': 'farmer',
+                        'from': farmer_label,
+                        'to': f"pk={linked_farmer.pk} (new record)",
+                        'reason': 'farmer_created',
+                        'detail': {
+                            'match_method': 'created',
+                            'match_fields': match_fields,
+                            'match_count':  0,
+                        },
+                    })
                 farmer_cache[cache_key] = linked_farmer
 
         # Fall back to farmer's registered crops if commodity is still unknown
@@ -331,6 +503,8 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
             commodity=commodity,
             deforestation_risk_status='standard',
             is_eudr_verified=False,
+            mapped_by_name=field_officer,
+            mapping_date=mapping_date_parsed,
         ))
 
     created_count = 0

@@ -197,7 +197,11 @@ class Farm(models.Model):
         null=True, blank=True,
         help_text="Most recent harvest year on this plot (e.g. 2024). Required for EUDR due diligence statement."
     )
-    mapping_date   = models.DateField(null=True, blank=True)
+    mapping_date    = models.DateField(null=True, blank=True)
+    mapped_by_name  = models.CharField(
+                        max_length=150, blank=True, default='',
+                        help_text="Field officer name as recorded in the import file (free text — not a platform user)."
+                      )
     mapped_by      = models.ForeignKey(
                        'users.CustomUser', null=True, blank=True,
                        on_delete=models.SET_NULL,

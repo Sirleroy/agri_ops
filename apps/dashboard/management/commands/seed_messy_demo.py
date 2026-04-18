@@ -253,7 +253,12 @@ class Command(BaseCommand):
             self.stdout.write('  Ake Collective not found — nothing to flush.')
             return
 
-        Supplier.objects.filter(name=SUPPLIER_NAME, company=ake).delete()
+        # Delete farms first — Farm.supplier is SET_NULL on delete, so farms
+        # must be removed before the supplier or they become orphaned and block re-import
+        from apps.suppliers.models import Farm
+        coop_qs = Supplier.objects.filter(name=SUPPLIER_NAME, company=ake)
+        Farm.objects.filter(company=ake, supplier__in=coop_qs).delete()
+        coop_qs.delete()
         SalesOrder.objects.filter(order_number=SO_NUMBER, company=ake).delete()
         PurchaseOrder.objects.filter(order_number=PO_NUMBER, company=ake).delete()
         Product.objects.filter(name=PRODUCT_NAME, company=ake).delete()
