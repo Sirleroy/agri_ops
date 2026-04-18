@@ -453,7 +453,7 @@ class FarmForm(forms.ModelForm):
             'supplier', 'name', 'farmer', 'country', 'state_region',
             'commodity', 'harvest_year',
             'deforestation_risk_status', 'deforestation_reference_date',
-            'land_cleared_after_cutoff', 'mapping_date', 'mapped_by', 'geolocation',
+            'land_cleared_after_cutoff', 'mapping_date', 'mapped_by', 'mapped_by_name', 'geolocation',
         ]
 
     def __init__(self, *args, company=None, **kwargs):

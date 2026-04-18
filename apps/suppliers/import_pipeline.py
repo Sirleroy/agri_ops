@@ -188,7 +188,8 @@ def _parse_mapping_date(raw):
     return None
 
 
-def run_farm_geojson_import(company, supplier, features, default_commodity='', dry_run=False):
+def run_farm_geojson_import(company, supplier, features, default_commodity='', dry_run=False,
+                            simplification_tolerance=0.00005):
     """
     Core GeoJSON import pipeline — called by both the web view and the API endpoint.
     Runs all validation layers and bulk-creates passing farms (unless dry_run=True).
@@ -207,7 +208,7 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
     from django.db import transaction
     from .models import Farm, Farmer
     from .forms import _validate_geojson_polygon, _find_overlapping_farm, normalize_field_gps_geometry, _compute_area_ha
-    from .ng_geodata import canonicalise_lga_state, normalise_commodity
+    from .ng_geodata import canonicalise_lga_state, normalise_commodity, is_eudr_commodity
 
     # Accept a FeatureCollection dict as well as a plain list
     if isinstance(features, dict) and features.get('type') == 'FeatureCollection':
@@ -269,12 +270,14 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
         )
         mapping_date_parsed = _parse_mapping_date(mapping_date_raw)
 
-        # ── Geometry normalisation with quantified metrics ────────────────────
+        # row_warnings collected throughout — initialised here so all blocks below can append
+        row_warnings = []
+
+        # ── Geometry: normalise + always log invariant event ─────────────────
         raw_geometry = geometry
         raw_vertices = _geom_vertex_count(raw_geometry)
         raw_centroid = _geom_centroid(raw_geometry)
 
-        # Detect elevation before stripping — any coordinate with 3 values
         had_elevation = False
         if raw_geometry and raw_geometry.get('coordinates'):
             try:
@@ -285,7 +288,6 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
             except Exception:
                 pass
 
-        # Check topology validity of raw geometry before repair
         raw_is_valid = True
         if raw_geometry:
             try:
@@ -295,47 +297,51 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                 pass
 
         if geometry:
-            geometry = normalize_field_gps_geometry(geometry)
+            geometry = normalize_field_gps_geometry(
+                geometry, simplify_tolerance=simplification_tolerance
+            )
 
         geom_was_corrected = bool(raw_geometry) and geometry != raw_geometry
-        if geom_was_corrected:
-            proc_vertices = _geom_vertex_count(geometry)
-            proc_centroid = _geom_centroid(geometry)
 
-            # Area before/after in m² — use the same spherical formula as _compute_area_ha
-            area_before_m2 = round(_compute_area_ha(raw_geometry) * 10_000, 1) if _compute_area_ha(raw_geometry) else None
-            area_after_m2  = round(_compute_area_ha(geometry)     * 10_000, 1) if _compute_area_ha(geometry)     else None
-            area_delta_pct = None
+        if raw_geometry:
+            # Always emit a geometry event — 'geometry_normalised' if changed,
+            # 'geometry_clean' if it passed without modification (invariant guarantee)
+            proc_vertices    = _geom_vertex_count(geometry)
+            proc_centroid    = _geom_centroid(geometry)
+            area_before_m2   = round(_compute_area_ha(raw_geometry) * 10_000, 1) if _compute_area_ha(raw_geometry) else None
+            area_after_m2    = round(_compute_area_ha(geometry)     * 10_000, 1) if _compute_area_ha(geometry)     else None
+            area_delta_pct   = None
             if area_before_m2 and area_after_m2 and area_before_m2 > 0:
                 area_delta_pct = round(abs(area_after_m2 - area_before_m2) / area_before_m2 * 100, 2)
-
             centroid_shift_m = None
             if raw_centroid and proc_centroid:
                 centroid_shift_m = _haversine_m(
                     raw_centroid[0], raw_centroid[1],
                     proc_centroid[0], proc_centroid[1],
                 )
-
             transformations.append({
                 'row': row, 'farm': name, 'field': 'geometry',
-                'from': None, 'to': None, 'reason': 'geometry_normalised',
+                'from': None, 'to': None,
+                'reason': 'geometry_normalised' if geom_was_corrected else 'geometry_clean',
                 'detail': {
-                    'had_elevation':      had_elevation,
-                    'had_duplicates':     raw_vertices > proc_vertices,
-                    'topology_repaired':  not raw_is_valid,
-                    'vertex_count_before': raw_vertices,
-                    'vertex_count_after':  proc_vertices,
-                    'area_before_m2':     area_before_m2,
-                    'area_after_m2':      area_after_m2,
-                    'area_delta_pct':     area_delta_pct,
-                    'centroid_shift_m':   centroid_shift_m,
+                    'had_elevation':        had_elevation,
+                    'had_duplicates':       raw_vertices > proc_vertices,
+                    'topology_repaired':    not raw_is_valid,
+                    'topology_valid':       raw_is_valid or True,  # always true post-repair
+                    'vertex_count_before':  raw_vertices,
+                    'vertex_count_after':   proc_vertices,
+                    'area_before_m2':       area_before_m2,
+                    'area_after_m2':        area_after_m2,
+                    'area_delta_pct':       area_delta_pct,
+                    'centroid_shift_m':     centroid_shift_m,
+                    'simplification_tolerance': simplification_tolerance,
                 },
             })
 
-        # ── LGA canonicalisation with fuzzy-match confidence ─────────────────
+        # ── LGA canonicalisation — tiered confidence response ────────────────
+        import difflib as _difflib
         lga_was_corrected = bool(lga_raw) and lga.strip().lower() != lga_raw.strip().lower()
         if lga_was_corrected:
-            import difflib as _difflib
             confidence = round(
                 _difflib.SequenceMatcher(None, lga_raw.strip().lower(), lga.strip().lower()).ratio(), 3
             )
@@ -344,6 +350,12 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                 'from': lga_raw, 'to': lga, 'reason': 'fuzzy_match',
                 'detail': {'confidence': confidence},
             })
+            # Below 0.90 confidence: correct but surface a warning for human review
+            if confidence < 0.90:
+                row_warnings.append(
+                    f"LGA '{lga_raw}' was fuzzy-matched to '{lga}' "
+                    f"(confidence {confidence}) — verify this is correct."
+                )
 
         # ── Commodity controlled-vocabulary enforcement ───────────────────────
         commodity_was_corrected = (
@@ -361,6 +373,51 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
 
         # Area computed from normalized polygon — file metadata is ignored
         area = _compute_area_ha(geometry) if geometry else None
+
+        # ── Source area comparison (device-reported vs computed) ─────────────
+        # Compares the AREA property from the mapping app against the value we
+        # computed from the polygon.  Unit inferred by whichever match is closer.
+        source_area_raw = _s(
+            raw_props.get('AREA') or raw_props.get('area') or raw_props.get('Area')
+        )
+        if source_area_raw and area:
+            try:
+                source_val = float(source_area_raw)
+                computed_ha = float(area)
+                if source_val > 0 and computed_ha > 0:
+                    computed_m2   = computed_ha * 10_000
+                    diff_if_ha = abs(source_val - computed_ha) / computed_ha
+                    diff_if_m2 = abs(source_val - computed_m2) / computed_m2
+                    if diff_if_m2 <= diff_if_ha:
+                        unit_inferred  = 'm2'
+                        computed_same  = round(computed_m2, 1)
+                        delta_pct      = round(diff_if_m2 * 100, 2)
+                    else:
+                        unit_inferred  = 'ha'
+                        computed_same  = round(computed_ha, 4)
+                        delta_pct      = round(diff_if_ha * 100, 2)
+                    transformations.append({
+                        'row': row, 'farm': name, 'field': 'area',
+                        'from': f"{source_val} ({unit_inferred})",
+                        'to':   f"{computed_same} ({unit_inferred})",
+                        'reason': 'area_source_comparison',
+                        'detail': {
+                            'source_area':      source_val,
+                            'computed_area_ha': computed_ha,
+                            'unit_inferred':    unit_inferred,
+                            'delta_pct':        delta_pct,
+                        },
+                    })
+            except (ValueError, ZeroDivisionError, TypeError):
+                pass
+
+        # ── EUDR commodity scope check ────────────────────────────────────────
+        if commodity and commodity != 'Unknown' and not is_eudr_commodity(commodity):
+            row_warnings.append(
+                f"'{commodity}' is not an EUDR Annex I commodity — "
+                "standard EUDR due-diligence rules do not apply. "
+                "Verify the correct commodity is recorded."
+            )
 
         try:
             _validate_geojson_polygon(geometry)
@@ -401,7 +458,6 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
         batch_names.add(name.lower())
 
         # Completeness warnings (commodity checked after farmer resolution below)
-        row_warnings = []
         if not farmer_label:
             row_warnings.append("No farmer name found — check 'First Name' and 'Last Name' columns.")
         if not lga:

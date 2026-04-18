@@ -387,6 +387,29 @@ def normalise_commodity(raw):
     return _COMMODITY_MAP.get(key, raw.strip().title())
 
 
+# ── EUDR Annex I commodity scope ──────────────────────────────────────────────
+# EU Regulation 2023/1115, Annex I: commodities whose production must not
+# contribute to deforestation or forest degradation after 31 Dec 2020.
+# This set uses canonical names as returned by normalise_commodity().
+EUDR_ANNEX_I = {
+    'Cattle',
+    'Cocoa',
+    'Coffee',
+    'Palm Oil',
+    'Soybeans',
+    'Wood',
+    'Rubber',
+}
+
+
+def is_eudr_commodity(commodity):
+    """
+    Return True if the canonical commodity name is covered by EUDR Annex I.
+    Pass the result of normalise_commodity() — not the raw string.
+    """
+    return bool(commodity) and commodity in EUDR_ANNEX_I
+
+
 def canonicalise_lga_state(lga_raw, state_raw=''):
     """
     Return (canonical_lga, canonical_state) for a Nigerian LGA/State pair.

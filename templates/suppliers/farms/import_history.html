@@ -119,7 +119,7 @@
                 {% if log.transformation_log %}
                 <div class="px-4 py-3">
                   <p class="text-xs font-mono text-cyan-400 uppercase tracking-widest mb-3">
-                    {{ log.transformation_log|length }} Normalisation{{ log.transformation_log|length|pluralize }}
+                    {{ log.transformation_log|length }} Transformation record{{ log.transformation_log|length|pluralize }}
                   </p>
                   <ul class="space-y-2">
                     {% for t in log.transformation_log %}
@@ -136,11 +136,12 @@
                           {% elif t.field == 'commodity' %}bg-cyan-500/10 text-cyan-300 border-cyan-500/20
                           {% elif t.field == 'geometry' %}bg-blue-500/10 text-blue-300 border-blue-500/20
                           {% elif t.field == 'farmer' %}bg-green/10 text-green border-green/20
+                          {% elif t.field == 'area' %}bg-amber-500/10 text-amber-300 border-amber-500/20
                           {% else %}bg-slate-500/10 text-slate-400 border-slate-500/20{% endif %}">
                           {{ t.field }}
                         </span>
-                        {# From → To (shown for lga, commodity, farmer events) #}
-                        {% if t.from and t.to and t.reason not in 'geometry_normalised' %}
+                        {# From → To (shown for lga, commodity, farmer, area events) #}
+                        {% if t.from and t.to and t.reason != 'geometry_normalised' and t.reason != 'geometry_clean' %}
                         <span class="flex items-center gap-1.5 min-w-0">
                           <span class="text-slate-500 truncate max-w-[100px]" title="{{ t.from }}">{{ t.from }}</span>
                           <span class="text-slate-600 shrink-0">→</span>
@@ -152,6 +153,8 @@
                           {% if t.reason == 'fuzzy_match' %}LGA fuzzy-matched
                           {% elif t.reason == 'canonical_name' %}canonical name
                           {% elif t.reason == 'geometry_normalised' %}geometry normalised
+                          {% elif t.reason == 'geometry_clean' %}geometry validated — clean
+                          {% elif t.reason == 'area_source_comparison' %}source area vs computed
                           {% elif t.reason == 'farmer_merged' %}linked to existing farmer
                           {% elif t.reason == 'farmer_created' %}new farmer created
                           {% elif t.reason == 'farmer_crop_fallback' %}from farmer profile
@@ -173,6 +176,15 @@
                       {% if t.detail and t.field == 'lga' and t.detail.confidence %}
                       <div class="ml-12 text-[10px] font-mono text-slate-500">
                         match confidence {{ t.detail.confidence }}
+                      </div>
+                      {% endif %}
+                      {# Detail line — area source comparison #}
+                      {% if t.detail and t.field == 'area' %}
+                      <div class="ml-12 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] font-mono text-slate-500">
+                        <span>device: {{ t.detail.source_area }} {{ t.detail.unit_inferred }}</span>
+                        <span>computed: {{ t.detail.computed_area_ha }} ha</span>
+                        {% if t.detail.delta_pct is not None %}<span class="{% if t.detail.delta_pct > 5 %}text-amber-400/80{% endif %}">Δ {{ t.detail.delta_pct }}%</span>{% endif %}
+                        <span class="text-slate-600">unit inferred: {{ t.detail.unit_inferred }}</span>
                       </div>
                       {% endif %}
                       {# Detail line — farmer resolution #}
