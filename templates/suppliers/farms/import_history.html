@@ -31,7 +31,7 @@
           </tr>
         </thead>
         {% for log in logs %}
-        <tbody x-data="{ open: false }">
+        <tbody x-data="{ open: false, techOpen: false }">
           <tr class="border-b border-border/50 hover:bg-surface/40 transition-colors cursor-default">
             <td class="px-3 py-2.5 text-slate-400 whitespace-nowrap">{{ log.created_at|date:"d M Y H:i" }}</td>
             <td class="px-3 py-2.5 text-slate-300 whitespace-nowrap">{{ log.uploaded_by.get_short_name|default:log.uploaded_by.username }}</td>
@@ -118,12 +118,21 @@
 
                 {% if log.transformation_log %}
                 <div class="px-4 py-3">
-                  <p class="text-xs font-mono text-cyan-400 uppercase tracking-widest mb-3">
-                    {{ log.transformation_log|length }} Transformation record{{ log.transformation_log|length|pluralize }}
-                  </p>
+                  <div class="flex items-center justify-between mb-3">
+                    <p class="text-xs font-mono text-cyan-400 uppercase tracking-widest">Processing Log</p>
+                    <button @click="techOpen = !techOpen"
+                      class="flex items-center gap-1 text-[10px] font-mono text-slate-600 hover:text-slate-400 transition-colors">
+                      <span x-text="techOpen ? 'Hide technical detail' : 'Technical detail'">Technical detail</span>
+                      <svg class="w-2.5 h-2.5 transition-transform duration-150" :class="techOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                      </svg>
+                    </button>
+                  </div>
                   <ul class="space-y-2">
                     {% for t in log.transformation_log %}
-                    <li class="flex flex-col gap-1 text-xs font-mono py-0.5">
+                    {# geometry_clean entries are technical — hidden until operator expands #}
+                    <li class="flex flex-col gap-1 text-xs font-mono py-0.5"
+                        x-show="'{{ t.reason|escapejs }}' !== 'geometry_clean' || techOpen">
                       <div class="flex flex-wrap sm:flex-nowrap sm:items-center gap-1 sm:gap-3">
                         {# Row + farm name #}
                         <div class="flex items-center gap-2 shrink-0">
@@ -150,20 +159,21 @@
                         {% endif %}
                         {# Reason chip #}
                         <span class="shrink-0 text-[10px] font-mono text-slate-500">
-                          {% if t.reason == 'fuzzy_match' %}LGA fuzzy-matched
-                          {% elif t.reason == 'canonical_name' %}canonical name
-                          {% elif t.reason == 'geometry_normalised' %}geometry normalised
-                          {% elif t.reason == 'geometry_clean' %}geometry validated — clean
-                          {% elif t.reason == 'area_source_comparison' %}source area vs computed
+                          {% if t.reason == 'fuzzy_match' %}LGA matched
+                          {% elif t.reason == 'canonical_name' %}spelling corrected
+                          {% elif t.reason == 'geometry_normalised' %}geometry corrected
+                          {% elif t.reason == 'geometry_clean' %}validated — no changes
+                          {% elif t.reason == 'area_source_comparison' %}area cross-check
                           {% elif t.reason == 'farmer_merged' %}linked to existing farmer
-                          {% elif t.reason == 'farmer_created' %}new farmer created
-                          {% elif t.reason == 'farmer_crop_fallback' %}from farmer profile
+                          {% elif t.reason == 'farmer_created' %}new farmer record created
+                          {% elif t.reason == 'farmer_crop_fallback' %}commodity from farmer profile
                           {% else %}{{ t.reason }}{% endif %}
                         </span>
                       </div>
-                      {# Detail line — geometry metrics #}
+                      {# Detail line — geometry metrics (technical — hidden until expanded) #}
                       {% if t.detail and t.field == 'geometry' %}
-                      <div class="ml-12 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] font-mono text-slate-500">
+                      <div x-show="techOpen"
+                           class="ml-12 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] font-mono text-slate-500">
                         {% if t.detail.had_elevation %}<span class="text-blue-400/70">3D→2D</span>{% endif %}
                         {% if t.detail.had_duplicates %}<span class="text-blue-400/70">dupes removed</span>{% endif %}
                         {% if t.detail.topology_repaired %}<span class="text-amber-400/80">topology repaired</span>{% endif %}
@@ -178,13 +188,12 @@
                         match confidence {{ t.detail.confidence }}
                       </div>
                       {% endif %}
-                      {# Detail line — area source comparison #}
+                      {# Detail line — area cross-check #}
                       {% if t.detail and t.field == 'area' %}
                       <div class="ml-12 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] font-mono text-slate-500">
-                        <span>device: {{ t.detail.source_area }} {{ t.detail.unit_inferred }}</span>
-                        <span>computed: {{ t.detail.computed_area_ha }} ha</span>
+                        <span>device {{ t.detail.source_area }} {{ t.detail.unit_inferred }}</span>
+                        <span>computed {{ t.detail.computed_area_ha }} ha</span>
                         {% if t.detail.delta_pct is not None %}<span class="{% if t.detail.delta_pct > 5 %}text-amber-400/80{% endif %}">Δ {{ t.detail.delta_pct }}%</span>{% endif %}
-                        <span class="text-slate-600">unit inferred: {{ t.detail.unit_inferred }}</span>
                       </div>
                       {% endif %}
                       {# Detail line — farmer resolution #}
