@@ -149,6 +149,7 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
     auto_corrected = 0
     farmer_cache   = {}  # (first_name_lower, last_name_lower, village_lower, lga_lower) -> Farmer
     batch_shapes   = []  # (shape, name) — intra-batch overlap guard
+    batch_names    = set()  # intra-batch name+supplier duplicate guard (case-insensitive)
 
     for i, feature in enumerate(features):
         row = i + 1
@@ -228,10 +229,15 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
             duplicates.append({'row': row, 'name': name})
             continue
 
+        if name.lower() in batch_names:
+            duplicates.append({'row': row, 'name': name})
+            continue
+
         overlapping = _find_overlapping_farm(geometry, company)
         if overlapping:
+            sup_label = overlapping.supplier.name if overlapping.supplier else 'no supplier'
             blocked.append({'row': row, 'name': name,
-                            'reason': f"Overlaps with existing farm '{overlapping.name}' ({overlapping.supplier.name})"})
+                            'reason': f"Overlaps with existing farm '{overlapping.name}' ({sup_label})"})
             continue
 
         # Intra-batch overlap: check against farms already accepted in this run
@@ -248,6 +254,8 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                                 'reason': f"Overlaps with '{intra_clash}' in this same file"})
                 continue
             batch_shapes.append((new_shape, name))
+
+        batch_names.add(name.lower())
 
         # Completeness warnings (commodity checked after farmer resolution below)
         row_warnings = []
@@ -298,6 +306,12 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
             first_crop = linked_farmer.crops.split(',')[0].strip()
             if first_crop:
                 commodity = normalise_commodity(first_crop)
+                transformations.append({
+                    'row': row, 'farm': name, 'field': 'commodity',
+                    'from': 'Unknown (not in file)',
+                    'to': commodity,
+                    'reason': 'farmer_crop_fallback',
+                })
 
         if commodity == 'Unknown':
             row_warnings.append("Commodity not in file — set a Default Commodity above, or add a 'Commodity' column.")
