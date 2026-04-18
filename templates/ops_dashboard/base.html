@@ -84,9 +84,39 @@
     .badge-warning { background: rgba(202,138,4,0.15); color: #facc15; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; }
     /* Section heading */
     .section-title { font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    /* Mobile sidebar */
+    .hamburger {
+      display: none; background: none; border: none; color: var(--text);
+      font-size: 1.4rem; cursor: pointer; padding: 0.25rem 0.5rem;
+      line-height: 1; border-radius: 6px;
+    }
+    .hamburger:hover { background: rgba(255,255,255,0.07); }
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55); z-index: 40;
+    }
+    @media (max-width: 768px) {
+      .hamburger { display: block; }
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.2s ease;
+        z-index: 50;
+      }
+      body.sidebar-open .sidebar { transform: translateX(0); }
+      body.sidebar-open .sidebar-overlay { display: block; }
+      .main { margin-left: 0; }
+      .topbar { padding: 0.9rem 1rem; }
+      .content { padding: 1rem; }
+      .grid-4, .grid-3 { grid-template-columns: repeat(2, 1fr); }
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
+  <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
   <aside class="sidebar">
     <div class="sidebar-logo">
       AgriOps <span>Ops</span>
@@ -105,12 +135,26 @@
   </aside>
   <div class="main">
     <div class="topbar">
-      <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <button class="hamburger" onclick="toggleSidebar()" aria-label="Toggle navigation">☰</button>
+        <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+      </div>
       <span class="badge">● Live</span>
     </div>
     <div class="content">
       {% block content %}{% endblock %}
     </div>
   </div>
+  <script>
+    function toggleSidebar() {
+      document.body.classList.toggle('sidebar-open');
+    }
+    // Close sidebar on nav link tap (mobile — page may not reload if already on that page)
+    document.querySelectorAll('.sidebar nav a').forEach(function(a) {
+      a.addEventListener('click', function() {
+        document.body.classList.remove('sidebar-open');
+      });
+    });
+  </script>
 </body>
 </html>
