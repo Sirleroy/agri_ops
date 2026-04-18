@@ -14,6 +14,7 @@
           <th>Plan</th>
           <th>Users</th>
           <th>Farms</th>
+          <th>EUDR Health</th>
           <th>Suppliers</th>
           <th>Orders</th>
           <th>Last Activity</th>
@@ -27,6 +28,20 @@
           <td style="color:var(--muted); font-size:0.8rem">{{ t.plan_tier|default:"—" }}</td>
           <td>{{ t.user_count }}</td>
           <td>{{ t.farm_count }}</td>
+          <td>
+            {% if t.eudr_pct is not None %}
+            <div style="display:flex;align-items:center;gap:0.5rem">
+              <div style="width:60px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0">
+                <div style="height:100%;width:{{ t.eudr_pct }}%;border-radius:3px;background:{% if t.eudr_pct >= 80 %}#4ade80{% elif t.eudr_pct >= 50 %}#facc15{% else %}#f87171{% endif %}"></div>
+              </div>
+              <span style="font-size:0.78rem;color:{% if t.eudr_pct >= 80 %}#4ade80{% elif t.eudr_pct >= 50 %}#facc15{% else %}#f87171{% endif %}">
+                {{ t.eudr_pct }}%
+              </span>
+            </div>
+            {% else %}
+            <span style="color:var(--dim);font-size:0.8rem">No farms</span>
+            {% endif %}
+          </td>
           <td>{{ t.supplier_count }}</td>
           <td>{{ t.order_count }}</td>
           <td style="color:var(--muted); font-size:0.8rem">

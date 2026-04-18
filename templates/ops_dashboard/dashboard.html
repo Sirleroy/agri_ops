@@ -99,6 +99,33 @@
   </div>
 </div>
 
+<div class="grid-3">
+  <div class="card">
+    <div class="card-title">EUDR Readiness</div>
+    <div class="card-value" style="color:{% if eudr_pct_all >= 80 %}#4ade80{% elif eudr_pct_all >= 50 %}#facc15{% else %}#f87171{% endif %}">
+      {{ eudr_pct_all }}%
+    </div>
+    <div style="margin:0.5rem 0 0.25rem">
+      <div style="height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:{{ eudr_pct_all }}%;background:{% if eudr_pct_all >= 80 %}#4ade80{% elif eudr_pct_all >= 50 %}#facc15{% else %}#f87171{% endif %};border-radius:3px"></div>
+      </div>
+    </div>
+    <div class="card-sub">Farms verified platform-wide</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Pending Verification</div>
+    <div class="card-value" style="color:{% if pending_farms > 0 %}#facc15{% else %}#4ade80{% endif %}">
+      {{ pending_farms }}
+    </div>
+    <div class="card-sub">Farms not yet EUDR-verified</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Batches Locked</div>
+    <div class="card-value">{{ batches_locked_month }}</div>
+    <div class="card-sub">This month</div>
+  </div>
+</div>
+
 {% if impact.total_ingested %}
 <div class="card" style="padding: 0; margin-bottom: 1.5rem; overflow: hidden;">
   <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">

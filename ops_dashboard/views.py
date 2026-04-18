@@ -155,6 +155,18 @@ def ops_dashboard(request):
         .distinct()
     )
 
+    # ── Platform signals ──────────────────────────────────────────────────────
+    from django.db.models import Q as _Q
+    from apps.sales_orders.batch import Batch
+
+    total_farms_all    = Farm.objects.count()
+    verified_farms_all = Farm.objects.filter(is_eudr_verified=True).count()
+    eudr_pct_all       = round(verified_farms_all / total_farms_all * 100, 1) if total_farms_all else 0
+    pending_farms      = total_farms_all - verified_farms_all
+    batches_locked_month = Batch.objects.filter(
+        updated_at__gte=thirty_days_ago, is_locked=True
+    ).count()
+
     # ── Data quality impact (from FarmImportLog) ─────────────────────────────
     live_logs = FarmImportLog.objects.filter(dry_run=False)
     agg = live_logs.aggregate(
@@ -207,6 +219,10 @@ def ops_dashboard(request):
         'total_inventory': Inventory.objects.count(),
         'recent_audit':   AuditLog.objects.select_related('user').order_by('-timestamp')[:10],
         'recent_events':  OpsEventLog.objects.select_related('user').order_by('-timestamp')[:10],
+        # platform signals
+        'eudr_pct_all':          eudr_pct_all,
+        'pending_farms':         pending_farms,
+        'batches_locked_month':  batches_locked_month,
         # impact stats
         'impact': {
             'total_ingested':       total_ingested,
@@ -225,7 +241,7 @@ def ops_dashboard(request):
 
 @ops_required
 def ops_tenants(request):
-    from django.db.models import OuterRef, Subquery
+    from django.db.models import OuterRef, Subquery, Q
 
     last_activity_sq = (
         AuditLog.objects
@@ -239,15 +255,24 @@ def ops_tenants(request):
         order_count=Count('sales_orders', distinct=True),
         farm_count=Count('farms', distinct=True),
         supplier_count=Count('suppliers', distinct=True),
+        verified_farm_count=Count('farms', filter=Q(farms__is_eudr_verified=True), distinct=True),
         last_activity=Subquery(last_activity_sq),
     ).order_by('-created_at')
+
+    # Compute health score per tenant (verified / total farms %)
+    for t in tenants:
+        if t.farm_count:
+            t.eudr_pct = round(t.verified_farm_count / t.farm_count * 100)
+        else:
+            t.eudr_pct = None
+
     return render(request, 'ops_dashboard/tenants.html', {'tenants': tenants})
 
 
 @ops_required
 def ops_tenant_detail(request, pk):
     from django.shortcuts import get_object_or_404
-    from apps.suppliers.models import Farm
+    from apps.suppliers.models import Farm, FarmImportLog
     from django.db.models import Sum
 
     company = get_object_or_404(Company, pk=pk)
@@ -278,6 +303,16 @@ def ops_tenant_detail(request, pk):
         .order_by('-timestamp')[:20]
     )
 
+    recent_imports = (
+        FarmImportLog.objects
+        .filter(company=company, dry_run=False)
+        .select_related('uploaded_by', 'supplier')
+        .order_by('-created_at')[:5]
+    )
+    # Annotate each log with its transformation event count
+    for log in recent_imports:
+        log.transformation_count = len(log.transformation_log) if log.transformation_log else 0
+
     context = {
         'company': company,
         'users': users,
@@ -288,6 +323,7 @@ def ops_tenant_detail(request, pk):
         'recent_pos': recent_pos,
         'recent_sos': recent_sos,
         'recent_audit': recent_audit,
+        'recent_imports': recent_imports,
     }
     return render(request, 'ops_dashboard/tenant_detail.html', context)
 
@@ -314,30 +350,116 @@ def ops_security(request):
 
 @ops_required
 def ops_metrics(request):
-    now = timezone.now()
-    thirty_days_ago = now - timedelta(days=30)
+    from django.db.models import Q, FloatField, ExpressionWrapper, F
+    from django.utils import timezone as tz
+    from apps.sales_orders.batch import Batch
+    from apps.suppliers.models import FarmImportLog
 
-    monthly_orders = (
-        SalesOrder.objects
-        .filter(created_at__gte=thirty_days_ago)
-        .annotate(day=TruncDate('created_at'))
-        .values('day')
-        .annotate(count=Count('id'))
-        .order_by('day')
+    now = tz.now()
+    sixty_days = now + timedelta(days=60)
+
+    # ── EUDR health ───────────────────────────────────────────────────────────
+    total_farms    = Farm.objects.count()
+    verified_farms = Farm.objects.filter(is_eudr_verified=True).count()
+    high_risk      = Farm.objects.filter(deforestation_risk_status='high').count()
+    expiring_soon  = Farm.objects.filter(
+        is_eudr_verified=True,
+        verification_expiry__isnull=False,
+        verification_expiry__lte=sixty_days,
+        verification_expiry__gte=now,
+    ).count()
+    already_expired = Farm.objects.filter(
+        is_eudr_verified=True,
+        verification_expiry__isnull=False,
+        verification_expiry__lt=now,
+    ).count()
+    eudr_pct = round(verified_farms / total_farms * 100, 1) if total_farms else 0
+
+    # ── Commodity breakdown ───────────────────────────────────────────────────
+    commodity_rows = []
+    for row in (Farm.objects
+                .values('commodity')
+                .annotate(
+                    total=Count('id'),
+                    verified=Count('id', filter=Q(is_eudr_verified=True)),
+                )
+                .order_by('-total')):
+        total = row['total']
+        v     = row['verified']
+        commodity_rows.append({
+            'commodity': row['commodity'] or 'Unknown',
+            'total':     total,
+            'verified':  v,
+            'pct':       round(v / total * 100) if total else 0,
+        })
+
+    # ── Import pipeline stats ─────────────────────────────────────────────────
+    live_logs = FarmImportLog.objects.filter(dry_run=False)
+    imp = live_logs.aggregate(
+        sessions=Count('id'),
+        ingested=Sum('total'),
+        created=Sum('created'),
+        corrected=Sum('auto_corrected'),
+        errors=Sum('errors'),
+        blocked=Sum('blocked'),
+    )
+    imp_sessions  = imp['sessions']  or 0
+    imp_ingested  = imp['ingested']  or 0
+    imp_created   = imp['created']   or 0
+    imp_corrected = imp['corrected'] or 0
+    imp_rejected  = (imp['errors'] or 0) + (imp['blocked'] or 0)
+    imp_transformations = sum(
+        len(l.transformation_log)
+        for l in live_logs.only('transformation_log')
+        if l.transformation_log
+    )
+    imp_correction_rate = round(imp_corrected / imp_created  * 100, 1) if imp_created  else 0
+    imp_rejection_rate  = round(imp_rejected  / imp_ingested * 100, 1) if imp_ingested else 0
+
+    # Most active importer by tenant
+    top_importer = (
+        live_logs
+        .values('company__name')
+        .annotate(n=Count('id'))
+        .order_by('-n')
+        .first()
     )
 
+    # ── Batch & traceability ──────────────────────────────────────────────────
+    total_batches  = Batch.objects.count()
+    locked_batches = Batch.objects.filter(is_locked=True).count()
+    eu_batches     = Batch.objects.filter(sales_order__is_eu_export=True).count()
+
     context = {
-        'total_sales_orders': SalesOrder.objects.count(),
-        'total_purchase_orders': PurchaseOrder.objects.count(),
-        'total_suppliers': Supplier.objects.count(),
-        'total_inventory_items': Inventory.objects.count(),
-        'monthly_orders': list(monthly_orders),
+        # EUDR
+        'total_farms':     total_farms,
+        'verified_farms':  verified_farms,
+        'eudr_pct':        eudr_pct,
+        'high_risk':       high_risk,
+        'expiring_soon':   expiring_soon,
+        'already_expired': already_expired,
+        # Commodity
+        'commodity_rows':  commodity_rows,
+        # Import
+        'imp_sessions':       imp_sessions,
+        'imp_ingested':       imp_ingested,
+        'imp_created':        imp_created,
+        'imp_transformations':imp_transformations,
+        'imp_correction_rate':imp_correction_rate,
+        'imp_rejection_rate': imp_rejection_rate,
+        'top_importer':       top_importer,
+        # Batch
+        'total_batches':  total_batches,
+        'locked_batches': locked_batches,
+        'eu_batches':     eu_batches,
     }
     return render(request, 'ops_dashboard/metrics.html', context)
 
 
 @ops_required
 def ops_health(request):
+    from apps.suppliers.models import FarmImportLog
+
     checks = []
 
     try:
@@ -369,6 +491,73 @@ def ops_health(request):
         'status': 'ok',
         'detail': f'{total_ops_users} staff user(s) registered'
     })
+
+    # EUDR expiry
+    now_dt = timezone.now()
+    thirty_ahead  = now_dt + timedelta(days=30)
+    sixty_ahead   = now_dt + timedelta(days=60)
+    expired_count = Farm.objects.filter(
+        is_eudr_verified=True,
+        verification_expiry__isnull=False,
+        verification_expiry__lt=now_dt,
+    ).count()
+    expiring_30   = Farm.objects.filter(
+        is_eudr_verified=True,
+        verification_expiry__isnull=False,
+        verification_expiry__gte=now_dt,
+        verification_expiry__lte=thirty_ahead,
+    ).count()
+    expiring_60   = Farm.objects.filter(
+        is_eudr_verified=True,
+        verification_expiry__isnull=False,
+        verification_expiry__gt=thirty_ahead,
+        verification_expiry__lte=sixty_ahead,
+    ).count()
+    if expired_count:
+        checks.append({
+            'name': 'EUDR Expiry',
+            'status': 'error',
+            'detail': f'{expired_count} farm verification{"s" if expired_count != 1 else ""} already expired — renewal required',
+        })
+    elif expiring_30:
+        checks.append({
+            'name': 'EUDR Expiry',
+            'status': 'warning',
+            'detail': f'{expiring_30} farm verification{"s" if expiring_30 != 1 else ""} expiring within 30 days',
+        })
+    elif expiring_60:
+        checks.append({
+            'name': 'EUDR Expiry',
+            'status': 'warning',
+            'detail': f'{expiring_60} farm verification{"s" if expiring_60 != 1 else ""} expiring within 60 days',
+        })
+    else:
+        checks.append({
+            'name': 'EUDR Expiry',
+            'status': 'ok',
+            'detail': 'All active verifications valid beyond 60 days',
+        })
+
+    # Import error rate
+    live_logs = FarmImportLog.objects.filter(dry_run=False)
+    imp_agg = live_logs.aggregate(
+        total=Sum('total'), errors=Sum('errors'), blocked=Sum('blocked')
+    )
+    if imp_agg['total']:
+        rejected = (imp_agg['errors'] or 0) + (imp_agg['blocked'] or 0)
+        rej_pct  = round(rejected / imp_agg['total'] * 100, 1)
+        status   = 'warning' if rej_pct > 25 else 'ok'
+        checks.append({
+            'name': 'Import Rejection Rate',
+            'status': status,
+            'detail': f'{rej_pct}% of ingested rows rejected across {live_logs.count()} session(s)',
+        })
+    else:
+        checks.append({
+            'name': 'Import Rejection Rate',
+            'status': 'ok',
+            'detail': 'No import sessions recorded yet',
+        })
 
     # Sentry
     try:

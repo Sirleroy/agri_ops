@@ -121,6 +121,45 @@
   </div>
 </div>
 
+<!-- Import history -->
+{% if recent_imports %}
+<div class="card" style="margin-bottom:1.5rem">
+  <div class="section-title">Recent Imports (last 5)</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>File</th>
+          <th>Supplier</th>
+          <th>Saved</th>
+          <th>Corrections</th>
+          <th>Transformations</th>
+          <th>Rejected</th>
+          <th>Warnings</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in recent_imports %}
+        <tr>
+          <td style="color:var(--dim);font-size:0.8rem;white-space:nowrap">{{ log.created_at|date:"d M Y H:i" }}</td>
+          <td style="font-size:0.8rem;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ log.filename }}">{{ log.filename|default:"—" }}</td>
+          <td style="font-size:0.8rem;color:var(--muted)">{{ log.supplier.name|default:"—" }}</td>
+          <td style="font-weight:500;color:{% if log.created > 0 %}#4ade80{% else %}var(--dim){% endif %}">{{ log.created }}</td>
+          <td style="font-size:0.8rem;color:{% if log.auto_corrected > 0 %}#22d3ee{% else %}var(--dim){% endif %}">{{ log.auto_corrected }}</td>
+          <td style="font-size:0.8rem;color:{% if log.transformation_count > 0 %}#22d3ee{% else %}var(--dim){% endif %}">{{ log.transformation_count }}</td>
+          <td style="font-size:0.8rem;color:{% if log.errors > 0 or log.blocked > 0 %}#f87171{% else %}var(--dim){% endif %}">
+            {{ log.errors|add:log.blocked }}
+          </td>
+          <td style="font-size:0.8rem;color:{% if log.warning_count > 0 %}#facc15{% else %}var(--dim){% endif %}">{{ log.warning_count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
 <div class="grid-2">
 
   <!-- Recent Purchase Orders -->
