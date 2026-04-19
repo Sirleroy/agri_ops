@@ -5,8 +5,9 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.core.cache import cache
+from django.utils.http import url_has_allowed_host_and_scheme
 from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin, OtherRevealMixin
-from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin
+from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 from .batch import Batch
 from .quality import PhytosanitaryCertificate, BatchQualityTest
 
@@ -113,8 +114,8 @@ class BatchUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
         return context
 
     def get_success_url(self):
-        next_url = self.request.GET.get('next')
-        if next_url:
+        next_url = self.request.GET.get('next', '').strip()
+        if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={self.request.get_host()}):
             return next_url
         return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.object.pk})
 
@@ -169,7 +170,7 @@ class PhytosanitaryCertUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequir
         return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.object.batch_id})
 
 
-class PhytosanitaryCertDeleteView(ManagerRequiredMixin, DeleteView):
+class PhytosanitaryCertDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
     model = PhytosanitaryCertificate
 
     def get_object(self):
@@ -233,7 +234,7 @@ class BatchQualityTestUpdateView(OtherRevealMixin, DatePickerMixin, AuditUpdateM
         return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.object.batch_id})
 
 
-class BatchQualityTestDeleteView(ManagerRequiredMixin, DeleteView):
+class BatchQualityTestDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
     model = BatchQualityTest
 
     def get_object(self):

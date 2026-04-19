@@ -1,6 +1,7 @@
-from apps.audit.mixins import AuditUpdateMixin
+from apps.audit.mixins import AuditUpdateMixin, AuditDeleteMixin
 from django.views.generic import ListView, DetailView, UpdateView, DeleteView
 from django.urls import reverse_lazy
+from django.utils.http import url_has_allowed_host_and_scheme
 from .models import CustomUser
 from .permissions import OrgAdminRequiredMixin, ManagerRequiredMixin
 
@@ -43,8 +44,8 @@ class UserUpdateView(AuditUpdateMixin, OrgAdminRequiredMixin, UpdateView):
         return obj
 
     def get_success_url(self):
-        next_url = self.request.GET.get('next')
-        if next_url:
+        next_url = self.request.GET.get('next', '').strip()
+        if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={self.request.get_host()}):
             return next_url
         return reverse_lazy('users:detail', kwargs={'pk': self.object.pk})
 
@@ -68,7 +69,7 @@ class UserSystemRoleUpdateView(AuditUpdateMixin, OrgAdminRequiredMixin, UpdateVi
         return obj
 
 
-class UserDeleteView(OrgAdminRequiredMixin, DeleteView):
+class UserDeleteView(AuditDeleteMixin, OrgAdminRequiredMixin, DeleteView):
     model = CustomUser
     template_name = 'users/confirm_delete.html'
     success_url = reverse_lazy('users:list')

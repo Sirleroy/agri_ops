@@ -21,7 +21,8 @@ class ReportsLandingView(StaffRequiredMixin, TemplateView):
         if not company:
             return context
 
-        context['active_tab'] = self.request.GET.get('tab', 'eudr')
+        tab = self.request.GET.get('tab', 'eudr')
+        context['active_tab'] = tab if tab in ('eudr', 'ops') else 'eudr'
 
         from apps.sales_orders.models import SalesOrder
         context['customers'] = (

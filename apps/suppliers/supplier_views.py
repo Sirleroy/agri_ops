@@ -1,5 +1,6 @@
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
+from django.utils.http import url_has_allowed_host_and_scheme
 from .models import Supplier
 from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin, OtherRevealMixin
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
@@ -58,8 +59,8 @@ class SupplierUpdateView(OtherRevealMixin, AuditUpdateMixin, StaffRequiredMixin,
     other_reveal_fields = ['category']
 
     def get_success_url(self):
-        next_url = self.request.POST.get('next') or self.request.GET.get('next')
-        if next_url:
+        next_url = (self.request.POST.get('next') or self.request.GET.get('next', '')).strip()
+        if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={self.request.get_host()}):
             return next_url
         return reverse_lazy('suppliers:detail', kwargs={'pk': self.object.pk})
 

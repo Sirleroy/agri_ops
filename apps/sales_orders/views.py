@@ -3,6 +3,7 @@ from django.views import View
 from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from decimal import Decimal, InvalidOperation
 from .models import SalesOrder, SalesOrderItem
 from apps.products.models import Product
@@ -95,8 +96,8 @@ class SalesOrderUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
         return obj
 
     def get_success_url(self):
-        next_url = self.request.GET.get('next')
-        if next_url:
+        next_url = self.request.GET.get('next', '').strip()
+        if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={self.request.get_host()}):
             return next_url
         return reverse_lazy('sales_orders:detail', kwargs={'pk': self.object.pk})
 
