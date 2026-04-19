@@ -453,18 +453,17 @@ class FarmForm(forms.ModelForm):
             'supplier', 'name', 'farmer', 'country', 'state_region',
             'commodity', 'harvest_year',
             'deforestation_risk_status', 'deforestation_reference_date',
-            'land_cleared_after_cutoff', 'mapping_date', 'mapped_by', 'mapped_by_name', 'geolocation',
+            'land_cleared_after_cutoff', 'mapping_date', 'mapped_by_name', 'geolocation',
         ]
 
     def __init__(self, *args, company=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.company = company
         self.fields['name'].label = 'Farm / Plot Name'
+        self.fields['mapped_by_name'].label = 'Field Officer'
         if company:
             self.fields['supplier'].queryset = Supplier.objects.filter(company=company)
             self.fields['farmer'].queryset   = Farmer.objects.filter(company=company)
-            from apps.users.models import CustomUser
-            self.fields['mapped_by'].queryset = CustomUser.objects.filter(company=company)
 
     # ── Layer 1: GeoJSON structural check ─────────────────────────────────────
 
