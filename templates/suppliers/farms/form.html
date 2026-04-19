@@ -238,18 +238,6 @@ document.addEventListener('DOMContentLoaded', function () {
   const drawnItems = new L.FeatureGroup();
   map.addLayer(drawnItems);
 
-  const drawControl = new L.Control.Draw({
-    edit: { featureGroup: drawnItems },
-    draw: {
-      polygon: {
-        shapeOptions: { color: '#22c55e', fillColor: '#22c55e', fillOpacity: 0.15, weight: 2 },
-        showArea: true,
-      },
-      polyline: false, rectangle: false, circle: false, marker: false, circlemarker: false,
-    },
-  });
-  map.addControl(drawControl);
-
   function setStatus(msg, color) {
     statusEl.textContent = msg;
     statusEl.style.color = color || '#64748b';
@@ -264,13 +252,29 @@ document.addEventListener('DOMContentLoaded', function () {
     setStatus('Polygon saved', '#22c55e');
   }
 
-  map.on(L.Draw.Event.CREATED, function (e) {
-    drawnItems.clearLayers();
-    drawnItems.addLayer(e.layer);
-    updateTextarea();
-  });
-  map.on(L.Draw.Event.EDITED, updateTextarea);
-  map.on(L.Draw.Event.DELETED, updateTextarea);
+  /* Draw controls — wrapped so a CDN failure doesn't abort polygon display */
+  try {
+    const drawControl = new L.Control.Draw({
+      edit: { featureGroup: drawnItems },
+      draw: {
+        polygon: {
+          shapeOptions: { color: '#22c55e', fillColor: '#22c55e', fillOpacity: 0.15, weight: 2 },
+          showArea: true,
+        },
+        polyline: false, rectangle: false, circle: false, marker: false, circlemarker: false,
+      },
+    });
+    map.addControl(drawControl);
+    map.on(L.Draw.Event.CREATED, function (e) {
+      drawnItems.clearLayers();
+      drawnItems.addLayer(e.layer);
+      updateTextarea();
+    });
+    map.on(L.Draw.Event.EDITED, updateTextarea);
+    map.on(L.Draw.Event.DELETED, updateTextarea);
+  } catch (e) {
+    setStatus('Draw tools unavailable — paste GeoJSON below', '#f59e0b');
+  }
 
   clearBtn.addEventListener('click', function () {
     drawnItems.clearLayers();
