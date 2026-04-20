@@ -323,10 +323,23 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                 round((1 - proc_vertices / raw_vertices) * 100)
                 if raw_vertices > 0 else 0
             )
+            # Severity: flag review if simplification exceeded spec thresholds
+            # Spec: area delta ≤ 0.5%, centroid shift ≤ 15m
+            geom_severity = 'info'
+            threshold_breach = []
+            if geom_was_corrected:
+                if area_delta_pct is not None and area_delta_pct > 0.5:
+                    geom_severity = 'review'
+                    threshold_breach.append(f"area_delta {area_delta_pct}% > 0.5% threshold")
+                if centroid_shift_m is not None and centroid_shift_m > 15:
+                    geom_severity = 'review'
+                    threshold_breach.append(f"centroid_shift {centroid_shift_m:.1f}m > 15m threshold")
+
             transformations.append({
                 'row': row, 'farm': name, 'field': 'geometry',
                 'from': None, 'to': None,
                 'reason': 'geometry_normalised' if geom_was_corrected else 'geometry_clean',
+                'severity': geom_severity,
                 'detail': {
                     'had_elevation':          had_elevation,
                     'had_duplicates':         raw_vertices > proc_vertices,
@@ -340,8 +353,17 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                     'area_delta_pct':         area_delta_pct,
                     'centroid_shift_m':       centroid_shift_m,
                     'simplification_tolerance': simplification_tolerance,
+                    'threshold_breach':       threshold_breach or None,
                 },
             })
+
+            # Escalate to manual review if thresholds breached
+            if threshold_breach:
+                row_warnings.append(
+                    f"Geometry normalisation exceeded spec thresholds: "
+                    + '; '.join(threshold_breach)
+                    + ". Manual review recommended before committing."
+                )
 
         # ── LGA canonicalisation — tiered confidence response ────────────────
         import difflib as _difflib
@@ -353,6 +375,7 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
             transformations.append({
                 'row': row, 'farm': name, 'field': 'lga',
                 'from': lga_raw, 'to': lga, 'reason': 'fuzzy_match',
+                'severity': 'review' if confidence < 0.90 else 'info',
                 'detail': {'confidence': confidence},
             })
             # Below 0.90 confidence: correct but surface a warning for human review
@@ -371,6 +394,7 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
             transformations.append({
                 'row': row, 'farm': name, 'field': 'commodity',
                 'from': commodity_raw, 'to': commodity, 'reason': 'canonical_name',
+                'severity': 'info',
             })
 
         if lga_was_corrected or geom_was_corrected:
@@ -406,6 +430,7 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                         'from': f"{source_val} ({unit_inferred})",
                         'to':   f"{computed_same} ({unit_inferred})",
                         'reason': 'area_source_comparison',
+                        'severity': 'warning' if delta_pct > 0.1 else 'info',
                         'detail': {
                             'source_area':      source_val,
                             'computed_area_ha': computed_ha,

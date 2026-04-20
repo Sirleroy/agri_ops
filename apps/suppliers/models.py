@@ -174,6 +174,10 @@ class Farm(models.Model):
                        null=True, blank=True,
                        help_text="GeoJSON Polygon. Export from SW Maps or NCAN Farm Mapper."
                      )
+    geometry_hash  = models.CharField(
+                       max_length=64, blank=True, default='',
+                       help_text="SHA-256 of the canonical geolocation JSON. Immutability verification."
+                     )
     area_hectares  = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(0)])
     country        = models.CharField(max_length=100)
     state_region   = models.CharField(max_length=100, blank=True)
@@ -277,12 +281,17 @@ class Farm(models.Model):
         if self.commodity:
             from apps.suppliers.ng_geodata import normalise_commodity
             self.commodity = normalise_commodity(self.commodity)
-        # Area — computed from polygon boundary
+        # Area + geometry hash — computed from polygon boundary
         if self.geolocation:
+            import hashlib, json as _json
             from apps.suppliers.forms import _compute_area_ha
             computed = _compute_area_ha(self.geolocation)
             if computed is not None:
                 self.area_hectares = computed
+            canonical = _json.dumps(self.geolocation, sort_keys=True, separators=(',', ':'))
+            self.geometry_hash = hashlib.sha256(canonical.encode()).hexdigest()
+        else:
+            self.geometry_hash = ''
         super().save(*args, **kwargs)
 
     @property
