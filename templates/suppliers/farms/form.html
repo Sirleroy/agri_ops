@@ -321,7 +321,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   /* Auto-fill commodity from farmer's registered crops when a farmer is selected */
-  const farmerCrops = {{ farmer_crops_json }};
+  const farmerCrops = {{ farmer_crops_json|safe }};
   const farmerSel   = document.getElementById('id_farmer');
   const commodityIn = document.getElementById('id_commodity');
   if (farmerSel && commodityIn) {

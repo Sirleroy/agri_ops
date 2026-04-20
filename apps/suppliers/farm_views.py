@@ -290,7 +290,10 @@ def _farmer_crops_json(company):
             first = f['crops'].split(',')[0].strip()
             if first:
                 data[str(f['pk'])] = first
-    return json.dumps(data)
+    # Escape HTML-sensitive chars so this is safe to emit inside a <script> tag
+    # with |safe — same escaping Django's json_script filter uses.
+    raw = json.dumps(data, ensure_ascii=False)
+    return raw.replace('&', r'\u0026').replace('<', r'\u003c').replace('>', r'\u003e')
 
 
 class FarmCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
