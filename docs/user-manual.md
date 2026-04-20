@@ -142,13 +142,6 @@ Review the results:
 - **Orange (Overlap blocked)** — polygons that overlap an existing farm
 - **Amber (Warnings)** — polygons that will import but are missing data (no LGA, no farmer name, etc.). Farm names in the warning list are clickable — tap to open that farm's edit page directly
 
-![Dry-run validation preview on mobile — 5 polygons total, 3 ready to create, 2 overlap blocked, with the sticky Commit bar at the bottom of the screen](assets/import-dry-run-mobile.png)
-
-> **What you're seeing above**
->
-> This is a dry run with 5 polygons from a single field session. Three passed all checks and are ready to save (green). Two overlap existing farms and are blocked (amber) — those plots need to be reviewed before committing. Nothing has been written to the database yet.
->
-> The green **Commit 3 Farms** bar fixed at the bottom of the screen is what saves the valid polygons. It stays visible as you scroll through the full results list — you do not need to scroll back to the top to commit.
 
 **Step 2 — Commit**
 Once satisfied with the dry-run results, tap the green **Commit N Farms** bar fixed at the bottom of the screen. The farms are saved immediately — no need to re-upload the file. The bar stays visible as you scroll through the results.
