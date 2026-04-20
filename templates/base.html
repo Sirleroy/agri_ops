@@ -154,6 +154,33 @@
     }
   </style>
 
+  <!-- Flatpickr — calendar date picker for all input[type=date] on desktop -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <style>
+    /* Dark-theme overrides for Flatpickr */
+    .flatpickr-calendar { background: #131f2e; border: 1px solid #1e2d40; box-shadow: 0 8px 24px rgba(0,0,0,0.4); border-radius: 10px; }
+    .flatpickr-months { background: #0d1520; border-radius: 10px 10px 0 0; }
+    .flatpickr-month { color: #f1f5f9; fill: #f1f5f9; }
+    .flatpickr-current-month { color: #f1f5f9; }
+    .flatpickr-current-month .numInputWrapper input,
+    .flatpickr-current-month .flatpickr-monthDropdown-months { color: #f1f5f9; background: transparent; }
+    .flatpickr-weekdays { background: #0d1520; }
+    span.flatpickr-weekday { color: #94a3b8; background: #0d1520; }
+    .flatpickr-day { color: #cbd5e1; border-radius: 6px; }
+    .flatpickr-day:hover { background: #1e2d40; border-color: #1e2d40; color: #f1f5f9; }
+    .flatpickr-day.selected, .flatpickr-day.selected:hover { background: #22c55e; border-color: #22c55e; color: #0a0f1a; font-weight: 700; }
+    .flatpickr-day.today { border-color: #22c55e; }
+    .flatpickr-day.today:not(.selected):hover { background: #22c55e22; }
+    .flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay { color: #475569; }
+    .flatpickr-day.disabled { color: #334155; }
+    .flatpickr-prev-month svg, .flatpickr-next-month svg { fill: #94a3b8; }
+    .flatpickr-prev-month:hover svg, .flatpickr-next-month:hover svg { fill: #22c55e; }
+    .numInputWrapper:hover, .numInputWrapper span { background: transparent; border-color: #1e2d40; }
+    .numInputWrapper span { border-color: #1e2d40; }
+    .numInputWrapper span svg { fill: #94a3b8; }
+    .flatpickr-months .flatpickr-prev-month, .flatpickr-months .flatpickr-next-month { fill: #94a3b8; color: #94a3b8; }
+  </style>
+
   {% block extra_head %}{% endblock %}
 {% if POSTHOG_API_KEY %}
 <script>
@@ -642,6 +669,18 @@
         startNav();
       });
     })();
+  </script>
+
+  <!-- Flatpickr JS — desktop calendar picker for all date inputs -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      flatpickr('input[type="date"]', {
+        dateFormat: 'Y-m-d',
+        allowInput: true,
+        disableMobile: true,  /* mobile already has native pickers */
+      });
+    });
   </script>
 
 </body>
