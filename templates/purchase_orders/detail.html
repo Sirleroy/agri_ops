@@ -6,12 +6,12 @@
 {% block content %}
 <div class="space-y-4 max-w-4xl">
 
-  <div class="flex items-center justify-between">
-    <a href="{% url 'purchase_orders:list' %}" class="text-sm text-slate-500 hover:text-slate-100 transition-colors flex items-center gap-1">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <a href="{% url 'purchase_orders:list' %}" class="text-sm text-slate-500 hover:text-slate-100 transition-colors flex items-center gap-1 self-start">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
       Back to Purchase Orders
     </a>
-    <div class="flex gap-2">
+    <div class="flex flex-wrap gap-2">
       {% if order.status != 'received' and order.status != 'cancelled' %}
       <form method="post" action="{% url 'purchase_orders:mark_received' order.pk %}">
         {% csrf_token %}
@@ -95,11 +95,11 @@
     <div x-show="addOpen" x-transition.opacity
          class="px-5 py-4 border-b border-border bg-white/[0.02]">
       <form method="post" action="{% url 'purchase_orders:add_item' order.pk %}"
-            class="flex flex-wrap items-end gap-3"
+            class="flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3"
             x-data="{ unitPrice: '' }"
             @submit="/* allow submit with current values */">
         {% csrf_token %}
-        <div class="flex-1 min-w-[180px]">
+        <div class="w-full sm:flex-1 sm:min-w-[180px]">
           <label class="block text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Product</label>
           <select name="product" required
             class="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-green outline-none transition-colors"
@@ -110,26 +110,28 @@
             {% endfor %}
           </select>
         </div>
-        <div class="w-28">
+        <div class="w-full sm:w-28">
           <label class="block text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Quantity</label>
           <input type="number" name="quantity" min="0.01" step="0.01" placeholder="0.00" required
             class="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-green outline-none transition-colors">
         </div>
-        <div class="w-32">
+        <div class="w-full sm:w-32">
           <label class="block text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Unit Price (₦)</label>
           <input type="number" name="unit_price" min="0" step="0.01" placeholder="0.00" required
             :value="unitPrice"
             @change="unitPrice = $event.target.value"
             class="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-green outline-none transition-colors">
         </div>
-        <button type="submit"
-          class="px-4 py-2 bg-green hover:bg-green-dim text-bg text-sm font-bold rounded-lg transition-colors whitespace-nowrap">
-          Add
-        </button>
-        <button type="button" @click="addOpen = false"
-          class="px-4 py-2 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">
-          Cancel
-        </button>
+        <div class="flex gap-3">
+          <button type="submit"
+            class="px-4 py-2 bg-green hover:bg-green-dim text-bg text-sm font-bold rounded-lg transition-colors whitespace-nowrap">
+            Add
+          </button>
+          <button type="button" @click="addOpen = false"
+            class="px-4 py-2 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">
+            Cancel
+          </button>
+        </div>
       </form>
     </div>
     {% endif %}

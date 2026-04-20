@@ -93,6 +93,28 @@ class PurchaseOrderUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMi
             raise Http404
         return obj
 
+    def form_valid(self, form):
+        from apps.inventory.models import Inventory
+        old_status = self.object.status  # captured before super() saves
+        response = super().form_valid(form)
+        # If status was changed to received via the edit form, sync inventory
+        if old_status != 'received' and self.object.status == 'received':
+            for item in self.object.items.select_related('product'):
+                inv, _ = Inventory.objects.get_or_create(
+                    company=self.request.user.company,
+                    product=item.product,
+                    warehouse_location='',
+                    defaults={'quantity': 0},
+                )
+                old_qty = inv.quantity
+                inv.quantity += item.quantity
+                inv.save(update_fields=['quantity', 'last_updated'])
+                log_action(self.request, 'update', inv, changes={
+                    'quantity': {'from': str(old_qty), 'to': str(inv.quantity)},
+                    'source': f'PO-{self.object.order_number}',
+                })
+        return response
+
     def get_success_url(self):
         next_url = self.request.GET.get('next', '').strip()
         if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={self.request.get_host()}):

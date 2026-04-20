@@ -63,25 +63,25 @@
 
     <!-- Data integrity strip -->
     <div class="grid grid-cols-3 gap-2 mb-6">
-      <div class="bg-surface border border-border rounded-lg px-3 py-2 flex items-center gap-2" title="Polygons auto-corrected by the normalisation layer (geometry repair, LGA fuzzy match)">
+      <div class="bg-surface border border-border rounded-lg px-3 py-2 flex items-center gap-2" title="Polygons normalised by the geometry layer (geometry repair, LGA fuzzy match)">
         <span class="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0"></span>
         <div>
           <p class="text-base font-bold font-mono text-blue-300">{{ result.auto_corrected }}</p>
-          <p class="text-xs text-slate-500 font-mono whitespace-nowrap">Auto-corrected</p>
+          <p class="text-xs text-slate-500 font-mono">Normalised</p>
         </div>
       </div>
       <div class="bg-surface border border-border rounded-lg px-3 py-2 flex items-center gap-2" title="Polygons imported but flagged — missing LGA, farmer name, or commodity">
         <span class="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0"></span>
         <div>
           <p class="text-base font-bold font-mono text-amber-300">{{ result.warnings|length }}</p>
-          <p class="text-xs text-slate-500 font-mono whitespace-nowrap">Flagged</p>
+          <p class="text-xs text-slate-500 font-mono">Flagged</p>
         </div>
       </div>
       <div class="bg-surface border border-border rounded-lg px-3 py-2 flex items-center gap-2" title="Polygons blocked or rejected — overlap conflicts and hard validation errors">
         <span class="w-2 h-2 rounded-full bg-red-400 flex-shrink-0"></span>
         <div>
           <p class="text-base font-bold font-mono text-red-300">{{ result.blocked|add:result.errors }}</p>
-          <p class="text-xs text-slate-500 font-mono whitespace-nowrap">Rejected</p>
+          <p class="text-xs text-slate-500 font-mono">Rejected</p>
         </div>
       </div>
     </div>

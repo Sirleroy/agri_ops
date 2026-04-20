@@ -220,16 +220,19 @@ document.addEventListener('DOMContentLoaded', function () {
   /* ── Init map ── */
   const map = L.map('geo-map', { zoomControl: true, scrollWheelZoom: false, maxZoom: 20 });
 
-  const satellite = L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    { attribution: 'Tiles &copy; Esri', maxZoom: 20, maxNativeZoom: 19 }
-  );
   const street = L.tileLayer(
     'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 }
   );
-  satellite.addTo(map);
-  L.control.layers({ 'Satellite': satellite, 'Street': street }, {}, { position: 'topright' }).addTo(map);
+  const satellite = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { attribution: 'Tiles &copy; Esri', maxZoom: 20, maxNativeZoom: 19 }
+  );
+  street.addTo(map);
+  L.control.layers({ 'Street': street, 'Satellite': satellite }, {}, { position: 'topright' }).addTo(map);
+
+  /* Force Leaflet to recalculate container size after mobile layout settles */
+  setTimeout(function () { map.invalidateSize(); }, 250);
 
   /* Default view: Nigeria */
   map.setView([9.0820, 8.6753], 6);
