@@ -177,6 +177,20 @@
       <p class="text-xs font-mono text-slate-600">GeoJSON type: {{ farm.geolocation.type }} · Coordinate system: WGS84</p>
       <p class="text-xs font-mono text-slate-700">Scroll zoom disabled — use +/− or pinch</p>
     </div>
+    {% if farm.geometry_hash %}
+    <div class="px-6 py-3 border-t border-border flex items-center justify-between gap-4"
+         x-data="{ copied: false }">
+      <div class="min-w-0">
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-1">Geometry Hash (SHA-256)</p>
+        <p class="text-xs font-mono text-slate-400 truncate">{{ farm.geometry_hash }}</p>
+      </div>
+      <button @click="navigator.clipboard.writeText('{{ farm.geometry_hash }}'); copied = true; setTimeout(() => copied = false, 2000)"
+              class="flex-shrink-0 text-xs font-mono px-3 py-1.5 rounded border border-border text-slate-400 hover:text-green hover:border-green transition-colors">
+        <span x-show="!copied">Copy</span>
+        <span x-show="copied" x-cloak>Copied</span>
+      </button>
+    </div>
+    {% endif %}
   </div>
 
   {{ farm.geolocation|json_script:"farm-geojson" }}
