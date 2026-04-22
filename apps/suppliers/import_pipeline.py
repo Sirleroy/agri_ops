@@ -52,7 +52,7 @@ def _wkt_csv_to_features(csv_text):
         try:
             geometry = dict(shapely_mapping(shapely_wkt.loads(wkt_str)))
         except Exception:
-            geometry = None
+            continue
         features.append({
             'type': 'Feature',
             'geometry': geometry,
@@ -449,6 +449,10 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                 "Verify the correct commodity is recorded."
             )
 
+        if not geometry:
+            errors.append({'row': row, 'name': name, 'reason': 'Feature has no geometry — cannot import.'})
+            continue
+
         try:
             _validate_geojson_polygon(geometry)
         except django_forms.ValidationError as e:
@@ -576,6 +580,12 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
         if row_warnings:
             warnings.append({'row': row, 'name': name, 'issues': row_warnings})
 
+        import hashlib as _hashlib, json as _json
+        geometry_hash = ''
+        if geometry:
+            _canonical = _json.dumps(geometry, sort_keys=True, separators=(',', ':'))
+            geometry_hash = _hashlib.sha256(_canonical.encode()).hexdigest()
+
         to_create.append(Farm(
             company=company,
             supplier=supplier,
@@ -591,6 +601,7 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
             is_eudr_verified=False,
             mapped_by_name=field_officer,
             mapping_date=mapping_date_parsed,
+            geometry_hash=geometry_hash,
         ))
 
     created_count = 0
