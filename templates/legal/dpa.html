@@ -69,12 +69,12 @@
 <p>AgriOps maintains the following controls:</p>
 <ul>
   <li><strong>Encryption in transit</strong> — TLS for all data transmitted between the Platform and users;</li>
-  <li><strong>Access controls</strong> — role-based permissions; Authorised Users can only access their own organisation's data;</li>
+  <li><strong>Access controls</strong> — role-based permissions and organisation-scoped access rules designed to restrict Authorised Users to their own organisation's data;</li>
   <li><strong>Authentication</strong> — password hashing (PBKDF2), brute-force protection (account lockout after 5 failed attempts), TOTP for administrative access;</li>
   <li><strong>Session management</strong> — 8-hour session timeout, secure session cookies;</li>
   <li><strong>Audit logging</strong> — all create, update, and delete actions are logged with user identity, timestamp, and IP address, retained for 365 days;</li>
-  <li><strong>Tenant isolation</strong> — all data is scoped by organisation; cross-tenant data access is prevented at the application layer;</li>
-  <li><strong>Vulnerability management</strong> — periodic security reviews; dependencies monitored for known vulnerabilities.</li>
+  <li><strong>Tenant isolation</strong> — core application data is scoped by organisation, with tenant-isolation controls reviewed and hardened as part of ongoing security work;</li>
+  <li><strong>Vulnerability management</strong> — periodic security reviews; dependencies reviewed for known vulnerabilities.</li>
 </ul>
 
 <h2>8. Sub-processors</h2>

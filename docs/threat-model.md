@@ -94,7 +94,7 @@ The threat model identifies what we are protecting, who might attempt to comprom
 | Threat | Attack Vector | Likelihood | Impact | Control | Status |
 |---|---|---|---|---|---|
 | EUDR compliance data tampering | Authenticated user modifies farm verification records | Medium | Critical | Audit log on all writes, OrgAdmin-only verification fields, immutable audit trail | ✅ Active |
-| Cross-tenant data modification | Crafted PUT/PATCH request to another org's record URL | Medium | Critical | Tenant isolation on all update views — 404 on cross-tenant object | ✅ Active |
+| Cross-tenant data modification | Crafted PUT/PATCH request to another org's record URL or cross-tenant foreign-key reference | Medium | Critical | Top-level object lookup is tenant-scoped; related-object tenant validation is part of ongoing hardening work | 🔄 Hardening |
 | CSRF attack | Forged form submission from malicious site | Medium | High | Django CSRF middleware enabled by default | ✅ Active |
 | Mass assignment | Extra POST fields used to overwrite sensitive model fields | Medium | High | Explicit `fields` lists on all forms and serializers | ✅ Active |
 | Audit log tampering | User attempts to delete or modify audit entries | Low | Critical | Audit log is append-only, no delete/update views exposed, admin-only access | ✅ Active |
@@ -131,7 +131,7 @@ The threat model identifies what we are protecting, who might attempt to comprom
 |---|---|---|---|---|---|
 | Login endpoint flooding | Automated POST requests to `/login/` | High | Medium | django-axes lockout. Rate limiting on auth endpoints. | ✅ Active |
 | API endpoint flooding | High-volume API requests | Medium | Medium | DRF throttling — 200 req/hr per user, 20 req/hr anonymous | ✅ Active |
-| Large file upload abuse | Uploading massive compliance documents | Low | Medium | File size limits on ComplianceDocument uploads. Content-type validation. | ✅ Active |
+| Large file upload abuse | Uploading massive or unexpected compliance documents | Low | Medium | Compliance document upload validation is being hardened; until then, rely on authenticated access and operational monitoring | 🔄 Hardening |
 | Expensive database queries | Crafted filter parameters causing full table scans | Low | Medium | Query optimisation audit and DB query timeouts | 🔄 Phase 5 |
 
 ---
@@ -141,11 +141,11 @@ The threat model identifies what we are protecting, who might attempt to comprom
 | Threat | Attack Vector | Likelihood | Impact | Control | Status |
 |---|---|---|---|---|---|
 | Role field manipulation | User edits own `system_role` via profile form | Medium | Critical | `system_role` not in any user-facing form `fields` list. OrgAdmin-only via dedicated view. | ✅ Active |
-| Horizontal privilege escalation | Staff user accesses manager-only views | Medium | High | RBAC mixins on all sensitive views checking `system_role` | ✅ Active |
+| Horizontal privilege escalation | Low-privilege tenant user reaches write-capable endpoints intended for staff or manager roles | Medium | High | Server-rendered views use RBAC mixins; API method-level role enforcement is being aligned with the same policy | 🔄 Hardening |
 | IDOR — access another user's profile | Authenticated user requests `/users/99/` for another org's user | Medium | High | UserDetailView filters by company. 404 on cross-tenant. | ✅ Active |
 | Django admin exposure | Admin panel accessible to non-superusers | Low | Critical | Admin at non-default URL. Superuser-only access enforced. | ✅ Active |
 | JWT algorithm confusion | Attacker crafts token using `alg: none` | Low | Critical | djangorestframework-simplejwt enforces HS256. Algorithm explicitly configured. | ✅ Active |
-| Mass user import | Bulk create users bypassing role assignment | Low | High | User creation restricted to OrgAdmin via controlled view only | ✅ Active |
+| Self-service tenant provisioning | Public onboarding path creates company and admin account without manual approval | Medium | High | Pre-commercial rollout requires gating or replacing public auto-provisioning before live tenant onboarding | 🔄 Hardening |
 
 ---
 
@@ -167,14 +167,14 @@ The compliance module introduces additional threats specific to regulatory data:
 ## 7. Controls Summary
 
 ### Phases 1–3 ✅ Complete
-- Multi-tenant queryset filtering — all ListViews
-- Cross-tenant DetailView 404 — all DetailViews
-- Company auto-assignment on CreateView — never from client
+- Multi-tenant queryset filtering — top-level ListViews
+- Cross-tenant DetailView 404 — top-level DetailViews
+- Company auto-assignment on primary create paths — never from client body
 - Explicit `fields` lists — no mass assignment
 - Django CSRF middleware
 - Secrets excluded from version control (`.gitignore`). Repository private.
 - Login UI with brute-force protection (django-axes) — 5 failures, 1hr lockout
-- RBAC permission mixins on all sensitive views
+- RBAC permission mixins on server-rendered sensitive views
 - Role field removed from user-facing forms
 - Audit log — all create/update/delete actions
 - JWT authentication for API
@@ -192,11 +192,17 @@ The compliance module introduces additional threats specific to regulatory data:
 - TOTP 2FA — ops dashboard (platform superusers)
 - GeoJSON 15-point validation suite — CI enforced on every deployment
 
+### Current Hardening Work 🔄 In Progress
+- Related-object tenant validation on serializer and form foreign keys
+- API method-level role enforcement aligned with UI RBAC
+- Public onboarding path gated before live tenant rollout
+- Compliance document upload validation
+
 ### Phase 5 🔄 Planned
 - Internal penetration test — documented findings and remediations
 - Dependency vulnerability scanning (Safety / pip-audit — GitHub Advanced Security not active on private repo)
 - Tenant OrgAdmin MFA — TOTP for tenant-level accounts
-- NDPR compliance review
+- NDPA compliance review
 - GDPR readiness assessment
 - Query timeout configuration
 
@@ -209,7 +215,7 @@ The compliance module introduces additional threats specific to regulatory data:
 | No tenant-level MFA | Ops dashboard TOTP live; tenant OrgAdmin MFA deferred pre-revenue | Phase 5 with TOTP for OrgAdmin accounts |
 | Single-layer DB isolation | RLS adds complexity — manual filtering sufficient at current scale | Phase 5 if multi-tenant load increases |
 | No dependency scanning | Private repo — GitHub Advanced Security not active. Manual review currently sufficient. | Safety / pip-audit in Phase 5 CI |
-| No penetration test | Product not yet public-facing | Phase 5 with documented report |
+| No penetration test | Product has a public marketing surface and pre-commercial onboarding flow, but no formal external test yet | Phase 5 with documented report |
 | Expensive query DoS | No query timeout configured | Phase 5 query optimisation audit |
 
 ---
