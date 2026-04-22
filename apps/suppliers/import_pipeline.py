@@ -323,7 +323,7 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                 round((1 - proc_vertices / raw_vertices) * 100)
                 if raw_vertices > 0 else 0
             )
-            # Severity: flag review if simplification exceeded spec thresholds
+            # Severity: flag review if any geometry correction breached spec thresholds
             # Spec: area delta ≤ 0.5%, centroid shift ≤ 15m
             geom_severity = 'info'
             threshold_breach = []
