@@ -335,11 +335,13 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                     geom_severity = 'review'
                     threshold_breach.append(f"centroid_shift {centroid_shift_m:.1f}m > 15m threshold")
 
+            import datetime as _dt
             transformations.append({
                 'row': row, 'farm': name, 'field': 'geometry',
                 'from': None, 'to': None,
                 'reason': 'geometry_normalised' if geom_was_corrected else 'geometry_clean',
                 'severity': geom_severity,
+                'ts': _dt.datetime.utcnow().isoformat() + 'Z',
                 'detail': {
                     'had_elevation':          had_elevation,
                     'had_duplicates':         raw_vertices > proc_vertices,
@@ -376,6 +378,7 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                 'row': row, 'farm': name, 'field': 'lga',
                 'from': lga_raw, 'to': lga, 'reason': 'fuzzy_match',
                 'severity': 'review' if confidence < 0.90 else 'info',
+                'ts': _dt.datetime.utcnow().isoformat() + 'Z',
                 'detail': {'confidence': confidence},
             })
             # Below 0.90 confidence: correct but surface a warning for human review
@@ -395,6 +398,7 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                 'row': row, 'farm': name, 'field': 'commodity',
                 'from': commodity_raw, 'to': commodity, 'reason': 'canonical_name',
                 'severity': 'info',
+                'ts': _dt.datetime.utcnow().isoformat() + 'Z',
             })
 
         if lga_was_corrected or geom_was_corrected:
@@ -593,6 +597,7 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
             farmer=linked_farmer,
             farmer_name=farmer_label,
             geolocation=geometry,
+            raw_geolocation=raw_geometry if geom_was_corrected else None,
             area_hectares=area,
             country='Nigeria',
             state_region=state_region,

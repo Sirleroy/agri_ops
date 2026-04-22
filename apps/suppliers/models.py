@@ -174,6 +174,10 @@ class Farm(models.Model):
                        null=True, blank=True,
                        help_text="GeoJSON Polygon. Export from SW Maps or NCAN Farm Mapper."
                      )
+    raw_geolocation = models.JSONField(
+                       null=True, blank=True,
+                       help_text="Original pre-normalisation geometry from the import file. Null when geometry was not modified or farm was created manually."
+                     )
     geometry_hash  = models.CharField(
                        max_length=64, blank=True, default='',
                        help_text="SHA-256 of the canonical geolocation JSON. Immutability verification."
