@@ -1,9 +1,11 @@
 """
-Request Access — auto-approval flow.
-1. Saves AccessRequest to database
-2. Creates Company + OrgAdmin user
-3. Sends welcome email with a secure set-password link
-4. Sends founder notification email
+Request Access — manual provisioning flow.
+1. Saves AccessRequest to database (status: pending)
+2. Notifies founder for manual review via ops dashboard
+3. No Company or user account is created automatically
+
+Self-service provisioning is disabled pending NDPA compliance formalisation.
+Tenants are onboarded manually after DPO review and NDPC registration.
 """
 from django.http import JsonResponse
 from django.core.cache import cache
