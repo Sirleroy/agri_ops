@@ -26,7 +26,7 @@ class PurchaseOrder(models.Model):
         null=True,
         related_name='purchase_orders'
     )
-    order_number = models.CharField(max_length=50, unique=True)
+    order_number = models.CharField(max_length=50)
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -42,6 +42,7 @@ class PurchaseOrder(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        unique_together = [('company', 'order_number')]
         indexes = [
             models.Index(fields=['company', '-order_date'], name='po_company_date_idx'),
             models.Index(fields=['company', 'status'], name='po_company_status_idx'),

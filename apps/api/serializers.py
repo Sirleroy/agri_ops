@@ -26,6 +26,12 @@ class FarmSerializer(serializers.ModelSerializer):
                   'compliance_status', 'created_at']
         read_only_fields = ['id', 'compliance_status', 'created_at']
 
+    def validate_supplier(self, value):
+        company = self.context['request'].user.company
+        if value and value.company_id != company.id:
+            raise serializers.ValidationError("Invalid supplier.")
+        return value
+
 
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
@@ -33,6 +39,12 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'category', 'unit', 'unit_price',
                   'supplier', 'is_active', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+    def validate_supplier(self, value):
+        company = self.context['request'].user.company
+        if value and value.company_id != company.id:
+            raise serializers.ValidationError("Invalid supplier.")
+        return value
 
 
 class InventorySerializer(serializers.ModelSerializer):
@@ -46,6 +58,12 @@ class InventorySerializer(serializers.ModelSerializer):
                   'is_low_stock', 'last_updated']
         read_only_fields = ['id', 'product_name', 'is_low_stock', 'last_updated']
 
+    def validate_product(self, value):
+        company = self.context['request'].user.company
+        if value and value.company_id != company.id:
+            raise serializers.ValidationError("Invalid product.")
+        return value
+
 
 class PurchaseOrderSerializer(serializers.ModelSerializer):
     supplier_name = serializers.ReadOnlyField(source='supplier.name')
@@ -55,6 +73,12 @@ class PurchaseOrderSerializer(serializers.ModelSerializer):
         fields = ['id', 'order_number', 'supplier', 'supplier_name',
                   'status', 'expected_delivery', 'notes', 'created_at']
         read_only_fields = ['id', 'supplier_name', 'created_at']
+
+    def validate_supplier(self, value):
+        company = self.context['request'].user.company
+        if value and value.company_id != company.id:
+            raise serializers.ValidationError("Invalid supplier.")
+        return value
 
 
 class SalesOrderSerializer(serializers.ModelSerializer):

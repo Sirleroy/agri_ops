@@ -17,11 +17,18 @@ from .serializers import (
     SupplierSerializer, FarmSerializer, ProductSerializer,
     InventorySerializer, PurchaseOrderSerializer, SalesOrderSerializer,
 )
-from .permissions import IsTenantMember, IsManagerOrAbove
+from .permissions import IsTenantMember, IsStaffOrAbove, IsManagerOrAbove
 
 
 class TenantScopedViewSet(viewsets.ModelViewSet):
     permission_classes = [IsTenantMember]
+
+    def get_permissions(self):
+        if self.request.method in ('POST', 'PUT', 'PATCH'):
+            return [IsStaffOrAbove()]
+        if self.request.method == 'DELETE':
+            return [IsManagerOrAbove()]
+        return [IsTenantMember()]
 
     def get_queryset(self):
         return super().get_queryset().filter(company=self.request.user.company)
@@ -36,9 +43,6 @@ class TenantScopedViewSet(viewsets.ModelViewSet):
         log_action(self.request, 'update', instance)
 
     def perform_destroy(self, instance):
-        if not IsManagerOrAbove().has_permission(self.request, self):
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("Manager or above required to delete.")
         log_action(self.request, 'delete', instance)
         instance.delete()
 

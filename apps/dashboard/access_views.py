@@ -47,72 +47,20 @@ class RequestAccessView(View):
             status='pending'
         )
 
-        # ── Auto-approve ──────────────────────────────────────
+        # ── Notify founder — manual provisioning required ─────────────────
+        # Self-service tenant provisioning is disabled pending NDPA compliance
+        # formalisation. Access requests are reviewed and provisioned manually
+        # via the ops dashboard.
+        company_name = company or f"{name}'s Organisation"
         try:
-            from apps.companies.models import Company
-            from apps.users.models import CustomUser
+            _notify_founder(name, email, company_name, None, commodity)
+        except Exception:
+            pass
 
-            # Create company
-            company_name = company or f"{name}'s Organisation"
-            company_obj, _ = Company.objects.get_or_create(
-                name=company_name,
-                defaults={
-                    'country': 'Nigeria',
-                    'city': '',
-                    'email': email,
-                    'plan_tier': 'free',
-                }
-            )
-
-            # Generate username from email
-            username_base = email.split('@')[0].lower().replace('.', '_')
-            username = username_base
-            counter = 1
-            while CustomUser.objects.filter(username=username).exists():
-                username = f"{username_base}{counter}"
-                counter += 1
-
-            # Create user with unusable password — set via secure link
-            user = CustomUser.objects.create_user(
-                username=username,
-                email=email,
-                password=None,
-                first_name=name.split()[0] if name else '',
-                last_name=' '.join(name.split()[1:]) if len(name.split()) > 1 else '',
-                company=company_obj,
-                system_role='org_admin',
-                job_title='Administrator',
-            )
-            user.set_unusable_password()
-            user.save()
-
-            # Update access request
-            access_request.status = 'approved'
-            access_request.approved_at = timezone.now()
-            access_request.save()
-
-            # ── Send welcome email with secure set-password link ──
-            site_url = getattr(settings, 'SITE_URL', 'https://app.agriops.io')
-            uid = urlsafe_base64_encode(force_bytes(user.pk))
-            token = default_token_generator.make_token(user)
-            set_password_url = f"{site_url}/set-password/{uid}/{token}/"
-            _send_welcome_email(user, set_password_url, company_obj)
-
-            # ── Notify founder ────────────────────────────────
-            _notify_founder(name, email, company_name, username, commodity)
-
-            return JsonResponse({
-                'success': True,
-                'message': 'Access approved. Check your email for login credentials.'
-            })
-
-        except Exception as e:
-            access_request.notes = str(e)
-            access_request.save()
-            return JsonResponse({
-                'success': True,
-                'message': 'Request received. We will be in touch within 48 hours.'
-            })
+        return JsonResponse({
+            'success': True,
+            'message': 'Request received. We will be in touch within 48 hours.'
+        })
 
 
 def _send_welcome_email(user, set_password_url, company):
@@ -170,15 +118,15 @@ def _notify_founder(name, email, company, username, commodity=''):
     if not founder_email:
         return
     commodity_label = commodity.replace('_', ' ').title() if commodity else 'Not specified'
-    subject = f"[AgriOps] New user onboarded — {name}"
+    subject = f"[AgriOps] New access request — {name}"
     body_text = (
-        f"New user auto-approved on AgriOps.\n\n"
+        f"New access request received. Manual provisioning required.\n\n"
         f"Name: {name}\n"
         f"Email: {email}\n"
         f"Company: {company}\n"
-        f"Commodity: {commodity_label}\n"
-        f"Username: {username}\n\n"
-        f"View access requests: https://app.agriops.io/admin/dashboard/accessrequest/\n"
+        f"Commodity: {commodity_label}\n\n"
+        f"Review and provision via the ops dashboard:\n"
+        f"https://app.agriops.io/ops/\n"
     )
     def _do_send():
         msg = EmailMultiAlternatives(subject, body_text, settings.DEFAULT_FROM_EMAIL, [founder_email])

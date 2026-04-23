@@ -27,7 +27,7 @@ class SalesOrder(models.Model):
         blank=True,
         related_name='sales_orders'
     )
-    order_number = models.CharField(max_length=50, unique=True)
+    order_number = models.CharField(max_length=50)
     customer_name = models.CharField(max_length=255)
     customer_email = models.EmailField(blank=True)
     customer_phone = models.CharField(max_length=20, blank=True)
@@ -58,6 +58,7 @@ class SalesOrder(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        unique_together = [('company', 'order_number')]
         indexes = [
             models.Index(fields=['company', '-order_date'], name='so_company_date_idx'),
             models.Index(fields=['company', 'status'], name='so_company_status_idx'),

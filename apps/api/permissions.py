@@ -15,6 +15,13 @@ class IsTenantMember(BasePermission):
                     and request.user.company_id)
 
 
+class IsStaffOrAbove(IsTenantMember):
+    def has_permission(self, request, view):
+        if not super().has_permission(request, view):
+            return False
+        return ROLE_HIERARCHY.get(request.user.system_role, 0) >= 2
+
+
 class IsManagerOrAbove(IsTenantMember):
     def has_permission(self, request, view):
         if not super().has_permission(request, view):

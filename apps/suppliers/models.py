@@ -1,9 +1,24 @@
 import datetime
+import os
 import re
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from apps.companies.models import Company
 from apps.companies.managers import TenantManager
+
+
+_COMPLIANCE_DOC_ALLOWED_EXTENSIONS = {'.pdf', '.jpg', '.jpeg', '.png', '.geojson', '.json'}
+_COMPLIANCE_DOC_MAX_SIZE = 10 * 1024 * 1024  # 10 MB
+
+
+def validate_compliance_file(file):
+    ext = os.path.splitext(file.name)[1].lower()
+    if ext not in _COMPLIANCE_DOC_ALLOWED_EXTENSIONS:
+        allowed = ', '.join(sorted(_COMPLIANCE_DOC_ALLOWED_EXTENSIONS))
+        raise ValidationError(f"File type '{ext}' is not allowed. Accepted types: {allowed}.")
+    if file.size > _COMPLIANCE_DOC_MAX_SIZE:
+        raise ValidationError("File must not exceed 10 MB.")
 
 
 # Commodities covered by EU Deforestation Regulation (EU) 2023/1115
@@ -411,7 +426,7 @@ class ComplianceDocument(models.Model):
     company     = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='compliance_docs')
     farm        = models.ForeignKey(Farm, on_delete=models.CASCADE, related_name='documents')
     doc_type    = models.CharField(max_length=30, choices=DOC_TYPE_CHOICES)
-    file        = models.FileField(upload_to='compliance_docs/%Y/%m/')
+    file        = models.FileField(upload_to='compliance_docs/%Y/%m/', validators=[validate_compliance_file])
     description = models.CharField(max_length=255, blank=True)
     uploaded_by = models.ForeignKey(
                     'users.CustomUser', on_delete=models.SET_NULL,
