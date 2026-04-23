@@ -11,3 +11,4 @@ agri_ops_project/settings.py
 staticfiles/
 CLAUDE.md
 pitch/
+static/agriops_logo.svg
