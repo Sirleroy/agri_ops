@@ -194,6 +194,7 @@
   </div>
 
   {{ farm.geolocation|json_script:"farm-geojson" }}
+  {% if farm.raw_geolocation %}{{ farm.raw_geolocation|json_script:"farm-raw-geojson" }}{% endif %}
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       const geojsonEl = document.getElementById('farm-geojson');
@@ -276,6 +277,40 @@
         });
       }
 
+      // ── Raw capture layer (pre-normalisation geometry) ───────────────────
+      const rawEl = document.getElementById('farm-raw-geojson');
+      const rawGeojson = rawEl ? JSON.parse(rawEl.textContent) : null;
+      let rawLayer = null;
+      let rawVisible = true;
+      if (rawGeojson) {
+        rawLayer = L.geoJSON(rawGeojson, {
+          style: { color: '#f97316', weight: 2.5, opacity: 0.9, fillOpacity: 0, dashArray: '7 5' },
+        }).addTo(map);
+
+        const Legend = L.Control.extend({
+          options: { position: 'bottomleft' },
+          onAdd: function () {
+            const div = L.DomUtil.create('div');
+            div.style.cssText = 'background:#131f2e;border:1px solid #1e2d40;border-radius:6px;' +
+                                'padding:8px 10px;font-family:monospace;font-size:11px;color:#94a3b8;line-height:1.9;';
+            function legendRow(color, dashed, label) {
+              const row = document.createElement('div');
+              const swatch = document.createElement('span');
+              swatch.style.cssText = 'display:inline-block;width:18px;vertical-align:middle;margin-right:5px;' +
+                (dashed ? 'height:0;border-top:2px dashed ' + color + ';'
+                        : 'height:2px;background:' + color + ';');
+              row.appendChild(swatch);
+              row.appendChild(document.createTextNode(label));
+              return row;
+            }
+            div.appendChild(legendRow('#22c55e', false, 'Normalised'));
+            div.appendChild(legendRow('#f97316', true, 'Original capture'));
+            return div;
+          },
+        });
+        new Legend().addTo(map);
+      }
+
       const ToggleControl = makeControl('topright', '\uD83D\uDDFA Street', function (btn) {
         if (isSatellite) {
           map.removeLayer(satellite); street.addTo(map);
@@ -289,8 +324,50 @@
 
       new ToggleControl().addTo(map);
       new FitControl().addTo(map);
+      if (rawLayer) {
+        const RawToggle = makeControl('topright', 'Hide original', function (btn) {
+          if (rawVisible) {
+            map.removeLayer(rawLayer);
+            btn.textContent = 'Show original'; rawVisible = false;
+          } else {
+            rawLayer.addTo(map);
+            btn.textContent = 'Hide original'; rawVisible = true;
+          }
+        });
+        new RawToggle().addTo(map);
+      }
     });
   </script>
+  {% endif %}
+
+  {% if farm.raw_geolocation %}
+  <div class="bg-card border border-border rounded-xl overflow-hidden" x-data="{ open: false }">
+    <button @click="open = !open"
+            class="w-full px-6 py-4 flex items-center justify-between hover:bg-white/5 transition-colors">
+      <div class="flex items-center gap-3">
+        <div class="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0"></div>
+        <div class="text-left">
+          <p class="text-xs font-mono text-slate-300 font-semibold">Pre-normalisation Geometry Preserved</p>
+          <p class="text-xs font-mono text-slate-500 mt-0.5">Original field capture stored — geometry was corrected during import</p>
+        </div>
+      </div>
+      <svg class="w-4 h-4 text-slate-500 transition-transform flex-shrink-0" :class="open ? 'rotate-180' : ''"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+      </svg>
+    </button>
+    <div x-show="open" x-cloak class="border-t border-border px-6 py-4 space-y-3">
+      <p class="text-xs font-mono text-slate-500">
+        The orange dashed boundary on the map is the original GPS-captured geometry before normalisation.
+        The green boundary is the accepted normalised version stored in the compliance record.
+        Both are retained in the audit chain — the geometry hash anchors the normalised polygon.
+      </p>
+      <div>
+        <p class="text-xs font-mono text-slate-600 uppercase tracking-widest mb-2">Raw GeoJSON</p>
+        <pre class="text-xs font-mono text-slate-400 bg-[#0a0f1a] border border-border rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all">{{ farm.raw_geolocation|pprint }}</pre>
+      </div>
+    </div>
+  </div>
   {% endif %}
 
   <script>
