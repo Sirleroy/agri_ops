@@ -244,6 +244,170 @@ class CorridorComplianceView(StaffRequiredMixin, TemplateView):
         return context
 
 
+class CorridorExportView(StaffRequiredMixin, View):
+
+    def get(self, request):
+        company = request.user.company
+        if not company:
+            raise Http404
+
+        from apps.suppliers.models import Farm
+        from django.db.models import Count, Q, Sum
+
+        corridors = list(
+            Farm.objects
+            .filter(company=company)
+            .values('state_region', 'commodity')
+            .annotate(
+                total=Count('id'),
+                low_risk=Count('id', filter=Q(deforestation_risk_status='low')),
+                pending=Count('id', filter=Q(deforestation_risk_status='standard')),
+                high_risk=Count('id', filter=Q(deforestation_risk_status='high')),
+                eudr_verified=Count('id', filter=Q(is_eudr_verified=True)),
+                total_area=Sum('area_hectares'),
+            )
+            .order_by('state_region', 'commodity')
+        )
+        for c in corridors:
+            c['verified_pct'] = round(c['eudr_verified'] / c['total'] * 100) if c['total'] else 0
+
+        fmt = request.GET.get('format', 'csv')
+        if fmt == 'pdf':
+            return self._pdf(company, corridors)
+        return self._csv(company, corridors)
+
+    def _csv(self, company, corridors):
+        filename = f"AgriOps_Corridor_Summary_{company.name.replace(' ', '_')}_{timezone.now().strftime('%Y%m%d')}.csv"
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        writer = csv.writer(response)
+        writer.writerow(['AgriOps — Corridor Compliance Summary'])
+        writer.writerow([f'Company: {company.name}'])
+        writer.writerow([f'Generated: {timezone.now().strftime("%Y-%m-%d %H:%M UTC")}'])
+        writer.writerow([])
+        writer.writerow(['Corridor', 'Total Farms', 'Low Risk', 'Pending Check', 'High Risk', 'EUDR Verified', 'Verified %', 'Area (ha)'])
+        for c in corridors:
+            label = f"{c['state_region'] or 'Unknown'} · {c['commodity'].title() if c['commodity'] else 'Unknown'}"
+            writer.writerow([
+                label,
+                c['total'],
+                c['low_risk'],
+                c['pending'],
+                c['high_risk'],
+                c['eudr_verified'],
+                f"{c['verified_pct']}%",
+                f"{c['total_area']:.1f}" if c['total_area'] else '—',
+            ])
+        writer.writerow([])
+        writer.writerow(['Note: Pending Check = farms not yet processed by the deforestation intersection engine.'])
+        return response
+
+    def _pdf(self, company, corridors):
+        from io import BytesIO
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.units import mm
+        from reportlab.lib import colors
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+        from reportlab.lib.styles import ParagraphStyle
+        from reportlab.lib.enums import TA_CENTER
+
+        GREEN  = colors.HexColor('#22c55e')
+        DARK   = colors.HexColor('#0a0f1a')
+        MUTED  = colors.HexColor('#64748b')
+        WHITE  = colors.white
+        BORDER = colors.HexColor('#1e2d40')
+
+        buf = BytesIO()
+        doc = SimpleDocTemplate(buf, pagesize=A4,
+                                leftMargin=20*mm, rightMargin=20*mm,
+                                topMargin=18*mm, bottomMargin=18*mm)
+
+        heading   = ParagraphStyle('h', fontName='Helvetica-Bold', fontSize=14, textColor=WHITE, spaceAfter=4)
+        subhead   = ParagraphStyle('s', fontName='Helvetica',      fontSize=9,  textColor=MUTED, spaceAfter=2)
+        footnote  = ParagraphStyle('f', fontName='Helvetica',      fontSize=7,  textColor=MUTED, spaceBefore=8)
+
+        total_farms    = sum(c['total'] for c in corridors)
+        total_verified = sum(c['eudr_verified'] for c in corridors)
+        platform_pct   = round(total_verified / total_farms * 100) if total_farms else 0
+        total_area     = sum(c['total_area'] or 0 for c in corridors)
+
+        story = [
+            Paragraph('AgriOps', ParagraphStyle('brand', fontName='Helvetica-Bold', fontSize=10, textColor=GREEN)),
+            Spacer(1, 3*mm),
+            Paragraph('Corridor Compliance Summary', heading),
+            Paragraph(f"{company.name} · Generated {timezone.now().strftime('%d %b %Y')}", subhead),
+            HRFlowable(width='100%', thickness=0.5, color=BORDER, spaceAfter=6*mm),
+        ]
+
+        # Summary row
+        summary_data = [
+            ['Total Farms', 'Corridors', 'EUDR Verified', 'Total Area'],
+            [str(total_farms), str(len(corridors)), f'{platform_pct}%', f'{total_area:.1f} ha'],
+        ]
+        summary_table = Table(summary_data, colWidths=[42*mm]*4)
+        summary_table.setStyle(TableStyle([
+            ('BACKGROUND',  (0, 0), (-1, 0), DARK),
+            ('TEXTCOLOR',   (0, 0), (-1, 0), MUTED),
+            ('FONTNAME',    (0, 0), (-1, 0), 'Helvetica'),
+            ('FONTSIZE',    (0, 0), (-1, 0), 7),
+            ('FONTNAME',    (0, 1), (-1, 1), 'Helvetica-Bold'),
+            ('FONTSIZE',    (0, 1), (-1, 1), 16),
+            ('TEXTCOLOR',   (0, 1), (-1, 1), WHITE),
+            ('ALIGN',       (0, 0), (-1, -1), 'CENTER'),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING',    (0, 0), (-1, -1), 6),
+            ('GRID',        (0, 0), (-1, -1), 0.5, BORDER),
+        ]))
+        story += [summary_table, Spacer(1, 6*mm)]
+
+        # Corridor table
+        headers = ['Corridor', 'Total', 'Low Risk', 'Pending', 'High Risk', 'Verified', 'Verified %', 'Area (ha)']
+        rows = [headers]
+        for c in corridors:
+            label = f"{c['state_region'] or 'Unknown'} · {c['commodity'].title() if c['commodity'] else 'Unknown'}"
+            rows.append([
+                label,
+                str(c['total']),
+                str(c['low_risk']),
+                str(c['pending']),
+                str(c['high_risk']),
+                str(c['eudr_verified']),
+                f"{c['verified_pct']}%",
+                f"{c['total_area']:.1f}" if c['total_area'] else '—',
+            ])
+
+        col_widths = [55*mm, 16*mm, 18*mm, 18*mm, 18*mm, 18*mm, 20*mm, 20*mm]
+        corridor_table = Table(rows, colWidths=col_widths, repeatRows=1)
+        corridor_table.setStyle(TableStyle([
+            ('BACKGROUND',    (0, 0), (-1, 0), DARK),
+            ('TEXTCOLOR',     (0, 0), (-1, 0), MUTED),
+            ('FONTNAME',      (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE',      (0, 0), (-1, -1), 8),
+            ('FONTNAME',      (0, 1), (-1, -1), 'Helvetica'),
+            ('TEXTCOLOR',     (0, 1), (-1, -1), WHITE),
+            ('ALIGN',         (1, 0), (-1, -1), 'CENTER'),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#0d1520'), colors.HexColor('#111827')]),
+            ('GRID',          (0, 0), (-1, -1), 0.5, BORDER),
+            ('TOPPADDING',    (0, 0), (-1, -1), 5),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ]))
+        story += [corridor_table]
+
+        story.append(Paragraph(
+            'Pending Check: farms at default risk status, not yet processed by the deforestation intersection engine. '
+            'Generated by AgriOps — app.agriops.io',
+            footnote
+        ))
+
+        doc.build(story)
+        buf.seek(0)
+
+        filename = f"AgriOps_Corridor_Summary_{company.name.replace(' ', '_')}_{timezone.now().strftime('%Y%m%d')}.pdf"
+        response = HttpResponse(buf, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+
+
 class OpsReportView(StaffRequiredMixin, View):
 
     REPORT_TYPES = {

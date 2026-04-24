@@ -18,8 +18,16 @@
       <p class="text-xs font-mono text-slate-600 uppercase tracking-widest leading-none mb-1">Total Area</p>
       <p class="text-2xl font-bold text-slate-100 font-mono">{{ total_area }} ha</p>
     </div>
-    <div class="ml-auto self-center">
-      <a href="{% url 'reports:index' %}" class="text-xs font-mono text-slate-500 hover:text-slate-300">← Back to Reports</a>
+    <div class="ml-auto self-center flex items-center gap-3">
+      <a href="{% url 'reports:corridor_export' %}?format=csv"
+         class="text-xs font-mono px-3 py-1.5 bg-card border border-border hover:border-slate-500 text-slate-300 rounded-lg transition-colors">
+        CSV
+      </a>
+      <a href="{% url 'reports:corridor_export' %}?format=pdf"
+         class="text-xs font-mono px-3 py-1.5 bg-green/10 border border-green/30 hover:bg-green/20 text-green rounded-lg transition-colors">
+        PDF
+      </a>
+      <a href="{% url 'reports:index' %}" class="text-xs font-mono text-slate-500 hover:text-slate-300 pl-2">← Back</a>
     </div>
   </div>
 
