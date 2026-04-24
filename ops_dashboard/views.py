@@ -586,6 +586,63 @@ def ops_health(request):
 
 
 @ops_required
+def ops_tenant_suspend(request, pk):
+    from django.shortcuts import get_object_or_404
+    if request.method != 'POST':
+        return redirect('ops_tenant_detail', pk=pk)
+
+    company = get_object_or_404(Company, pk=pk)
+    company.is_active = not company.is_active
+    company.save(update_fields=['is_active'])
+
+    action = 'tenant_unsuspended' if company.is_active else 'tenant_suspended'
+    _log_event(request, f'{action}:{company.pk}:{company.name}', user=request.user)
+
+    status = 'reactivated' if company.is_active else 'suspended'
+    from django.contrib import messages
+    messages.success(request, f'"{company.name}" has been {status}.')
+    return redirect('ops_tenant_detail', pk=pk)
+
+
+@ops_required
+def ops_tenant_delete(request, pk):
+    from django.shortcuts import get_object_or_404
+    from apps.purchase_orders.models import PurchaseOrder
+    if request.method != 'POST':
+        return redirect('ops_tenant_detail', pk=pk)
+
+    company = get_object_or_404(Company, pk=pk)
+
+    # Hard guard — refuse if any data exists
+    blockers = []
+    if Farm.objects.filter(company=company).exists():
+        blockers.append('farms')
+    if Supplier.objects.filter(company=company).exists():
+        blockers.append('suppliers')
+    if CustomUser.objects.filter(company=company).exists():
+        blockers.append('users')
+    if PurchaseOrder.objects.filter(company=company).exists():
+        blockers.append('purchase orders')
+    if SalesOrder.objects.filter(company=company).exists():
+        blockers.append('sales orders')
+
+    from django.contrib import messages
+    if blockers:
+        messages.error(
+            request,
+            f'Cannot delete "{company.name}" — it still has: {", ".join(blockers)}. '
+            'Remove all data first or use Django admin for a forced delete.'
+        )
+        return redirect('ops_tenant_detail', pk=pk)
+
+    name = company.name
+    _log_event(request, f'tenant_deleted:{company.pk}:{name}', user=request.user)
+    company.delete()
+    messages.success(request, f'Tenant "{name}" has been permanently deleted.')
+    return redirect('ops_tenants')
+
+
+@ops_required
 def ops_corridor(request):
     from django.db.models import Q as _Q
 

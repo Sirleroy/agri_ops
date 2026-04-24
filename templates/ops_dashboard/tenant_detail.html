@@ -5,9 +5,60 @@
 
 {% block content %}
 
-<p style="margin-bottom:1.5rem">
+<!-- Flash messages -->
+{% if messages %}
+{% for msg in messages %}
+<div style="margin-bottom:1rem;padding:0.75rem 1rem;border-radius:6px;font-size:0.85rem;font-family:monospace;
+  {% if msg.tags == 'error' %}background:#3b0a0a;border:1px solid #7f1d1d;color:#fca5a5;
+  {% else %}background:#052e16;border:1px solid #14532d;color:#86efac;{% endif %}">
+  {{ msg }}
+</div>
+{% endfor %}
+{% endif %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:0.75rem">
   <a href="/ops/tenants/" style="color:var(--muted); font-size:0.85rem; text-decoration:none;">← Tenants</a>
-</p>
+
+  <!-- Status + actions -->
+  <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+    {% if company.is_active %}
+      <span style="padding:0.2rem 0.75rem;border-radius:999px;font-size:0.75rem;font-family:monospace;
+                   background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.25);color:#4ade80">
+        Active
+      </span>
+    {% else %}
+      <span style="padding:0.2rem 0.75rem;border-radius:999px;font-size:0.75rem;font-family:monospace;
+                   background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);color:#f87171">
+        Suspended
+      </span>
+    {% endif %}
+
+    <!-- Suspend / Reactivate -->
+    <form method="post" action="/ops/tenants/{{ company.pk }}/suspend/" style="margin:0"
+          onsubmit="return confirm('{% if company.is_active %}Suspend {{ company.name }}? Their users will not be blocked immediately — enforce at login if needed.{% else %}Reactivate {{ company.name }}?{% endif %}')">
+      {% csrf_token %}
+      <button type="submit"
+              style="padding:0.35rem 0.9rem;border-radius:6px;font-size:0.8rem;font-family:monospace;cursor:pointer;
+                     {% if company.is_active %}background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;
+                     {% else %}background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.3);color:#4ade80;{% endif %}">
+        {% if company.is_active %}Suspend{% else %}Reactivate{% endif %}
+      </button>
+    </form>
+
+    <!-- Delete — only shown if tenant is empty -->
+    {% if not farms and not suppliers and not users %}
+    <form method="post" action="/ops/tenants/{{ company.pk }}/delete/" style="margin:0"
+          onsubmit="return confirm('Permanently delete {{ company.name }}? This cannot be undone.')">
+      {% csrf_token %}
+      <button type="submit"
+              style="padding:0.35rem 0.9rem;border-radius:6px;font-size:0.8rem;font-family:monospace;cursor:pointer;
+                     background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);color:#f87171">
+        Delete tenant
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>
 
 <!-- Company info -->
 <div class="grid-4" style="margin-bottom:1.5rem">
