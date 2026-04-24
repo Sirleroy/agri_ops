@@ -17,6 +17,18 @@ class RoleRequiredMixin(LoginRequiredMixin):
             return self.handle_no_permission()
         if not request.user.company:
             raise PermissionDenied("No organisation assigned to this user.")
+        if not request.user.company.is_active:
+            from django.contrib import messages
+            from django.contrib.auth import logout
+            from django.shortcuts import redirect
+            from django.conf import settings
+            logout(request)
+            messages.error(
+                request,
+                'Your organisation account has been suspended. '
+                'Please contact AgriOps support to restore access.'
+            )
+            return redirect(settings.LOGIN_URL)
         if self.required_role:
             user_level = self.ROLE_HIERARCHY.get(request.user.system_role, 0)
             required_level = self.ROLE_HIERARCHY.get(self.required_role, 0)

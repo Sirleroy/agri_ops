@@ -55,6 +55,16 @@
       <h1 class="text-lg font-bold text-slate-100 mb-1">Welcome back</h1>
       <p class="text-sm text-slate-500 mb-6">Sign in to your organisation</p>
 
+      <!-- Django messages (e.g. suspended account) -->
+      {% if messages %}
+        {% for message in messages %}
+        <div class="mb-4 px-4 py-3 rounded-lg
+          {% if message.tags == 'error' %}bg-red-500/10 border border-red-500/20{% else %}bg-green/10 border border-green/20{% endif %}">
+          <p class="text-sm font-mono {% if message.tags == 'error' %}text-red-400{% else %}text-green{% endif %}">{{ message }}</p>
+        </div>
+        {% endfor %}
+      {% endif %}
+
       <!-- Non-field errors -->
       {% if form.non_field_errors %}
         <div class="mb-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20">
