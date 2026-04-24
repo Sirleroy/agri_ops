@@ -313,19 +313,21 @@ class CorridorExportView(StaffRequiredMixin, View):
         GREEN      = colors.HexColor('#16a34a')
         INK        = colors.HexColor('#0f172a')
         MUTED      = colors.HexColor('#64748b')
+        DARK_HDR   = colors.HexColor('#131f2e')
         HDR_BG     = colors.HexColor('#f1f5f9')
         ROW_ALT    = colors.HexColor('#f8fafc')
         RULE       = colors.HexColor('#e2e8f0')
 
         buf = BytesIO()
+        # A4 portrait: 210mm wide, 20mm margins each side → 170mm usable
         doc = SimpleDocTemplate(buf, pagesize=A4,
                                 leftMargin=20*mm, rightMargin=20*mm,
                                 topMargin=18*mm, bottomMargin=18*mm)
 
-        brand    = ParagraphStyle('brand',   fontName='Helvetica-Bold', fontSize=10, textColor=GREEN, spaceAfter=2)
-        heading  = ParagraphStyle('heading', fontName='Helvetica-Bold', fontSize=16, textColor=INK,   spaceAfter=3)
-        subhead  = ParagraphStyle('sub',     fontName='Helvetica',      fontSize=9,  textColor=MUTED, spaceAfter=0)
-        footnote = ParagraphStyle('fn',      fontName='Helvetica',      fontSize=7,  textColor=MUTED, spaceBefore=6)
+        brand    = ParagraphStyle('brand',   fontName='Helvetica-Bold', fontSize=10, textColor=GREEN,   spaceAfter=2,  leading=14)
+        heading  = ParagraphStyle('heading', fontName='Helvetica-Bold', fontSize=16, textColor=INK,     spaceAfter=3,  leading=20)
+        subhead  = ParagraphStyle('sub',     fontName='Helvetica',      fontSize=9,  textColor=MUTED,   spaceAfter=0,  leading=12)
+        footnote = ParagraphStyle('fn',      fontName='Helvetica',      fontSize=7,  textColor=MUTED,   spaceBefore=6, leading=10)
 
         total_farms    = sum(c['total'] for c in corridors)
         total_verified = sum(c['eudr_verified'] for c in corridors)
@@ -340,12 +342,12 @@ class CorridorExportView(StaffRequiredMixin, View):
             HRFlowable(width='100%', thickness=1, color=GREEN, spaceAfter=5*mm),
         ]
 
-        # Summary strip — light background, dark text, green accent on values
+        # Summary strip — 170mm / 4 = 42.5mm per cell
         summary_data = [
             ['TOTAL FARMS', 'CORRIDORS', 'EUDR VERIFIED', 'TOTAL AREA'],
             [str(total_farms), str(len(corridors)), f'{platform_pct}%', f'{total_area:.1f} ha'],
         ]
-        summary_table = Table(summary_data, colWidths=[42*mm] * 4)
+        summary_table = Table(summary_data, colWidths=[42.5*mm] * 4)
         summary_table.setStyle(TableStyle([
             ('BACKGROUND',    (0, 0), (-1, 0), HDR_BG),
             ('TEXTCOLOR',     (0, 0), (-1, 0), MUTED),
@@ -355,14 +357,16 @@ class CorridorExportView(StaffRequiredMixin, View):
             ('FONTNAME',      (0, 1), (-1, 1), 'Helvetica-Bold'),
             ('FONTSIZE',      (0, 1), (-1, 1), 18),
             ('ALIGN',         (0, 0), (-1, -1), 'CENTER'),
-            ('TOPPADDING',    (0, 0), (-1, -1), 6),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('VALIGN',        (0, 0), (-1, -1), 'MIDDLE'),
+            ('TOPPADDING',    (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
             ('BOX',           (0, 0), (-1, -1), 0.5, RULE),
             ('INNERGRID',     (0, 0), (-1, -1), 0.5, RULE),
         ]))
         story += [summary_table, Spacer(1, 6*mm)]
 
-        # Corridor table
+        # Corridor table — col widths must sum to exactly 170mm
+        # Corridor(54) + Total(13) + LowRisk(18) + Pending(16) + HighRisk(18) + Verified(18) + Verified%(17) + Area(16) = 170
         headers = ['Corridor', 'Total', 'Low Risk', 'Pending', 'High Risk', 'Verified', 'Verified %', 'Area (ha)']
         rows = [headers]
         for c in corridors:
@@ -378,22 +382,35 @@ class CorridorExportView(StaffRequiredMixin, View):
                 f"{c['total_area']:.1f}" if c['total_area'] else '—',
             ])
 
-        col_widths = [55*mm, 14*mm, 18*mm, 16*mm, 18*mm, 17*mm, 19*mm, 19*mm]
+        col_widths = [54*mm, 13*mm, 18*mm, 16*mm, 18*mm, 18*mm, 17*mm, 16*mm]
         corridor_table = Table(rows, colWidths=col_widths, repeatRows=1)
-        corridor_table.setStyle(TableStyle([
-            ('BACKGROUND',     (0, 0), (-1, 0),  HDR_BG),
-            ('TEXTCOLOR',      (0, 0), (-1, 0),  INK),
-            ('FONTNAME',       (0, 0), (-1, 0),  'Helvetica-Bold'),
-            ('FONTSIZE',       (0, 0), (-1, -1), 8),
-            ('FONTNAME',       (0, 1), (-1, -1), 'Helvetica'),
-            ('TEXTCOLOR',      (0, 1), (-1, -1), INK),
-            ('ALIGN',          (1, 0), (-1, -1), 'CENTER'),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, ROW_ALT]),
-            ('BOX',            (0, 0), (-1, -1), 0.5, RULE),
-            ('INNERGRID',      (0, 0), (-1, -1), 0.5, RULE),
-            ('TOPPADDING',     (0, 0), (-1, -1), 5),
-            ('BOTTOMPADDING',  (0, 0), (-1, -1), 5),
-        ]))
+
+        ts = TableStyle([
+            # Dark header — institutional authority
+            ('BACKGROUND',    (0, 0), (-1, 0),  DARK_HDR),
+            ('TEXTCOLOR',     (0, 0), (-1, 0),  colors.white),
+            ('FONTNAME',      (0, 0), (-1, 0),  'Helvetica-Bold'),
+            # Body rows
+            ('FONTNAME',      (0, 1), (-1, -1), 'Helvetica'),
+            ('TEXTCOLOR',     (0, 1), (-1, -1), INK),
+            ('FONTSIZE',      (0, 0), (-1, -1), 8),
+            # Alignment
+            ('ALIGN',         (0, 0), (0, -1),  'LEFT'),
+            ('ALIGN',         (1, 0), (-1, -1), 'CENTER'),
+            ('VALIGN',        (0, 0), (-1, -1), 'MIDDLE'),
+            # Breathing room
+            ('TOPPADDING',    (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+            # Grid — subtle slate lines
+            ('BOX',           (0, 0), (-1, -1), 0.5, RULE),
+            ('INNERGRID',     (0, 0), (-1, -1), 0.3, RULE),
+        ])
+        # Zebra stripes on body rows (reliable explicit adds)
+        for i in range(1, len(rows)):
+            if i % 2 == 0:
+                ts.add('BACKGROUND', (0, i), (-1, i), ROW_ALT)
+        corridor_table.setStyle(ts)
+
         story += [corridor_table]
 
         story.append(Paragraph(
