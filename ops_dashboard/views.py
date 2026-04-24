@@ -583,3 +583,41 @@ def ops_health(request):
         checks.append({'name': 'Email (SendGrid)', 'status': 'warning', 'detail': 'No email transport configured — transactional emails will not send'})
 
     return render(request, 'ops_dashboard/health.html', {'checks': checks})
+
+
+@ops_required
+def ops_corridor(request):
+    from django.db.models import Q as _Q
+
+    corridors = list(
+        Farm.objects
+        .values('state_region', 'commodity')
+        .annotate(
+            total=Count('id'),
+            low_risk=Count('id', filter=_Q(deforestation_risk_status='low')),
+            pending=Count('id', filter=_Q(deforestation_risk_status='standard')),
+            high_risk=Count('id', filter=_Q(deforestation_risk_status='high')),
+            eudr_verified=Count('id', filter=_Q(is_eudr_verified=True)),
+            total_area=Sum('area_hectares'),
+            tenant_count=Count('company', distinct=True),
+        )
+        .order_by('state_region', 'commodity')
+    )
+
+    for c in corridors:
+        c['verified_pct'] = round(c['eudr_verified'] / c['total'] * 100) if c['total'] else 0
+        c['label'] = f"{c['state_region'] or 'Unknown'} · {c['commodity'].title() if c['commodity'] else 'Unknown'}"
+
+    total_farms    = sum(c['total'] for c in corridors)
+    total_area     = round(sum(c['total_area'] or 0 for c in corridors), 1)
+    total_verified = sum(c['eudr_verified'] for c in corridors)
+    platform_pct   = round(total_verified / total_farms * 100) if total_farms else 0
+
+    return render(request, 'ops_dashboard/corridor.html', {
+        'corridors':       corridors,
+        'total_farms':     total_farms,
+        'total_area':      total_area,
+        'total_verified':  total_verified,
+        'platform_pct':    platform_pct,
+        'corridor_count':  len(corridors),
+    })

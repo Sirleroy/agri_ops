@@ -11,5 +11,6 @@ urlpatterns = [
     path('ops/tenants/<int:pk>/', views.ops_tenant_detail, name='ops_tenant_detail'),
     path('ops/security/', views.ops_security, name='ops_security'),
     path('ops/metrics/', views.ops_metrics, name='ops_metrics'),
-    path('ops/health/', views.ops_health, name='ops_health'),
+    path('ops/health/',    views.ops_health,    name='ops_health'),
+    path('ops/corridor/',  views.ops_corridor,  name='ops_corridor'),
 ]

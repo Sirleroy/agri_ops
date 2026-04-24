@@ -1,0 +1,91 @@
+{% extends "ops_dashboard/base.html" %}
+{% block title %}Corridors — AgriOps Ops{% endblock %}
+{% block nav_corridor %}active{% endblock %}
+{% block page_title %}Corridor Compliance View{% endblock %}
+
+{% block content %}
+
+<!-- Platform summary -->
+<div class="grid-4" style="margin-bottom:1.5rem">
+  <div class="card">
+    <div class="card-title">Total Farms</div>
+    <div class="card-value">{{ total_farms }}</div>
+    <div class="card-sub">across all tenants</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Corridors</div>
+    <div class="card-value">{{ corridor_count }}</div>
+    <div class="card-sub">state + commodity pairs</div>
+  </div>
+  <div class="card">
+    <div class="card-title">EUDR Verified</div>
+    <div class="card-value" style="color:{% if platform_pct >= 80 %}#4ade80{% elif platform_pct >= 40 %}#facc15{% else %}#f87171{% endif %}">
+      {{ platform_pct }}%
+    </div>
+    <div class="card-sub">{{ total_verified }} of {{ total_farms }} farms</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Total Area</div>
+    <div class="card-value">{{ total_area }}</div>
+    <div class="card-sub">hectares mapped</div>
+  </div>
+</div>
+
+{% if not corridors %}
+<div class="card" style="text-align:center;padding:3rem;color:var(--dim)">
+  No farms registered on the platform yet.
+</div>
+{% endif %}
+
+<!-- Corridor table -->
+{% if corridors %}
+<div class="card">
+  <div class="section-title">All Corridors ({{ corridor_count }})</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Corridor</th>
+          <th>Tenants</th>
+          <th>Total Farms</th>
+          <th>Low Risk</th>
+          <th>Pending Check</th>
+          <th>High Risk</th>
+          <th>EUDR Verified</th>
+          <th>Area (ha)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in corridors %}
+        <tr>
+          <td style="font-weight:500">{{ c.label }}</td>
+          <td style="color:var(--muted)">{{ c.tenant_count }}</td>
+          <td style="font-weight:600">{{ c.total }}</td>
+          <td style="color:#4ade80">{{ c.low_risk }}</td>
+          <td style="color:#facc15">{{ c.pending }}</td>
+          <td style="color:#f87171">{{ c.high_risk }}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:0.5rem">
+              <div style="width:60px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0">
+                <div style="height:100%;width:{{ c.verified_pct }}%;border-radius:3px;
+                            background:{% if c.verified_pct >= 80 %}#4ade80{% elif c.verified_pct >= 40 %}#facc15{% else %}#f87171{% endif %}">
+                </div>
+              </div>
+              <span style="font-size:0.78rem;color:var(--muted)">{{ c.eudr_verified }} ({{ c.verified_pct }}%)</span>
+            </div>
+          </td>
+          <td style="color:var(--muted)">{{ c.total_area|floatformat:1|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<p style="font-size:0.75rem;color:var(--dim);margin-top:1rem">
+  Pending Check = farms at default risk status, not yet processed by the deforestation intersection engine.
+  Tenant count shows distinct companies with farms in each corridor.
+</p>
+{% endif %}
+
+{% endblock %}
