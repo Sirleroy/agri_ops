@@ -40,7 +40,13 @@
         <p class="text-xs font-mono text-slate-500 uppercase tracking-widest leading-none mb-1">Corridor</p>
         <h2 class="text-base font-bold text-slate-100">{{ c.label }}</h2>
       </div>
-      <span class="font-mono text-2xl font-bold text-green">{{ c.total }}</span>
+      <div class="flex items-center gap-3">
+        <span class="font-mono text-2xl font-bold text-green">{{ c.total }}</span>
+        <a href="{% url 'suppliers:farm_list' %}?state={{ c.state_region|urlencode }}&commodity={{ c.commodity|urlencode }}"
+           class="text-xs font-mono text-slate-500 hover:text-green transition-colors whitespace-nowrap">
+          View farms →
+        </a>
+      </div>
     </div>
 
     <!-- EUDR verification bar -->
