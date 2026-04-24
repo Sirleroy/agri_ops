@@ -309,22 +309,23 @@ class CorridorExportView(StaffRequiredMixin, View):
         from reportlab.lib import colors
         from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
         from reportlab.lib.styles import ParagraphStyle
-        from reportlab.lib.enums import TA_CENTER
 
-        GREEN  = colors.HexColor('#22c55e')
-        DARK   = colors.HexColor('#0a0f1a')
-        MUTED  = colors.HexColor('#64748b')
-        WHITE  = colors.white
-        BORDER = colors.HexColor('#1e2d40')
+        GREEN      = colors.HexColor('#16a34a')
+        INK        = colors.HexColor('#0f172a')
+        MUTED      = colors.HexColor('#64748b')
+        HDR_BG     = colors.HexColor('#f1f5f9')
+        ROW_ALT    = colors.HexColor('#f8fafc')
+        RULE       = colors.HexColor('#e2e8f0')
 
         buf = BytesIO()
         doc = SimpleDocTemplate(buf, pagesize=A4,
                                 leftMargin=20*mm, rightMargin=20*mm,
                                 topMargin=18*mm, bottomMargin=18*mm)
 
-        heading   = ParagraphStyle('h', fontName='Helvetica-Bold', fontSize=14, textColor=WHITE, spaceAfter=4)
-        subhead   = ParagraphStyle('s', fontName='Helvetica',      fontSize=9,  textColor=MUTED, spaceAfter=2)
-        footnote  = ParagraphStyle('f', fontName='Helvetica',      fontSize=7,  textColor=MUTED, spaceBefore=8)
+        brand    = ParagraphStyle('brand',   fontName='Helvetica-Bold', fontSize=10, textColor=GREEN, spaceAfter=2)
+        heading  = ParagraphStyle('heading', fontName='Helvetica-Bold', fontSize=16, textColor=INK,   spaceAfter=3)
+        subhead  = ParagraphStyle('sub',     fontName='Helvetica',      fontSize=9,  textColor=MUTED, spaceAfter=0)
+        footnote = ParagraphStyle('fn',      fontName='Helvetica',      fontSize=7,  textColor=MUTED, spaceBefore=6)
 
         total_farms    = sum(c['total'] for c in corridors)
         total_verified = sum(c['eudr_verified'] for c in corridors)
@@ -332,31 +333,32 @@ class CorridorExportView(StaffRequiredMixin, View):
         total_area     = sum(c['total_area'] or 0 for c in corridors)
 
         story = [
-            Paragraph('AgriOps', ParagraphStyle('brand', fontName='Helvetica-Bold', fontSize=10, textColor=GREEN)),
-            Spacer(1, 3*mm),
+            Paragraph('AGRIOPS', brand),
             Paragraph('Corridor Compliance Summary', heading),
-            Paragraph(f"{company.name} · Generated {timezone.now().strftime('%d %b %Y')}", subhead),
-            HRFlowable(width='100%', thickness=0.5, color=BORDER, spaceAfter=6*mm),
+            Paragraph(f"{company.name}  ·  Generated {timezone.now().strftime('%d %b %Y')}", subhead),
+            Spacer(1, 4*mm),
+            HRFlowable(width='100%', thickness=1, color=GREEN, spaceAfter=5*mm),
         ]
 
-        # Summary row
+        # Summary strip — light background, dark text, green accent on values
         summary_data = [
-            ['Total Farms', 'Corridors', 'EUDR Verified', 'Total Area'],
+            ['TOTAL FARMS', 'CORRIDORS', 'EUDR VERIFIED', 'TOTAL AREA'],
             [str(total_farms), str(len(corridors)), f'{platform_pct}%', f'{total_area:.1f} ha'],
         ]
-        summary_table = Table(summary_data, colWidths=[42*mm]*4)
+        summary_table = Table(summary_data, colWidths=[42*mm] * 4)
         summary_table.setStyle(TableStyle([
-            ('BACKGROUND',  (0, 0), (-1, 0), DARK),
-            ('TEXTCOLOR',   (0, 0), (-1, 0), MUTED),
-            ('FONTNAME',    (0, 0), (-1, 0), 'Helvetica'),
-            ('FONTSIZE',    (0, 0), (-1, 0), 7),
-            ('FONTNAME',    (0, 1), (-1, 1), 'Helvetica-Bold'),
-            ('FONTSIZE',    (0, 1), (-1, 1), 16),
-            ('TEXTCOLOR',   (0, 1), (-1, 1), WHITE),
-            ('ALIGN',       (0, 0), (-1, -1), 'CENTER'),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('BACKGROUND',    (0, 0), (-1, 0), HDR_BG),
+            ('TEXTCOLOR',     (0, 0), (-1, 0), MUTED),
+            ('FONTNAME',      (0, 0), (-1, 0), 'Helvetica'),
+            ('FONTSIZE',      (0, 0), (-1, 0), 7),
+            ('TEXTCOLOR',     (0, 1), (-1, 1), GREEN),
+            ('FONTNAME',      (0, 1), (-1, 1), 'Helvetica-Bold'),
+            ('FONTSIZE',      (0, 1), (-1, 1), 18),
+            ('ALIGN',         (0, 0), (-1, -1), 'CENTER'),
             ('TOPPADDING',    (0, 0), (-1, -1), 6),
-            ('GRID',        (0, 0), (-1, -1), 0.5, BORDER),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('BOX',           (0, 0), (-1, -1), 0.5, RULE),
+            ('INNERGRID',     (0, 0), (-1, -1), 0.5, RULE),
         ]))
         story += [summary_table, Spacer(1, 6*mm)]
 
@@ -376,26 +378,27 @@ class CorridorExportView(StaffRequiredMixin, View):
                 f"{c['total_area']:.1f}" if c['total_area'] else '—',
             ])
 
-        col_widths = [55*mm, 16*mm, 18*mm, 18*mm, 18*mm, 18*mm, 20*mm, 20*mm]
+        col_widths = [55*mm, 14*mm, 18*mm, 16*mm, 18*mm, 17*mm, 19*mm, 19*mm]
         corridor_table = Table(rows, colWidths=col_widths, repeatRows=1)
         corridor_table.setStyle(TableStyle([
-            ('BACKGROUND',    (0, 0), (-1, 0), DARK),
-            ('TEXTCOLOR',     (0, 0), (-1, 0), MUTED),
-            ('FONTNAME',      (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE',      (0, 0), (-1, -1), 8),
-            ('FONTNAME',      (0, 1), (-1, -1), 'Helvetica'),
-            ('TEXTCOLOR',     (0, 1), (-1, -1), WHITE),
-            ('ALIGN',         (1, 0), (-1, -1), 'CENTER'),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#0d1520'), colors.HexColor('#111827')]),
-            ('GRID',          (0, 0), (-1, -1), 0.5, BORDER),
-            ('TOPPADDING',    (0, 0), (-1, -1), 5),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+            ('BACKGROUND',     (0, 0), (-1, 0),  HDR_BG),
+            ('TEXTCOLOR',      (0, 0), (-1, 0),  INK),
+            ('FONTNAME',       (0, 0), (-1, 0),  'Helvetica-Bold'),
+            ('FONTSIZE',       (0, 0), (-1, -1), 8),
+            ('FONTNAME',       (0, 1), (-1, -1), 'Helvetica'),
+            ('TEXTCOLOR',      (0, 1), (-1, -1), INK),
+            ('ALIGN',          (1, 0), (-1, -1), 'CENTER'),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, ROW_ALT]),
+            ('BOX',            (0, 0), (-1, -1), 0.5, RULE),
+            ('INNERGRID',      (0, 0), (-1, -1), 0.5, RULE),
+            ('TOPPADDING',     (0, 0), (-1, -1), 5),
+            ('BOTTOMPADDING',  (0, 0), (-1, -1), 5),
         ]))
         story += [corridor_table]
 
         story.append(Paragraph(
-            'Pending Check: farms at default risk status, not yet processed by the deforestation intersection engine. '
-            'Generated by AgriOps — app.agriops.io',
+            'Pending Check: farms at default risk status, not yet processed by the deforestation '
+            'intersection engine.  ·  Generated by AgriOps — app.agriops.io',
             footnote
         ))
 
