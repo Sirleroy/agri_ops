@@ -207,7 +207,9 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
     from django import forms as django_forms
     from django.db import transaction
     from .models import Farm, Farmer
-    from .forms import _validate_geojson_polygon, _find_overlapping_farm, normalize_field_gps_geometry, _compute_area_ha
+    from .forms import (_validate_geojson_polygon, _find_overlapping_farm,
+                        _build_farm_overlap_index, _check_overlap_strtree,
+                        normalize_field_gps_geometry, _compute_area_ha)
     from .ng_geodata import canonicalise_lga_state, normalise_commodity, is_eudr_commodity
 
     # Accept a FeatureCollection dict as well as a plain list
@@ -223,6 +225,11 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
     auto_corrected = 0
     farmer_cache   = {}  # (first_name_lower, last_name_lower, village_lower, lga_lower) -> Farmer
     batch_shapes   = []  # (shape, name) — intra-batch overlap guard
+
+    # Build STRtree of existing DB farms once — avoids per-row queryset scans
+    _overlap_tree, _overlap_shapes, _overlap_refs = _build_farm_overlap_index(company)
+    _OVERLAP_BLOCK_PCT   = 10.0  # >10% overlap with an existing farm → blocked
+    _OVERLAP_WARN_PCT    =  0.0  # any overlap below block threshold → warning only
     batch_names    = set()  # intra-batch name+supplier duplicate guard (case-insensitive)
 
     for i, feature in enumerate(features):
@@ -471,16 +478,33 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
             duplicates.append({'row': row, 'name': name})
             continue
 
-        overlapping = _find_overlapping_farm(geometry, company)
-        if overlapping:
-            sup_label = overlapping.supplier.name if overlapping.supplier else 'no supplier'
-            blocked.append({'row': row, 'name': name,
-                            'reason': f"Overlaps with existing farm '{overlapping.name}' ({sup_label})"})
-            continue
-
-        # Intra-batch overlap: check against farms already accepted in this run
+        # Overlap check against existing DB farms (STRtree — single index, no per-row queries)
         from .forms import _geojson_to_shape
         new_shape = _geojson_to_shape(geometry) if geometry else None
+        if new_shape:
+            db_farm, db_pct = _check_overlap_strtree(
+                new_shape, _overlap_tree, _overlap_shapes, _overlap_refs,
+                pct_threshold=_OVERLAP_BLOCK_PCT,
+            )
+            if db_farm:
+                sup_label = db_farm.supplier.name if db_farm.supplier else 'no supplier'
+                blocked.append({'row': row, 'name': name,
+                                'reason': (f"Overlaps {db_pct}% with existing farm "
+                                           f"'{db_farm.name}' ({sup_label})")})
+                continue
+            # Low-level overlap warning (>0% but ≤ block threshold)
+            db_warn, warn_pct = _check_overlap_strtree(
+                new_shape, _overlap_tree, _overlap_shapes, _overlap_refs,
+                pct_threshold=_OVERLAP_WARN_PCT,
+            )
+            if db_warn:
+                sup_label = db_warn.supplier.name if db_warn.supplier else 'no supplier'
+                row_warnings.append(
+                    f"Minor boundary overlap ({warn_pct}%) with '{db_warn.name}' "
+                    f"({sup_label}) — below the 10% block threshold, verify boundaries."
+                )
+
+        # Intra-batch overlap: check against farms already accepted in this run
         if new_shape:
             intra_clash = next(
                 (n for s, n in batch_shapes

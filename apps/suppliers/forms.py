@@ -408,17 +408,18 @@ def _geojson_to_shape(geojson):
         return None
 
 
-def _find_overlapping_farm(geojson, company, exclude_pk=None):
+def _find_overlapping_farm(geojson, company, exclude_pk=None, pct_threshold=0.0):
     """
-    Check whether the given GeoJSON polygon overlaps (shares area, not just
-    a boundary edge) with any existing farm in the same company.
-    Returns the first overlapping Farm instance, or None.
+    Check whether the given GeoJSON polygon overlaps with any existing farm
+    in the same company by more than pct_threshold percent of the smaller polygon.
+
+    Returns (Farm, overlap_pct) for the first match above threshold, or (None, 0.0).
+    pct_threshold=0.0 means any area overlap triggers a match (used by form validation).
     """
     new_shape = _geojson_to_shape(geojson)
     if new_shape is None:
-        return None
+        return None, 0.0
 
-    # Attempt to repair self-intersections before comparison
     if not new_shape.is_valid:
         new_shape = new_shape.buffer(0)
 
@@ -435,13 +436,65 @@ def _find_overlapping_farm(geojson, company, exclude_pk=None):
         try:
             if not existing_shape.is_valid:
                 existing_shape = existing_shape.buffer(0)
-            # intersection.area > 0 catches containment and overlap; ignores shared edges
-            if new_shape.intersection(existing_shape).area > 0:
-                return farm
+            intersection_area = new_shape.intersection(existing_shape).area
+            if intersection_area <= 0:
+                continue
+            min_area = min(new_shape.area, existing_shape.area)
+            pct = round(intersection_area / min_area * 100, 1) if min_area > 0 else 0.0
+            if pct > pct_threshold:
+                return farm, pct
         except Exception:
-            continue  # skip malformed stored polygons — don't block the submission
+            continue
 
-    return None
+    return None, 0.0
+
+
+def _build_farm_overlap_index(company):
+    """
+    Load all existing farm geometries for a company into a Shapely STRtree.
+    Used by the import pipeline to avoid per-row DB queries during overlap checks.
+    Returns (STRtree | None, list[shape], list[Farm]).
+    """
+    from shapely.strtree import STRtree
+    farms = list(
+        Farm.objects.filter(company=company)
+        .exclude(geolocation__isnull=True)
+        .select_related('supplier')
+    )
+    shapes, refs = [], []
+    for f in farms:
+        s = _geojson_to_shape(f.geolocation)
+        if s is not None:
+            if not s.is_valid:
+                s = s.buffer(0)
+            shapes.append(s)
+            refs.append(f)
+    tree = STRtree(shapes) if shapes else None
+    return tree, shapes, refs
+
+
+def _check_overlap_strtree(new_shape, tree, shapes, refs, pct_threshold=0.0):
+    """
+    Check new_shape against a pre-built STRtree index.
+    Returns (Farm, overlap_pct) for the first match above pct_threshold, or (None, 0.0).
+    """
+    if tree is None or new_shape is None:
+        return None, 0.0
+    import numpy as _np
+    candidates = tree.query(new_shape)
+    for idx in (candidates.tolist() if hasattr(candidates, 'tolist') else candidates):
+        existing = shapes[idx]
+        try:
+            intersection_area = new_shape.intersection(existing).area
+            if intersection_area <= 0:
+                continue
+            min_area = min(new_shape.area, existing.area)
+            pct = round(intersection_area / min_area * 100, 1) if min_area > 0 else 0.0
+            if pct > pct_threshold:
+                return refs[idx], pct
+        except Exception:
+            continue
+    return None, 0.0
 
 
 # ── Farm (create) ─────────────────────────────────────────────────────────────
@@ -533,13 +586,15 @@ class FarmForm(forms.ModelForm):
                     != json.dumps(self.instance.geolocation, sort_keys=True)
                 )
             if geometry_changed:
-                overlapping = _find_overlapping_farm(geojson, self.company, exclude_pk=exclude_pk)
+                overlapping, overlap_pct = _find_overlapping_farm(
+                    geojson, self.company, exclude_pk=exclude_pk
+                )
                 if overlapping:
                     raise forms.ValidationError(
                         f"This farm boundary overlaps with '{overlapping.name}' "
-                        f"({overlapping.supplier.name}). Overlapping boundaries produce "
-                        "inaccurate area totals and invalid compliance records. "
-                        "Adjust the boundary before saving."
+                        f"({overlapping.supplier.name}) by {overlap_pct}%. "
+                        "Overlapping boundaries produce inaccurate area totals and "
+                        "invalid compliance records. Adjust the boundary before saving."
                     )
 
         return cleaned_data
