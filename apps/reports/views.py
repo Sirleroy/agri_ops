@@ -203,6 +203,47 @@ class EUDRReportView(ManagerRequiredMixin, View):
         return response
 
 
+class CorridorComplianceView(StaffRequiredMixin, TemplateView):
+    template_name = 'reports/corridor.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        company = self.request.user.company
+        if not company:
+            return context
+
+        from apps.suppliers.models import Farm
+        from django.db.models import Count, Q, Sum
+
+        corridors = list(
+            Farm.objects
+            .filter(company=company)
+            .values('state_region', 'commodity')
+            .annotate(
+                total=Count('id'),
+                low_risk=Count('id', filter=Q(deforestation_risk_status='low')),
+                pending=Count('id', filter=Q(deforestation_risk_status='standard')),
+                high_risk=Count('id', filter=Q(deforestation_risk_status='high')),
+                eudr_verified=Count('id', filter=Q(is_eudr_verified=True)),
+                total_area=Sum('area_hectares'),
+            )
+            .order_by('state_region', 'commodity')
+        )
+
+        for c in corridors:
+            c['verified_pct'] = round(c['eudr_verified'] / c['total'] * 100) if c['total'] else 0
+            c['label'] = f"{c['state_region'] or 'Unknown Region'} · {c['commodity'].title() if c['commodity'] else 'Unknown'}"
+
+        total_farms = sum(c['total'] for c in corridors)
+        total_area  = sum(c['total_area'] or 0 for c in corridors)
+
+        context['corridors']    = corridors
+        context['total_farms']  = total_farms
+        context['total_area']   = round(total_area, 1)
+        context['corridor_count'] = len(corridors)
+        return context
+
+
 class OpsReportView(StaffRequiredMixin, View):
 
     REPORT_TYPES = {

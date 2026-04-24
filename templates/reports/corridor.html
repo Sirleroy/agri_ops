@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block title %}Corridor Compliance — AgriOps{% endblock %}
+{% block page_title %}Corridor Compliance View{% endblock %}
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Summary strip -->
+  <div class="bg-card border border-border rounded-xl px-5 py-4 flex flex-wrap gap-8">
+    <div>
+      <p class="text-xs font-mono text-slate-600 uppercase tracking-widest leading-none mb-1">Total Farms</p>
+      <p class="text-2xl font-bold text-slate-100 font-mono">{{ total_farms }}</p>
+    </div>
+    <div>
+      <p class="text-xs font-mono text-slate-600 uppercase tracking-widest leading-none mb-1">Corridors</p>
+      <p class="text-2xl font-bold text-slate-100 font-mono">{{ corridor_count }}</p>
+    </div>
+    <div>
+      <p class="text-xs font-mono text-slate-600 uppercase tracking-widest leading-none mb-1">Total Area</p>
+      <p class="text-2xl font-bold text-slate-100 font-mono">{{ total_area }} ha</p>
+    </div>
+    <div class="ml-auto self-center">
+      <a href="{% url 'reports:index' %}" class="text-xs font-mono text-slate-500 hover:text-slate-300">← Back to Reports</a>
+    </div>
+  </div>
+
+  {% if not corridors %}
+  <div class="bg-card border border-border rounded-xl px-6 py-12 text-center">
+    <p class="text-slate-500 font-mono text-sm">No farms registered yet.</p>
+  </div>
+  {% endif %}
+
+  <!-- Corridor cards -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  {% for c in corridors %}
+  <div class="bg-card border border-border rounded-xl p-5 space-y-4">
+
+    <!-- Header -->
+    <div class="flex items-start justify-between">
+      <div>
+        <p class="text-xs font-mono text-slate-500 uppercase tracking-widest leading-none mb-1">Corridor</p>
+        <h2 class="text-base font-bold text-slate-100">{{ c.label }}</h2>
+      </div>
+      <span class="font-mono text-2xl font-bold text-green">{{ c.total }}</span>
+    </div>
+
+    <!-- EUDR verification bar -->
+    <div>
+      <div class="flex justify-between items-center mb-1">
+        <span class="text-xs font-mono text-slate-500">EUDR Verified</span>
+        <span class="text-xs font-mono text-slate-300">{{ c.eudr_verified }} / {{ c.total }} &nbsp;({{ c.verified_pct }}%)</span>
+      </div>
+      <div class="w-full bg-border rounded-full h-2">
+        <div class="h-2 rounded-full {% if c.verified_pct >= 80 %}bg-green{% elif c.verified_pct >= 40 %}bg-yellow-500{% else %}bg-red-500{% endif %}"
+             style="width: {{ c.verified_pct }}%"></div>
+      </div>
+    </div>
+
+    <!-- Risk breakdown -->
+    <div class="grid grid-cols-3 gap-3">
+      <div class="bg-[#0a0f1a] border border-border rounded-lg px-3 py-2">
+        <p class="text-xs font-mono text-slate-600 uppercase tracking-widest leading-none mb-1">Low Risk</p>
+        <p class="text-xl font-bold text-green font-mono">{{ c.low_risk }}</p>
+      </div>
+      <div class="bg-[#0a0f1a] border border-border rounded-lg px-3 py-2">
+        <p class="text-xs font-mono text-slate-600 uppercase tracking-widest leading-none mb-1">Pending Check</p>
+        <p class="text-xl font-bold text-yellow-400 font-mono">{{ c.pending }}</p>
+      </div>
+      <div class="bg-[#0a0f1a] border border-border rounded-lg px-3 py-2">
+        <p class="text-xs font-mono text-slate-600 uppercase tracking-widest leading-none mb-1">High Risk</p>
+        <p class="text-xl font-bold text-red-400 font-mono">{{ c.high_risk }}</p>
+      </div>
+    </div>
+
+    <!-- Area -->
+    {% if c.total_area %}
+    <p class="text-xs font-mono text-slate-600">
+      Total mapped area: <span class="text-slate-400">{{ c.total_area|floatformat:1 }} ha</span>
+    </p>
+    {% endif %}
+
+  </div>
+  {% endfor %}
+  </div>
+
+  <p class="text-xs font-mono text-slate-700 pb-4">
+    Deforestation risk status reflects the current stored value for each farm.
+    Farms showing <span class="text-yellow-600">Pending Check</span> have not yet been processed by the deforestation intersection engine.
+  </p>
+
+</div>
+{% endblock %}
