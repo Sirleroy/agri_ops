@@ -122,8 +122,13 @@
 
     /* ── Page transitions ───────────────────────────────────────────────── */
     /* View Transitions API — Chrome 111+, Edge 111+, Safari 18.2+.
-       Falls back to instant navigation on Firefox / older browsers.      */
-    @view-transition { navigation: auto; }
+       Falls back to instant navigation on Firefox / older browsers.
+       Disabled on mobile: Tailwind CDN runtime compile stalls the animation
+       mid-flight, producing a stuck "side motion" before the new page paints.
+       Re-enable globally once Tailwind is pre-built (Phase 2 of perf plan). */
+    @media (min-width: 1024px) {
+      @view-transition { navigation: auto; }
+    }
 
     /* Suppress the full-page root cross-fade — only <main> animates */
     ::view-transition-old(root),
@@ -243,7 +248,7 @@
           : 'position:relative;'
       "
       :class="(sidebarOpen || mobileOpen) ? 'w-56' : 'w-16'"
-      class="w-56 bg-sidebar border-r border-border flex flex-col transition-all duration-300 overflow-hidden flex-shrink-0"
+      class="w-56 bg-sidebar border-r border-border flex flex-col transition-[width] duration-300 overflow-hidden flex-shrink-0"
     >
 
       <!-- Logo -->
