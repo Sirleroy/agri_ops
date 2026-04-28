@@ -264,6 +264,54 @@
       }
     }
 
+    /* FAQ accordion */
+    .faq-item {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--card);
+      margin-bottom: 8px;
+    }
+    .faq-q {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 20px 24px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: #e2e8f0;
+      transition: color 0.2s;
+    }
+    .faq-q:hover { color: #f8fafc; }
+    .faq-q[aria-expanded="true"] { color: var(--green); }
+    .faq-chevron {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      color: #475569;
+      transition: transform 0.25s ease;
+    }
+    .faq-q[aria-expanded="true"] .faq-chevron {
+      transform: rotate(180deg);
+      color: var(--green);
+    }
+    .faq-a {
+      display: none;
+      padding: 0 24px 20px;
+      font-size: 14px;
+      color: #94a3b8;
+      line-height: 1.75;
+      border-top: 1px solid var(--border);
+    }
+    .faq-a.open { display: block; }
+
     /* Mid-page CTA nudge */
     .mid-cta {
       text-align: center;
@@ -304,6 +352,8 @@
     <div style="display:flex;align-items:center;gap:16px;">
       <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);letter-spacing:0.1em;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:4px;padding:2px 8px;">BETA</span>
       <a href="https://docs.agriops.io" style="font-family:'Syne',sans-serif;font-size:13px;color:#64748b;text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='var(--green)'" onmouseout="this.style.color='#64748b'">Docs</a>
+      <!-- Book a Demo — swap href for Calendly link when available -->
+      <a href="mailto:ohahezinna@gmail.com?subject=AgriOps%20Demo%20Request" style="font-family:'Syne',sans-serif;font-size:13px;color:var(--green);text-decoration:none;border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:7px 14px;transition:background 0.2s;" onmouseover="this.style.background='rgba(34,197,94,0.08)'" onmouseout="this.style.background='transparent'">Book a Demo</a>
       {% if user.is_authenticated %}
         <a href="/dashboard/" class="btn-primary" style="padding:8px 18px;font-size:13px;">Dashboard</a>
       {% else %}
@@ -346,11 +396,8 @@
 
       <div class="hero-animate-4" style="display:flex;gap:12px;flex-wrap:wrap;">
         <a href="#request-access" class="btn-primary">Get Early Access</a>
-        {% if user.is_authenticated %}
-          <a href="/dashboard/" class="btn-secondary">Go to Dashboard →</a>
-        {% else %}
-          <a href="/login/" class="btn-secondary">Sign In →</a>
-        {% endif %}
+        <!-- Book a Demo — swap href for Calendly link when available -->
+        <a href="mailto:ohahezinna@gmail.com?subject=AgriOps%20Demo%20Request" class="btn-secondary">Book a Demo</a>
       </div>
     </div>
 
@@ -884,6 +931,120 @@
 
 
 <!-- ═══════════════════════════════════════════════════════
+     FAQ
+════════════════════════════════════════════════════════ -->
+<section style="padding:100px 24px;">
+  <div style="max-width:720px;margin:0 auto;">
+    <div class="reveal" style="text-align:center;margin-bottom:56px;">
+      <span class="tag">FAQ</span>
+      <div class="section-divider" style="margin:16px auto 24px;"></div>
+      <h2 style="font-family:'Syne',sans-serif;font-weight:700;font-size:clamp(28px,4vw,40px);color:#f8fafc;">
+        Common questions
+      </h2>
+    </div>
+
+    <div class="reveal" id="faq-list" style="display:flex;flex-direction:column;gap:2px;">
+
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">
+          What is AgriOps?
+          <svg class="faq-chevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="faq-a">
+          <p>AgriOps is a supply chain intelligence platform for agricultural commodity operators. It gives you end-to-end traceability — GPS-mapped farms, procurement records, inventory, sales orders, and compliance certificates — in one place. It is built for agri-exporters, cooperatives, and commodity traders who need to prove origin to buyers or meet regulatory requirements.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">
+          What is the EUDR and does it affect me?
+          <svg class="faq-chevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="faq-a">
+          <p>The EU Deforestation Regulation (Regulation (EU) 2023/1115 as amended by 2025/2650) requires that specific commodities — soy, cocoa, coffee, palm oil, cattle, rubber, wood — placed on the EU market must not have contributed to deforestation after 31 December 2020. Operators must collect GPS farm data, conduct due diligence, and file a Due Diligence Statement before export.</p>
+          <p style="margin-top:12px;">Enforcement deadlines: <strong style="color:#f8fafc;">30 December 2026</strong> for large and medium operators, <strong style="color:#f8fafc;">30 June 2027</strong> for small and micro operators. If you are supplying or planning to supply an EU buyer in any of those commodities, this regulation applies to you.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">
+          Do I need AgriOps if I am not exporting to the EU?
+          <svg class="faq-chevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="faq-a">
+          <p>Yes. EU regulation is one demand signal — not the only one. US buyers are increasingly requiring farm-level traceability as a condition of sample requests and contracts, ahead of any formal mandate. UK due diligence legislation is also in progress.</p>
+          <p style="margin-top:12px;">Beyond compliance: AgriOps gives you real-time stock visibility, purchase order tracking, supplier management, and a full audit trail. These are operational benefits regardless of which market you sell into.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">
+          How does GPS farm mapping work?
+          <svg class="faq-chevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="faq-a">
+          <p>A field agent walks the boundary of the farm with a mapping app installed on their phone — SW Maps, Avenza Maps, NCAN Farm Mapper, or any app that exports GeoJSON. The app records the GPS track as a polygon. Back at the office, the file is uploaded to AgriOps.</p>
+          <p style="margin-top:12px;">AgriOps validates the geometry (checks for self-intersections, coordinate range, size), normalises it (strips elevation, rounds coordinates, removes duplicate points), calculates the area in hectares, and anchors the polygon to the farm record with a SHA-256 hash. The hash is immutable — any boundary change produces a different hash, giving you tamper-evident proof of the original mapping.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">
+          What happens when a farm verification expires?
+          <svg class="faq-chevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="faq-a">
+          <p>AgriOps alerts you 30 days before a farm verification expires. Expired farms are flagged on the dashboard and in the farm registry. Any compliance certificate generated while a farm is expired will reflect that status — so the buyer can see exactly what was current at the time of shipment.</p>
+          <p style="margin-top:12px;">Re-verification is a simple process: the compliance officer reviews the farm record, updates the risk assessment if needed, and extends the verification date.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">
+          Is my data shared with other operators on the platform?
+          <svg class="faq-chevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="faq-a">
+          <p>No. AgriOps is a multi-tenant platform with strict data isolation. Every farm, supplier, farmer, purchase order, and batch record belongs exclusively to your organisation. No other operator — not even AgriOps staff — can access your data in the normal course of operations. Each organisation is a completely isolated tenant.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">
+          What commodities does AgriOps support?
+          <svg class="faq-chevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="faq-a">
+          <p>AgriOps supports all agricultural commodities. The platform is not locked to EUDR-listed crops. Current operators are using it for soy, cocoa, sesame, groundnut, and maize. The compliance certificate and traceability chain work for any commodity you source and sell.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">
+          How much does AgriOps cost?
+          <svg class="faq-chevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="faq-a">
+          <p>AgriOps is in closed beta. Pricing is being finalised in direct conversation with early operators. Request access below and we will discuss a plan that fits your scale and commodity mix. We offer both Naira and USD billing.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">
+          How do I get started?
+          <svg class="faq-chevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="faq-a">
+          <p>Request early access using the form below. We will be in touch within 48 hours to schedule an onboarding session. If you want to see the platform in action first, book a demo — we will walk you through a live chain from farm mapping to compliance certificate.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
      REQUEST ACCESS
      CHANGE: Headline more direct. Sub shorter.
 ════════════════════════════════════════════════════════ -->
@@ -980,6 +1141,23 @@
     });
   }, { threshold: 0.1 });
   document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // FAQ accordion
+  document.querySelectorAll('.faq-q').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const isOpen = btn.getAttribute('aria-expanded') === 'true';
+      // Close all
+      document.querySelectorAll('.faq-q').forEach(b => {
+        b.setAttribute('aria-expanded', 'false');
+        b.nextElementSibling.classList.remove('open');
+      });
+      // Open clicked one if it was closed
+      if (!isOpen) {
+        btn.setAttribute('aria-expanded', 'true');
+        btn.nextElementSibling.classList.add('open');
+      }
+    });
+  });
 
   document.getElementById('access-form').addEventListener('submit', function(e) {
     e.preventDefault();
