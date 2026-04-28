@@ -8,7 +8,7 @@
 
 ## 1. Product Summary
 
-AgriOps is a secure, multi-tenant SaaS platform for agricultural SMEs and cooperatives. It provides real-time traceability across agricultural supply chains — from farm procurement through storage and inventory to market dispatch — with built-in EUDR compliance support.
+AgriOps is a secure, multi-tenant SaaS platform for agricultural SMEs and cooperatives. It provides real-time traceability across agricultural supply chains — from farm procurement through storage and inventory to market dispatch — with compliance verification support across regulatory frameworks including EUDR.
 
 **Primary market:** Agricultural cooperatives, SME processors, and agri-logistics companies in Sub-Saharan Africa and South Asia.
 

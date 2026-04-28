@@ -1,7 +1,7 @@
 # AgriOps
 **Agricultural Supply Chain Intelligence — Built for the businesses that feed the world.**
 
-A secure, multi-tenant SaaS platform giving agricultural SMEs and cooperatives end-to-end traceability across their supply chains — from farm procurement to market dispatch — with built-in EUDR compliance.
+A secure, multi-tenant SaaS platform giving agricultural SMEs and cooperatives end-to-end traceability across their supply chains — from farm procurement to market dispatch — with compliance verification for any buyer or regulatory framework.
 
 ![Status](https://img.shields.io/badge/status-active%20development-green)
 ![Phase](https://img.shields.io/badge/phase-4%20active-blue)
@@ -129,7 +129,7 @@ AgriOps manages the full chain:
 
 | Layer | Technology |
 |---|---|
-| Backend | Python 3.12 / Django 4.x |
+| Backend | Python 3.12 / Django 6.x |
 | Database | PostgreSQL |
 | Auth | Django session auth + django-axes + django-otp (ops) |
 | API | Django REST Framework + SimpleJWT |

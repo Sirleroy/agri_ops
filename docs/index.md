@@ -7,7 +7,7 @@ title: AgriOps Documentation
 
 **Agricultural Supply Chain Intelligence**
 
-AgriOps is a secure, multi-tenant SaaS platform for agricultural SMEs and cooperatives — built for EUDR compliance, farm-level GPS traceability, and supply chain intelligence.
+AgriOps is a secure, multi-tenant SaaS platform for agricultural SMEs and cooperatives — providing farm-level GPS traceability, supply chain intelligence, and compliance verification across regulatory frameworks including EUDR.
 
 **Live platform:** [app.agriops.io](https://app.agriops.io) · **API:** [api.agriops.io/api/v1/](https://api.agriops.io/api/v1/)
 

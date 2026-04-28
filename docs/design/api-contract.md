@@ -144,7 +144,7 @@ Run the farm GeoJSON bulk import pipeline for a tenant supplier.
   "id": 1,
   "supplier": 1,
   "name": "Plot 01 — Barkin Ladi",
-  "farmer_name": "Musa Ibrahim",
+  "farmer": 1,
   "country": "Nigeria",
   "state_region": "Plateau",
   "commodity": "shea",
