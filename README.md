@@ -170,34 +170,43 @@ Field flow hardened end-to-end — dry run → one-tap commit (sticky bar, no re
 
 ## Getting Started (Local Development)
 
-**Prerequisites**
-- Python 3.12
-- PostgreSQL
-- pip / virtualenv
+### 1. Machine prerequisites (once per machine)
+
+**Linux / WSL (Ubuntu):**
+```bash
+sudo apt update && sudo apt install -y git python3.12 python3.12-venv postgresql postgresql-contrib
+sudo service postgresql start
+sudo -u postgres psql -c "CREATE USER agriops WITH PASSWORD 'yourpassword';"
+sudo -u postgres psql -c "CREATE DATABASE agri_ops_db OWNER agriops;"
+```
+
+**macOS (Homebrew):**
+```bash
+brew install python@3.12 postgresql
+brew services start postgresql
+psql postgres -c "CREATE USER agriops WITH PASSWORD 'yourpassword';"
+psql postgres -c "CREATE DATABASE agri_ops_db OWNER agriops;"
+```
+
+### 2. Project setup
 
 ```bash
-# Clone the repo
 git clone https://github.com/Sirleroy/agri_ops.git
 cd agri_ops
+bash setup.sh
+```
 
-# Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+`setup.sh` handles everything from here: virtual environment, dependencies, `.env` creation, `SECRET_KEY` generation, migrations, and static files.
 
-# Install dependencies
-pip install -r requirements.txt
+To also load demo data:
+```bash
+bash setup.sh --seed
+```
 
-# Configure environment
-cp .env.example .env
-# Edit .env with your PostgreSQL credentials and secret key
+### 3. Start the server
 
-# Run migrations
-python manage.py migrate
-
-# Load demo data (optional)
-python manage.py seed_demo
-
-# Start development server
+```bash
+source venv/bin/activate
 python manage.py runserver 8001
 ```
 
