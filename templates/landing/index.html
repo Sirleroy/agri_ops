@@ -264,6 +264,11 @@
       }
     }
 
+    /* Hide Book a Demo from nav on mobile — hero and body CTAs cover it */
+    @media (max-width: 640px) {
+      .nav-demo-btn { display: none; }
+    }
+
     /* FAQ accordion */
     .faq-item {
       border: 1px solid var(--border);
@@ -352,8 +357,8 @@
     <div style="display:flex;align-items:center;gap:16px;">
       <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);letter-spacing:0.1em;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:4px;padding:2px 8px;">BETA</span>
       <a href="https://docs.agriops.io" style="font-family:'Syne',sans-serif;font-size:13px;color:#64748b;text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='var(--green)'" onmouseout="this.style.color='#64748b'">Docs</a>
-      <!-- Book a Demo — swap href for Calendly link when available -->
-      <a href="mailto:founder@agriops.io?subject=AgriOps%20Demo%20Request" style="font-family:'Syne',sans-serif;font-size:13px;color:var(--green);text-decoration:none;border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:7px 14px;transition:background 0.2s;" onmouseover="this.style.background='rgba(34,197,94,0.08)'" onmouseout="this.style.background='transparent'">Book a Demo</a>
+      <!-- Book a Demo — swap href for Calendly link when available; hidden on mobile -->
+      <a href="mailto:founder@agriops.io?subject=AgriOps%20Demo%20Request" class="nav-demo-btn" style="font-family:'Syne',sans-serif;font-size:13px;color:var(--green);text-decoration:none;border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:7px 14px;transition:background 0.2s;" onmouseover="this.style.background='rgba(34,197,94,0.08)'" onmouseout="this.style.background='transparent'">Book a Demo</a>
       {% if user.is_authenticated %}
         <a href="/dashboard/" class="btn-primary" style="padding:8px 18px;font-size:13px;">Dashboard</a>
       {% else %}
