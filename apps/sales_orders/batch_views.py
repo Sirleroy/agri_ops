@@ -503,7 +503,7 @@ class PublicTraceView(View):
 
   <div class="footer">
     AgriOps &middot; app.agriops.io &middot; Agricultural Supply Chain Intelligence<br>
-    This record was generated from verified supply chain data and is intended for EU buyer compliance under EUDR 2023/1115.
+    This record was generated from verified supply chain data and is intended for EU buyer compliance under EUDR (Regulation (EU) 2023/1115 as amended by Regulation (EU) 2025/2650).
   </div>
 
 </div>

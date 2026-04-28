@@ -21,7 +21,7 @@ def validate_compliance_file(file):
         raise ValidationError("File must not exceed 10 MB.")
 
 
-# Commodities covered by EU Deforestation Regulation (EU) 2023/1115
+# Commodities covered by EU Deforestation Regulation (EU) 2023/1115 as amended by (EU) 2025/2650
 EUDR_COMMODITIES = {
     'cattle', 'cocoa', 'coffee', 'oil palm', 'palm oil', 'rubber', 'soya', 'soy', 'wood',
 }

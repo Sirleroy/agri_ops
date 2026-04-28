@@ -8,7 +8,7 @@
 
 ## Overview
 
-The AgriOps EUDR Compliance Module supports operators in meeting the requirements of the **EU Deforestation Regulation (EUDR)** — Regulation (EU) 2023/1115 — which mandates that specific commodities (including soy, cattle, palm oil, wood, cocoa, coffee, rubber) placed on the EU market must not have contributed to deforestation or forest degradation after December 31, 2020.
+The AgriOps EUDR Compliance Module supports operators in meeting the requirements of the **EU Deforestation Regulation (EUDR)** — Regulation (EU) 2023/1115 as amended by Regulation (EU) 2025/2650 — which mandates that specific commodities (including soy, cattle, palm oil, wood, cocoa, coffee, rubber) placed on the EU market must not have contributed to deforestation or forest degradation after December 31, 2020.
 
 This module was designed based on direct operational experience. The founding company holds a soy supply contract with an EU buyer that explicitly requires EUDR compliance, including farm-level geolocation mapping using SW Maps and NCAN Farm Mapper.
 

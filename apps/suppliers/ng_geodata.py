@@ -388,7 +388,7 @@ def normalise_commodity(raw):
 
 
 # ── EUDR Annex I commodity scope ──────────────────────────────────────────────
-# EU Regulation 2023/1115, Annex I: commodities whose production must not
+# EU Regulation 2023/1115 (as amended by 2025/2650), Annex I: commodities whose production must not
 # contribute to deforestation or forest degradation after 31 Dec 2020.
 # This set uses canonical names as returned by normalise_commodity().
 EUDR_ANNEX_I = {

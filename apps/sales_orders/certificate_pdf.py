@@ -361,7 +361,7 @@ def generate_certificate(batch):
         story.append(Paragraph(
             f"The operator <b>{batch.company.name}</b> declares that all commodities in batch "
             f"<b>{batch.batch_number}</b> have been sourced in compliance with EU Deforestation "
-            f"Regulation (EU) 2023/1115. Farm-level geolocation data and risk assessments are "
+            f"Regulation (EU) 2023/1115 as amended by Regulation (EU) 2025/2650. Farm-level geolocation data and risk assessments are "
             f"retained in the AgriOps platform and available for audit.",
             ParagraphStyle("body", fontName="Helvetica", fontSize=9, textColor=colors.HexColor("#334155"), spaceAfter=6*mm)
         ))

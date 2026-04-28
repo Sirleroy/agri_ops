@@ -14,7 +14,7 @@ A secure, multi-tenant SaaS platform giving agricultural SMEs and cooperatives e
 
 Smallholder farmers, cooperatives, and agricultural SMEs manage supply chains through WhatsApp groups, paper manifests, and spreadsheets. The result: post-harvest losses, compliance failures, and zero visibility across the chain.
 
-The EU Deforestation Regulation (EUDR — Regulation (EU) 2023/1115) now mandates supply chain traceability for commodity imports — making digital farm-to-buyer records a legal requirement for export-market operators, not just a convenience.
+The EU Deforestation Regulation (EUDR — Regulation (EU) 2023/1115, enforcement deadline December 2026) mandates supply chain traceability for commodity imports — making digital farm-to-buyer records a legal requirement for export-market operators, not just a convenience.
 
 Enterprise AgriTech exists but is priced for multinationals. The gap is everyone else.
 
@@ -89,7 +89,7 @@ Company (Tenant Root)
 
 ## EUDR Compliance
 
-AgriOps includes a dedicated compliance module for **Regulation (EU) 2023/1115**.
+AgriOps includes a dedicated compliance module for **Regulation (EU) 2023/1115 as amended by Regulation (EU) 2025/2650**.
 
 The regulation requires operators trading in specific commodities (soy, cattle, palm oil, wood, cocoa, coffee, rubber) to prove those commodities did not contribute to deforestation after 31 December 2020.
 

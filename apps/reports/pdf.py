@@ -473,7 +473,7 @@ def generate_compliance_report(company, user, filters=None):
     story.append(Paragraph(
         f"The operator <b>{company.name}</b> hereby declares that to the best of their knowledge, "
         "all commodities listed in this report have been sourced in compliance with the EU Deforestation "
-        "Regulation (EU) 2023/1115. Farm-level geolocation data, risk assessments, and supporting "
+        "Regulation (EU) 2023/1115 as amended by Regulation (EU) 2025/2650. Farm-level geolocation data, risk assessments, and supporting "
         "documentation have been collected and are retained in the AgriOps platform for audit purposes.",
         st["body"]
     ))
