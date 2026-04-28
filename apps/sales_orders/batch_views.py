@@ -277,6 +277,22 @@ class BatchCertificateView(StaffRequiredMixin, View):
         return response
 
 
+class NeutralCertificateView(StaffRequiredMixin, View):
+    """Download buyer-neutral Supply Chain Traceability Certificate (no EUDR branding)."""
+    def get(self, request, pk):
+        batch = get_object_or_404(Batch, pk=pk, company=request.user.company)
+        if request.user.company.plan_tier != 'enterprise':
+            from django.contrib import messages
+            messages.error(request, "Supply Chain Traceability Certificates are available on the Enterprise plan.")
+            return redirect('sales_orders:batch_detail', pk=pk)
+        from .certificate_pdf import generate_neutral_certificate
+        buffer = generate_neutral_certificate(batch)
+        filename = f"AgriOps_TraceabilityCert_{batch.batch_number}.pdf"
+        response = HttpResponse(buffer, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+
+
 class PublicTraceView(View):
     """
     Public-facing traceability page — no login required.

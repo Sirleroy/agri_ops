@@ -21,6 +21,7 @@ urlpatterns = [
     path('batches/<int:pk>/', batch_views.BatchDetailView.as_view(), name='batch_detail'),
     path('batches/<int:pk>/edit/', batch_views.BatchUpdateView.as_view(), name='batch_update'),
     path('batches/<int:pk>/certificate/', batch_views.BatchCertificateView.as_view(), name='batch_certificate'),
+    path('batches/<int:pk>/traceability-certificate/', batch_views.NeutralCertificateView.as_view(), name='batch_neutral_certificate'),
     path('batches/<int:pk>/lock/', batch_views.BatchToggleLockView.as_view(), name='batch_lock'),
 
     # Phytosanitary certificates

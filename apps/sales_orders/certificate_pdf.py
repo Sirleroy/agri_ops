@@ -392,3 +392,275 @@ def generate_certificate(batch):
     doc.build(story)
     buffer.seek(0)
     return buffer
+
+
+def generate_neutral_certificate(batch):
+    """
+    Supply Chain Traceability Certificate — buyer-neutral output.
+    No EUDR branding or regulation codes. Suitable for US buyers and non-EU markets.
+    """
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer, pagesize=A4,
+        leftMargin=18*mm, rightMargin=18*mm,
+        topMargin=18*mm, bottomMargin=18*mm,
+        title=f"Supply Chain Traceability Certificate — {batch.batch_number}"
+    )
+
+    story = []
+
+    # ── Header ────────────────────────────────────────────────
+    header_data = [[
+        [
+            Paragraph("AGRIOPS", ParagraphStyle("ag", fontName="Helvetica-Bold", fontSize=9, textColor=GREEN)),
+            Paragraph("Supply Chain Traceability Certificate", ParagraphStyle("tc", fontName="Helvetica-Bold", fontSize=19, textColor=DARK, spaceAfter=5*mm)),
+            Paragraph(f"Batch: {batch.batch_number}", ParagraphStyle("bn", fontName="Helvetica-Bold", fontSize=10, textColor=SLATE, spaceAfter=1*mm)),
+            Paragraph(f"Commodity: {batch.commodity}  ·  {date.today().strftime('%d %B %Y')}", ParagraphStyle("cm", fontName="Helvetica", fontSize=9, textColor=SLATE)),
+        ],
+        _qr_image(batch.trace_url)
+    ]]
+    header_t = Table(header_data, colWidths=[134*mm, 40*mm])
+    header_t.setStyle(TableStyle([("VALIGN", (0,0), (-1,-1), "TOP"), ("ALIGN", (1,0), (1,0), "RIGHT")]))
+    story.append(header_t)
+    story.append(HRFlowable(width="100%", thickness=1.5, color=GREEN, spaceAfter=6*mm, spaceBefore=4*mm))
+
+    # ── Operator ──────────────────────────────────────────────
+    story.append(Paragraph("Operator", ParagraphStyle("s", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceBefore=4*mm, spaceAfter=3*mm)))
+    qty_str = f"{batch.quantity_kg:,.3f} kg" if batch.quantity_kg else "Not specified"
+    op_data = [
+        [_p("Company",            _CELL_BOLD), _p(batch.company.name)],
+        [_p("Country",            _CELL_BOLD), _p(batch.company.country)],
+        [_p("Sales Order",        _CELL_BOLD), _p(batch.sales_order.order_number if batch.sales_order else "—")],
+        [_p("Quantity (net mass)", _CELL_BOLD), _p(qty_str)],
+        [_p("Certificate Date",   _CELL_BOLD), _p(str(date.today()))],
+        [_p("Public Trace URL",   _CELL_BOLD), _p(batch.trace_url, _CELL_URL)],
+    ]
+    op_t = Table(op_data, colWidths=[44*mm, 130*mm])
+    op_t.setStyle(TableStyle([
+        ("FONTSIZE",       (0,0), (-1,-1), 9),
+        ("GRID",           (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+        ("TOPPADDING",     (0,0), (-1,-1), 5),
+        ("BOTTOMPADDING",  (0,0), (-1,-1), 5),
+        ("LEFTPADDING",    (0,0), (-1,-1), 6),
+        ("VALIGN",         (0,0), (-1,-1), "TOP"),
+        ("ROWBACKGROUNDS", (0,0), (-1,-1), [colors.HexColor("#f8fafc"), WHITE]),
+    ]))
+    story.append(op_t)
+
+    # ── Supplier chain ────────────────────────────────────────
+    farms = list(batch.farms.select_related('supplier', 'verified_by').prefetch_related('certifications').all())
+    suppliers = {farm.supplier for farm in farms if farm.supplier}
+    if suppliers:
+        story.append(Paragraph("Supplier Chain", ParagraphStyle("s1b", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceBefore=6*mm, spaceAfter=3*mm)))
+        sup_data = [[_p("Supplier", _CELL_HDR), _p("Country / City", _CELL_HDR), _p("Address", _CELL_HDR), _p("Email", _CELL_HDR)]]
+        for sup in sorted(suppliers, key=lambda s: s.name):
+            location = f"{sup.country or '—'} / {sup.city or '—'}"
+            sup_data.append([_p(sup.name), _p(location), _p(sup.address or "—"), _p(sup.email or "—")])
+        sup_t = Table(sup_data, colWidths=[46*mm, 34*mm, 55*mm, 39*mm])
+        sup_t.setStyle(TableStyle([
+            ("BACKGROUND",     (0,0), (-1,0), DARK),
+            ("FONTSIZE",       (0,0), (-1,-1), 8),
+            ("GRID",           (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+            ("ROWBACKGROUNDS", (0,1), (-1,-1), [WHITE, colors.HexColor("#f8fafc")]),
+            ("TOPPADDING",     (0,0), (-1,-1), 5),
+            ("BOTTOMPADDING",  (0,0), (-1,-1), 5),
+            ("LEFTPADDING",    (0,0), (-1,-1), 5),
+            ("VALIGN",         (0,0), (-1,-1), "TOP"),
+        ]))
+        story.append(sup_t)
+
+    # ── Farm traceability ─────────────────────────────────────
+    # Neutral table: no EUDR column — GPS Verified replaces it
+    # 174mm: 38+32+28+16+14+22+24
+    story.append(Paragraph(f"Farm Traceability — {len(farms)} farms", ParagraphStyle("s2", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceBefore=6*mm, spaceAfter=3*mm)))
+    farm_headers = [_p(h, _CELL_HDR) for h in ["Farm", "Supplier", "Location", "Area", "Harvest", "Ref. Date", "GPS Verified"]]
+    farm_col_w   = [38*mm, 32*mm, 28*mm, 16*mm, 14*mm, 22*mm, 24*mm]
+
+    _GRN = ParagraphStyle("gps_ok",  fontName="Helvetica-Bold", fontSize=8, textColor=GREEN,                           leading=11)
+    _DIM = ParagraphStyle("gps_dim", fontName="Helvetica",      fontSize=8, textColor=colors.HexColor("#94a3b8"), leading=11)
+
+    farm_data = [farm_headers]
+    for farm in farms:
+        ref_date = str(farm.deforestation_reference_date) if farm.deforestation_reference_date else "—"
+        harvest  = str(farm.harvest_year) if farm.harvest_year else "—"
+        location = f"{farm.country} / {farm.state_region or '—'}"
+        area     = f"{farm.area_hectares} ha" if farm.area_hectares else "—"
+        has_polygon = bool(farm.geolocation and farm.geometry_hash)
+        gps_text  = "✓" if has_polygon else "—"
+        gps_style = _GRN if has_polygon else _DIM
+        farm_data.append([
+            _p(farm.name),
+            _p(farm.supplier.name if farm.supplier else "—"),
+            _p(location),
+            _p(area),
+            _p(harvest),
+            _p(ref_date),
+            Paragraph(gps_text, gps_style),
+        ])
+
+    if len(farm_data) == 1:
+        farm_data.append([_p("No farms linked")] + [_p("") for _ in range(len(farm_headers) - 1)])
+
+    farm_t = Table(farm_data, colWidths=farm_col_w)
+    farm_t.setStyle(TableStyle([
+        ("BACKGROUND",     (0,0), (-1,0), DARK),
+        ("FONTSIZE",       (0,0), (-1,-1), 8),
+        ("GRID",           (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+        ("ROWBACKGROUNDS", (0,1), (-1,-1), [WHITE, colors.HexColor("#f8fafc")]),
+        ("TOPPADDING",     (0,0), (-1,-1), 5),
+        ("BOTTOMPADDING",  (0,0), (-1,-1), 5),
+        ("LEFTPADDING",    (0,0), (-1,-1), 5),
+        ("VALIGN",         (0,0), (-1,-1), "TOP"),
+    ]))
+    story.append(farm_t)
+
+    # ── GPS Verification Evidence ─────────────────────────────
+    # Show geometry hash and centroid for farms that have a polygon
+    mapped_farms = [f for f in farms if f.geolocation and f.geometry_hash]
+    if mapped_farms:
+        story.append(Paragraph("GPS Verification Evidence", ParagraphStyle(
+            "s_gve", fontName="Helvetica-Bold", fontSize=11, textColor=DARK,
+            spaceBefore=6*mm, spaceAfter=3*mm,
+        )))
+        story.append(Paragraph(
+            "Each farm boundary polygon is anchored by a SHA-256 hash of the canonical GeoJSON geometry. "
+            "The hash is immutable once recorded — any boundary modification produces a different hash, "
+            "providing tamper-evident proof of the recorded geolocation at time of verification.",
+            ParagraphStyle("gve_intro", fontName="Helvetica", fontSize=8, textColor=SLATE, spaceAfter=3*mm),
+        ))
+
+        _LBL = ParagraphStyle("gve_lbl", fontName="Helvetica-Bold", fontSize=8, textColor=colors.HexColor("#334155"), leading=11)
+        _VAL = ParagraphStyle("gve_val", fontName="Helvetica",      fontSize=8, textColor=colors.HexColor("#1e293b"), leading=11)
+        _HSH = ParagraphStyle("gve_hash", fontName="Helvetica",     fontSize=7, textColor=colors.HexColor("#475569"), leading=10, wordWrap='CJK')
+
+        for farm in mapped_farms:
+            story.append(Table(
+                [[Paragraph(farm.name, ParagraphStyle("gve_farm", fontName="Helvetica-Bold", fontSize=9, textColor=DARK, leading=12))]],
+                colWidths=[PAGE_W],
+                style=TableStyle([
+                    ("BACKGROUND",    (0,0), (-1,-1), colors.HexColor("#f1f5f9")),
+                    ("LEFTPADDING",   (0,0), (-1,-1), 6),
+                    ("TOPPADDING",    (0,0), (-1,-1), 5),
+                    ("BOTTOMPADDING", (0,0), (-1,-1), 5),
+                ]),
+            ))
+            centroid = _gps_centroid(farm.geolocation) or "—"
+            area_str = f"{farm.area_hectares} ha" if farm.area_hectares else "—"
+            map_date = farm.mapping_date.strftime("%d %b %Y") if farm.mapping_date else "—"
+            geo_data = [
+                [_p("GPS Centroid",    _LBL), _p(centroid,            _VAL), _p("Area",        _LBL), _p(area_str,  _VAL)],
+                [_p("Mapping Date",    _LBL), _p(map_date,            _VAL), _p("Mapped by",   _LBL), _p(farm.mapped_by or "—", _VAL)],
+                [_p("Geometry SHA-256", _LBL), Paragraph(farm.geometry_hash, _HSH), _p("", _LBL), _p("", _VAL)],
+            ]
+            geo_t = Table(geo_data, colWidths=[30*mm, 57*mm, 30*mm, 57*mm])
+            geo_t.setStyle(TableStyle([
+                ("GRID",           (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+                ("TOPPADDING",     (0,0), (-1,-1), 4),
+                ("BOTTOMPADDING",  (0,0), (-1,-1), 4),
+                ("LEFTPADDING",    (0,0), (-1,-1), 5),
+                ("VALIGN",         (0,0), (-1,-1), "TOP"),
+                ("ROWBACKGROUNDS", (0,0), (-1,-1), [WHITE, colors.HexColor("#f8fafc"), WHITE]),
+                # Span the hash value across the last two columns of row 2
+                ("SPAN",           (1,2), (3,2)),
+            ]))
+            story.append(geo_t)
+            story.append(Spacer(1, 3*mm))
+
+    # ── Compliance Documents ──────────────────────────────────
+    phyto_certs   = list(batch.phytosanitary_certs.all())
+    quality_tests = list(batch.quality_tests.all())
+
+    if phyto_certs or quality_tests:
+        story.append(Paragraph("Compliance Documents", ParagraphStyle("s3cd", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceBefore=6*mm, spaceAfter=3*mm)))
+
+    if phyto_certs:
+        story.append(Paragraph("Phytosanitary Certificates (NAQS)", ParagraphStyle("s3ph", fontName="Helvetica", fontSize=9, textColor=SLATE, spaceBefore=2*mm, spaceAfter=2*mm)))
+        ph_data = [[_p(h, _CELL_HDR) for h in ["Cert Number", "Issuing Office", "Issued", "Expires", "Status"]]]
+        for c in phyto_certs:
+            status_text  = "✓ Current" if c.is_current else "Expired"
+            status_style = ParagraphStyle("ps_ok", fontName="Helvetica", fontSize=8, textColor=GREEN, leading=11) if c.is_current else _CELL
+            ph_data.append([
+                _p(c.certificate_number),
+                _p(c.issuing_office or "—"),
+                _p(str(c.issued_date) if c.issued_date else "—"),
+                _p(str(c.expiry_date) if c.expiry_date else "—"),
+                Paragraph(status_text, status_style),
+            ])
+        ph_t = Table(ph_data, colWidths=[46*mm, 46*mm, 26*mm, 26*mm, 30*mm])
+        ph_t.setStyle(TableStyle([
+            ("BACKGROUND",     (0,0), (-1,0), DARK),
+            ("FONTSIZE",       (0,0), (-1,-1), 8),
+            ("GRID",           (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+            ("ROWBACKGROUNDS", (0,1), (-1,-1), [WHITE, colors.HexColor("#f8fafc")]),
+            ("TOPPADDING",     (0,0), (-1,-1), 5),
+            ("BOTTOMPADDING",  (0,0), (-1,-1), 5),
+            ("LEFTPADDING",    (0,0), (-1,-1), 5),
+            ("VALIGN",         (0,0), (-1,-1), "TOP"),
+        ]))
+        story.append(ph_t)
+
+    if quality_tests:
+        story.append(Paragraph("Quality Tests (MRL / Aflatoxin)", ParagraphStyle("s3qt", fontName="Helvetica", fontSize=9, textColor=SLATE, spaceBefore=4*mm, spaceAfter=2*mm)))
+        qt_data = [[_p(h, _CELL_HDR) for h in ["Test Type", "Laboratory", "Ref", "Date", "Result"]]]
+        for t in quality_tests:
+            result_text  = "✓ Pass" if t.result == 'pass' else ("✗ Fail" if t.result == 'fail' else "Pending")
+            result_style = ParagraphStyle("rs_ok", fontName="Helvetica", fontSize=8, textColor=GREEN, leading=11) if t.result == 'pass' else (
+                           ParagraphStyle("rs_bad", fontName="Helvetica", fontSize=8, textColor=colors.HexColor("#f87171"), leading=11) if t.result == 'fail' else _CELL)
+            qt_data.append([
+                _p(t.get_test_type_display()),
+                _p(t.lab_name or "—"),
+                _p(t.lab_certificate_ref or "—"),
+                _p(str(t.test_date) if t.test_date else "—"),
+                Paragraph(result_text, result_style),
+            ])
+        qt_t = Table(qt_data, colWidths=[42*mm, 46*mm, 36*mm, 26*mm, 24*mm])
+        qt_t.setStyle(TableStyle([
+            ("BACKGROUND",     (0,0), (-1,0), DARK),
+            ("FONTSIZE",       (0,0), (-1,-1), 8),
+            ("GRID",           (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+            ("ROWBACKGROUNDS", (0,1), (-1,-1), [WHITE, colors.HexColor("#f8fafc")]),
+            ("TOPPADDING",     (0,0), (-1,-1), 5),
+            ("BOTTOMPADDING",  (0,0), (-1,-1), 5),
+            ("LEFTPADDING",    (0,0), (-1,-1), 5),
+            ("VALIGN",         (0,0), (-1,-1), "TOP"),
+        ]))
+        story.append(qt_t)
+
+    # ── Origin & Traceability Declaration ────────────────────
+    story.append(Spacer(1, 6*mm))
+    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#cbd5e1"), spaceAfter=4*mm))
+    story.append(Paragraph("Origin & Traceability Declaration", ParagraphStyle("s_decl", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceAfter=3*mm)))
+    story.append(Paragraph(
+        f"<b>{batch.company.name}</b> declares that the commodities in batch <b>{batch.batch_number}</b> "
+        f"have been sourced from identified farms with recorded GPS boundaries. Farm-level geolocation data, "
+        f"supplier relationships, and procurement records are maintained in the AgriOps platform. "
+        f"The integrity of each farm polygon is anchored by a SHA-256 hash retained at time of mapping. "
+        f"Full supply chain records are available for buyer or auditor review upon request.",
+        ParagraphStyle("body", fontName="Helvetica", fontSize=9, textColor=colors.HexColor("#334155"), spaceAfter=6*mm)
+    ))
+
+    story.append(Spacer(1, 8*mm))
+    sig_data = [
+        [_p("Authorised Signatory", _CELL_BOLD), _p("Date", _CELL_BOLD)],
+        [_p(" " * 50), _p(str(date.today()))],
+    ]
+    sig_t = Table(sig_data, colWidths=[100*mm, 74*mm])
+    sig_t.setStyle(TableStyle([
+        ("FONTSIZE",      (0,0), (-1,-1), 8),
+        ("LINEBELOW",     (0,1), (0,1), 0.5, DARK),
+        ("TOPPADDING",    (0,0), (-1,-1), 4),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 12),
+        ("VALIGN",        (0,0), (-1,-1), "TOP"),
+    ]))
+    story.append(sig_t)
+
+    story.append(Spacer(1, 4*mm))
+    story.append(Paragraph(
+        f"Generated by AgriOps · app.agriops.io · {date.today().strftime('%d %B %Y')} · "
+        f"Scan QR code to verify: {batch.trace_url}",
+        ParagraphStyle("footer", fontName="Helvetica", fontSize=7, textColor=SLATE, alignment=TA_CENTER)
+    ))
+
+    doc.build(story)
+    buffer.seek(0)
+    return buffer
