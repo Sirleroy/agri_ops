@@ -72,6 +72,15 @@ AgriOps is a secure, multi-tenant SaaS platform for agricultural SMEs and cooper
 
 ---
 
+## Commercial
+
+| Document | Description |
+|---|---|
+| [Subscription Agreement](commercial/subscription-agreement-template.md) | Standard SaaS contract template — Schedule A covers tier, currency, and limits |
+| [Tenant Onboarding Checklist](commercial/tenant-onboarding-checklist.md) | White-glove onboarding across 3 sessions — done when first compliance PDF is in tenant's hands |
+
+---
+
 ## Project Roadmap
 
 See [ROADMAP.md](ROADMAP.md) for the full phase-by-phase build plan.
