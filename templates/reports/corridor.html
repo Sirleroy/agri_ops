@@ -40,65 +40,68 @@
   <!-- Corridor cards -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
   {% for c in corridors %}
-  <div class="bg-card border border-border rounded-xl p-5 space-y-4">
+  <div class="bg-card border border-border rounded-xl p-5 flex flex-col gap-4">
 
-    <!-- Header -->
-    <div class="flex items-start justify-between">
+    <!-- Header: label + farm count -->
+    <div class="flex items-start justify-between gap-3">
       <div>
         <p class="text-xs font-mono text-slate-500 uppercase tracking-widest leading-none mb-1">Corridor</p>
         <h2 class="text-base font-bold text-slate-100">{{ c.label }}</h2>
       </div>
-      <div class="flex items-center gap-3">
-        <span class="font-mono text-2xl font-bold text-green">{{ c.total }}</span>
-        <a href="{% url 'suppliers:farm_list' %}?state={{ c.state_region|urlencode }}&commodity={{ c.commodity|urlencode }}"
-           class="text-xs font-mono text-slate-500 hover:text-green transition-colors whitespace-nowrap">
-          View farms →
-        </a>
-      </div>
+      <span class="font-mono text-2xl font-bold text-green flex-shrink-0">{{ c.total }}</span>
     </div>
 
     <!-- EUDR verification bar -->
     <div>
-      <div class="flex justify-between items-center mb-1">
+      <div class="flex justify-between items-center mb-1.5">
         <span class="text-xs font-mono text-slate-500">EUDR Verified</span>
-        <span class="text-xs font-mono text-slate-300">{{ c.eudr_verified }} / {{ c.total }} &nbsp;({{ c.verified_pct }}%)</span>
+        <span class="text-xs font-mono text-slate-300">{{ c.eudr_verified }} / {{ c.total }}&nbsp;&nbsp;<span class="text-slate-500">({{ c.verified_pct }}%)</span></span>
       </div>
-      <div class="w-full bg-border rounded-full h-2">
-        <div class="h-2 rounded-full {% if c.verified_pct >= 80 %}bg-green{% elif c.verified_pct >= 40 %}bg-yellow-500{% else %}bg-red-500{% endif %}"
+      <div class="w-full bg-border rounded-full h-1.5">
+        <div class="h-1.5 rounded-full transition-all
+          {% if c.verified_pct >= 80 %}bg-green{% elif c.verified_pct >= 40 %}bg-yellow-500{% else %}bg-red-500{% endif %}"
              style="width: {{ c.verified_pct }}%"></div>
       </div>
     </div>
 
-    <!-- Risk breakdown -->
-    <div class="grid grid-cols-3 gap-3">
-      <div class="bg-[#0a0f1a] border border-border rounded-lg px-3 py-2">
-        <p class="text-xs font-mono text-slate-600 uppercase tracking-widest leading-none mb-1">Low Risk</p>
-        <p class="text-xl font-bold text-green font-mono">{{ c.low_risk }}</p>
-      </div>
-      <div class="bg-[#0a0f1a] border border-border rounded-lg px-3 py-2">
-        <p class="text-xs font-mono text-slate-600 uppercase tracking-widest leading-none mb-1">Pending Check</p>
-        <p class="text-xl font-bold text-yellow-400 font-mono">{{ c.pending }}</p>
-      </div>
-      <div class="bg-[#0a0f1a] border border-border rounded-lg px-3 py-2">
-        <p class="text-xs font-mono text-slate-600 uppercase tracking-widest leading-none mb-1">High Risk</p>
-        <p class="text-xl font-bold text-red-400 font-mono">{{ c.high_risk }}</p>
-      </div>
+    <!-- Risk breakdown — inline pill row -->
+    <div class="flex items-center gap-4 text-xs font-mono">
+      <span class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-green inline-block flex-shrink-0"></span>
+        <span class="text-slate-400">Low</span>
+        <span class="text-slate-100 font-bold">{{ c.low_risk }}</span>
+      </span>
+      <span class="text-slate-700">·</span>
+      <span class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-yellow-500 inline-block flex-shrink-0"></span>
+        <span class="text-slate-400">Pending</span>
+        <span class="text-slate-100 font-bold">{{ c.pending }}</span>
+      </span>
+      <span class="text-slate-700">·</span>
+      <span class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-red-500 inline-block flex-shrink-0"></span>
+        <span class="text-slate-400">High</span>
+        <span class="text-slate-100 font-bold">{{ c.high_risk }}</span>
+      </span>
     </div>
 
-    <!-- Area -->
-    {% if c.total_area %}
-    <p class="text-xs font-mono text-slate-600">
-      Total mapped area: <span class="text-slate-400">{{ c.total_area|floatformat:1 }} ha</span>
-    </p>
-    {% endif %}
+    <!-- Footer: area + view link -->
+    <div class="flex items-center justify-between pt-1 border-t border-border mt-auto">
+      <span class="text-xs font-mono text-slate-600">
+        {% if c.total_area %}{{ c.total_area|floatformat:1 }} ha mapped{% else %}Area not recorded{% endif %}
+      </span>
+      <a href="{% url 'suppliers:farm_list' %}?state={{ c.state_region|urlencode }}&commodity={{ c.commodity|urlencode }}"
+         class="text-xs font-mono text-slate-500 hover:text-green transition-colors">
+        View farms →
+      </a>
+    </div>
 
   </div>
   {% endfor %}
   </div>
 
   <p class="text-xs font-mono text-slate-700 pb-4">
-    Deforestation risk status reflects the current stored value for each farm.
-    Farms showing <span class="text-yellow-600">Pending Check</span> have not yet been processed by the deforestation intersection engine.
+    Pending = farms not yet processed by the deforestation intersection engine.
   </p>
 
 </div>
