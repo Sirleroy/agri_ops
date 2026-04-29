@@ -81,6 +81,10 @@
         {% if readiness.quality %}bg-green/10 text-green border-green/20{% else %}bg-yellow-500/10 text-yellow-400 border-yellow-500/20{% endif %}">
         {% if readiness.quality %}✓{% else %}⚠{% endif %} Quality test pass
       </span>
+      <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono border
+        {% if readiness.purchase_orders %}bg-green/10 text-green border-green/20{% else %}bg-slate-800 text-slate-500 border-slate-700{% endif %}">
+        {% if readiness.purchase_orders %}✓{% else %}○{% endif %} POs linked
+      </span>
     </div>
   </div>
 
@@ -156,6 +160,33 @@
     </div>
     {% else %}
     <p class="text-sm text-slate-500">No farms linked to this batch.</p>
+    {% endif %}
+  </div>
+
+  <!-- Purchase Orders -->
+  <div class="bg-card border border-border rounded-xl p-6">
+    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Purchase Orders — {{ batch_purchase_orders|length }}</p>
+    {% if batch_purchase_orders %}
+    <div class="space-y-2">
+      {% for po in batch_purchase_orders %}
+      <div class="flex items-center justify-between py-2 border-b border-border last:border-0 gap-3">
+        <div class="min-w-0">
+          <p class="text-sm text-slate-100 font-mono">
+            <a href="{% url 'purchase_orders:detail' po.pk %}" class="hover:text-green transition-colors">PO-{{ po.order_number }}</a>
+          </p>
+          <p class="text-xs text-slate-500 font-mono truncate">
+            {% if po.supplier %}{{ po.supplier.name }} · {% endif %}{% if po.expected_delivery %}Delivery {{ po.expected_delivery }}{% endif %}
+          </p>
+        </div>
+        <span class="text-xs font-mono flex-shrink-0
+          {% if po.status == 'received' %}text-green{% elif po.status == 'cancelled' %}text-red-400{% else %}text-slate-500{% endif %}">
+          {{ po.get_status_display }}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-sm text-slate-500">No purchase orders linked. <a href="{% url 'sales_orders:batch_update' batch.pk %}" class="text-green hover:text-green-dim transition-colors">Link POs →</a></p>
     {% endif %}
   </div>
 

@@ -69,6 +69,34 @@
       {% endif %}
     </div>
 
+    <!-- Purchase Orders -->
+    <div class="bg-card border border-border rounded-xl p-6">
+      <label class="block text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">Linked Purchase Orders</label>
+      <p class="text-xs text-slate-600 mb-3">Link the POs that supplied this batch. Used for multi-supplier quantity attribution on certificates.</p>
+      {% if all_purchase_orders %}
+      <div class="space-y-2 max-h-72 overflow-y-auto pr-1">
+        {% for po in all_purchase_orders %}
+        <label class="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-transparent hover:border-border hover:bg-white/[0.02] cursor-pointer transition-colors">
+          <input type="checkbox" name="purchase_orders" value="{{ po.pk }}"
+            {% if po.pk|stringformat:"s" in selected_po_ids %}checked{% endif %}
+            class="w-4 h-4 accent-green flex-shrink-0">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-slate-200 font-medium truncate">PO-{{ po.order_number }}</p>
+            <p class="text-xs text-slate-500 font-mono truncate">
+              {% if po.supplier %}{{ po.supplier.name }} · {% endif %}{{ po.get_status_display }}{% if po.expected_delivery %} · Expected {{ po.expected_delivery }}{% endif %}
+            </p>
+          </div>
+          <span class="text-xs font-mono text-slate-500 flex-shrink-0">{{ po.get_status_display }}</span>
+        </label>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-sm text-slate-500">No purchase orders yet.
+        <a href="{% url 'purchase_orders:create' %}" class="text-green hover:text-green-dim transition-colors">Create a PO →</a>
+      </p>
+      {% endif %}
+    </div>
+
     {% if form.errors %}
     <div class="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
       <p class="text-xs text-red-400">{{ form.non_field_errors }}</p>

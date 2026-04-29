@@ -40,11 +40,19 @@ class BatchDetailView(StaffRequiredMixin, DetailView):
         quality_tests = self.object.quality_tests.all()
         context['phytosanitary_certs'] = phyto_certs
         context['quality_tests'] = quality_tests
+        batch_pos = list(
+            self.object.purchase_orders
+            .select_related('supplier')
+            .prefetch_related('items__product')
+            .order_by('order_date')
+        )
+        context['batch_purchase_orders'] = batch_pos
         context['readiness'] = {
             'farms': self.object.farms.exists(),
             'quantity': bool(self.object.quantity_kg),
             'phyto': any(c.is_current for c in phyto_certs),
             'quality': quality_tests.filter(result='pass').exists(),
+            'purchase_orders': bool(batch_pos),
         }
         return context
 
@@ -52,21 +60,27 @@ class BatchDetailView(StaffRequiredMixin, DetailView):
 class BatchCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
     model = Batch
     template_name = 'sales_orders/batches/form.html'
-    fields = ['sales_order', 'commodity', 'quantity_kg', 'farms', 'notes']
+    fields = ['sales_order', 'commodity', 'quantity_kg', 'farms', 'purchase_orders', 'notes']
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         from apps.suppliers.models import Farm
         from apps.sales_orders.models import SalesOrder
+        from apps.purchase_orders.models import PurchaseOrder
         company = self.request.user.company
         form.fields['farms'].queryset = Farm.objects.filter(company=company)
         form.fields['sales_order'].queryset = SalesOrder.objects.filter(company=company)
+        form.fields['purchase_orders'].queryset = PurchaseOrder.objects.filter(
+            company=company
+        ).select_related('supplier').prefetch_related('items__product').order_by('-order_date')
         return form
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['all_farms'] = context['form'].fields['farms'].queryset
         context['selected_farm_ids'] = set()
+        context['all_purchase_orders'] = context['form'].fields['purchase_orders'].queryset
+        context['selected_po_ids'] = set()
         return context
 
     def form_valid(self, form):
@@ -80,7 +94,7 @@ class BatchCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
 class BatchUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
     model = Batch
     template_name = 'sales_orders/batches/form.html'
-    fields = ['sales_order', 'commodity', 'quantity_kg', 'farms', 'notes']
+    fields = ['sales_order', 'commodity', 'quantity_kg', 'farms', 'purchase_orders', 'notes']
 
     def get_object(self):
         obj = super().get_object()
@@ -100,9 +114,13 @@ class BatchUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
         form = super().get_form(form_class)
         from apps.suppliers.models import Farm
         from apps.sales_orders.models import SalesOrder
+        from apps.purchase_orders.models import PurchaseOrder
         company = self.request.user.company
         form.fields['farms'].queryset = Farm.objects.filter(company=company)
         form.fields['sales_order'].queryset = SalesOrder.objects.filter(company=company)
+        form.fields['purchase_orders'].queryset = PurchaseOrder.objects.filter(
+            company=company
+        ).select_related('supplier').prefetch_related('items__product').order_by('-order_date')
         return form
 
     def get_context_data(self, **kwargs):
@@ -110,6 +128,10 @@ class BatchUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
         context['all_farms'] = context['form'].fields['farms'].queryset
         context['selected_farm_ids'] = set(
             str(pk) for pk in self.object.farms.values_list('pk', flat=True)
+        )
+        context['all_purchase_orders'] = context['form'].fields['purchase_orders'].queryset
+        context['selected_po_ids'] = set(
+            str(pk) for pk in self.object.purchase_orders.values_list('pk', flat=True)
         )
         return context
 

@@ -8,6 +8,7 @@ from django.core.validators import MinValueValidator
 from apps.companies.models import Company
 from apps.companies.managers import TenantManager
 from apps.suppliers.models import Farm
+from apps.purchase_orders.models import PurchaseOrder
 
 
 def generate_batch_number(company_name, commodity):
@@ -31,7 +32,8 @@ class Batch(models.Model):
                      'sales_orders.SalesOrder', on_delete=models.SET_NULL,
                      null=True, blank=True, related_name='batches'
                    )
-    farms        = models.ManyToManyField(Farm, blank=True, related_name='batches')
+    farms          = models.ManyToManyField(Farm, blank=True, related_name='batches')
+    purchase_orders = models.ManyToManyField(PurchaseOrder, blank=True, related_name='batches')
     batch_number = models.CharField(max_length=50, unique=True)
     commodity    = models.CharField(max_length=100)
     quantity_kg  = models.DecimalField(

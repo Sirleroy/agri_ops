@@ -71,6 +71,68 @@ def _qr_image(url):
     return Image(buf, width=35*mm, height=35*mm)
 
 
+def _supplier_chain_table(batch):
+    """
+    Return a (heading, table) pair for the Supplier Chain section.
+    If the batch has linked POs, builds a PO-based table with quantities.
+    Falls back to a farms-derived supplier list if no POs are linked.
+    Returns None if there is nothing to show.
+    """
+    pos = list(batch.purchase_orders.select_related('supplier').prefetch_related('items__product').order_by('order_date'))
+    if pos:
+        # PO-based table: PO Ref | Supplier | Quantity | Expected Delivery | Status
+        # 174mm: 30+50+28+36+30
+        data = [[_p(h, _CELL_HDR) for h in ["PO Reference", "Supplier", "Quantity (kg)", "Expected Delivery", "Status"]]]
+        for po in pos:
+            total_qty = sum(item.quantity for item in po.items.all())
+            qty_str   = f"{total_qty:,.2f}" if total_qty else "—"
+            delivery  = str(po.expected_delivery) if po.expected_delivery else "—"
+            sup_name  = po.supplier.name if po.supplier else "—"
+            data.append([
+                _p(f"PO-{po.order_number}"),
+                _p(sup_name),
+                _p(qty_str),
+                _p(delivery),
+                _p(po.get_status_display()),
+            ])
+        t = Table(data, colWidths=[30*mm, 50*mm, 28*mm, 36*mm, 30*mm])
+        t.setStyle(TableStyle([
+            ("BACKGROUND",     (0,0), (-1,0), DARK),
+            ("FONTSIZE",       (0,0), (-1,-1), 8),
+            ("GRID",           (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+            ("ROWBACKGROUNDS", (0,1), (-1,-1), [WHITE, colors.HexColor("#f8fafc")]),
+            ("TOPPADDING",     (0,0), (-1,-1), 5),
+            ("BOTTOMPADDING",  (0,0), (-1,-1), 5),
+            ("LEFTPADDING",    (0,0), (-1,-1), 5),
+            ("VALIGN",         (0,0), (-1,-1), "TOP"),
+        ]))
+        return t
+
+    # Fallback: derive unique suppliers from linked farms
+    farms = list(batch.farms.select_related('supplier').all())
+    suppliers = {farm.supplier for farm in farms if farm.supplier}
+    if not suppliers:
+        return None
+
+    # 174mm: 46+34+55+39
+    data = [[_p("Supplier", _CELL_HDR), _p("Country / City", _CELL_HDR), _p("Address", _CELL_HDR), _p("Email", _CELL_HDR)]]
+    for sup in sorted(suppliers, key=lambda s: s.name):
+        location = f"{sup.country or '—'} / {sup.city or '—'}"
+        data.append([_p(sup.name), _p(location), _p(sup.address or "—"), _p(sup.email or "—")])
+    t = Table(data, colWidths=[46*mm, 34*mm, 55*mm, 39*mm])
+    t.setStyle(TableStyle([
+        ("BACKGROUND",     (0,0), (-1,0), DARK),
+        ("FONTSIZE",       (0,0), (-1,-1), 8),
+        ("GRID",           (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+        ("ROWBACKGROUNDS", (0,1), (-1,-1), [WHITE, colors.HexColor("#f8fafc")]),
+        ("TOPPADDING",     (0,0), (-1,-1), 5),
+        ("BOTTOMPADDING",  (0,0), (-1,-1), 5),
+        ("LEFTPADDING",    (0,0), (-1,-1), 5),
+        ("VALIGN",         (0,0), (-1,-1), "TOP"),
+    ]))
+    return t
+
+
 def generate_certificate(batch):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -124,26 +186,10 @@ def generate_certificate(batch):
     story.append(op_t)
 
     # ── Supplier chain ────────────────────────────────────────
-    # 174mm total: 46+34+55+39
     farms = list(batch.farms.select_related('supplier', 'verified_by').prefetch_related('certifications').all())
-    suppliers = {farm.supplier for farm in farms if farm.supplier}
-    if suppliers:
+    sup_t = _supplier_chain_table(batch)
+    if sup_t:
         story.append(Paragraph("Supplier Chain", ParagraphStyle("s1b", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceBefore=6*mm, spaceAfter=3*mm)))
-        sup_data = [[_p("Supplier", _CELL_HDR), _p("Country / City", _CELL_HDR), _p("Address", _CELL_HDR), _p("Email", _CELL_HDR)]]
-        for sup in sorted(suppliers, key=lambda s: s.name):
-            location = f"{sup.country or '—'} / {sup.city or '—'}"
-            sup_data.append([_p(sup.name), _p(location), _p(sup.address or "—"), _p(sup.email or "—")])
-        sup_t = Table(sup_data, colWidths=[46*mm, 34*mm, 55*mm, 39*mm])
-        sup_t.setStyle(TableStyle([
-            ("BACKGROUND",     (0,0), (-1,0), DARK),
-            ("FONTSIZE",       (0,0), (-1,-1), 8),
-            ("GRID",           (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
-            ("ROWBACKGROUNDS", (0,1), (-1,-1), [WHITE, colors.HexColor("#f8fafc")]),
-            ("TOPPADDING",     (0,0), (-1,-1), 5),
-            ("BOTTOMPADDING",  (0,0), (-1,-1), 5),
-            ("LEFTPADDING",    (0,0), (-1,-1), 5),
-            ("VALIGN",         (0,0), (-1,-1), "TOP"),
-        ]))
         story.append(sup_t)
 
     # ── Farm traceability ─────────────────────────────────────
@@ -449,24 +495,9 @@ def generate_neutral_certificate(batch):
 
     # ── Supplier chain ────────────────────────────────────────
     farms = list(batch.farms.select_related('supplier', 'verified_by').prefetch_related('certifications').all())
-    suppliers = {farm.supplier for farm in farms if farm.supplier}
-    if suppliers:
+    sup_t = _supplier_chain_table(batch)
+    if sup_t:
         story.append(Paragraph("Supplier Chain", ParagraphStyle("s1b", fontName="Helvetica-Bold", fontSize=11, textColor=DARK, spaceBefore=6*mm, spaceAfter=3*mm)))
-        sup_data = [[_p("Supplier", _CELL_HDR), _p("Country / City", _CELL_HDR), _p("Address", _CELL_HDR), _p("Email", _CELL_HDR)]]
-        for sup in sorted(suppliers, key=lambda s: s.name):
-            location = f"{sup.country or '—'} / {sup.city or '—'}"
-            sup_data.append([_p(sup.name), _p(location), _p(sup.address or "—"), _p(sup.email or "—")])
-        sup_t = Table(sup_data, colWidths=[46*mm, 34*mm, 55*mm, 39*mm])
-        sup_t.setStyle(TableStyle([
-            ("BACKGROUND",     (0,0), (-1,0), DARK),
-            ("FONTSIZE",       (0,0), (-1,-1), 8),
-            ("GRID",           (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
-            ("ROWBACKGROUNDS", (0,1), (-1,-1), [WHITE, colors.HexColor("#f8fafc")]),
-            ("TOPPADDING",     (0,0), (-1,-1), 5),
-            ("BOTTOMPADDING",  (0,0), (-1,-1), 5),
-            ("LEFTPADDING",    (0,0), (-1,-1), 5),
-            ("VALIGN",         (0,0), (-1,-1), "TOP"),
-        ]))
         story.append(sup_t)
 
     # ── Farm traceability ─────────────────────────────────────
