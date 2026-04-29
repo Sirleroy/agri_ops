@@ -1,7 +1,6 @@
 ---
 layout: default
 title: "ADR 010 — Billing Architecture"
-render_with_liquid: false
 ---
 
 # ADR 010 — Billing Architecture: Dual Processor, Isolated App, Plan-Gated Access
@@ -77,6 +76,7 @@ The architecture must stay consistent with existing codebase patterns — partic
 
 All billing code lives in `apps/billing/`. No other app imports from it. Billing reads `Company` — that is the only dependency direction.
 
+{% raw %}
 ```
 apps/billing/
 ├── models.py       # Subscription, Invoice
@@ -86,6 +86,7 @@ apps/billing/
 ├── templatetags/   # {% plan_gate 'enterprise' %} template tag
 └── urls.py         # /billing/ + /webhooks/stripe/ + /webhooks/paystack/
 ```
+{% endraw %}
 
 ### 2. Plan tier on Company model
 
@@ -117,6 +118,7 @@ class PlanRequiredMixin:
 `Company.meets_plan(tier)` evaluates tier hierarchy: enterprise ≥ growth ≥ starter.
 
 Template guard:
+{% raw %}
 ```django
 {% if request.user.company.meets_plan 'enterprise' %}
   ...feature...
@@ -124,6 +126,7 @@ Template guard:
   ...upgrade nudge...
 {% endif %}
 ```
+{% endraw %}
 
 ### 4. BillingService abstracts processor selection
 
@@ -156,7 +159,7 @@ The ops dashboard gains a subscription management panel per tenant:
 
 - `Company` model gains four new fields — migration required at build time
 - `PlanRequiredMixin` must be added to every view that gates a plan-restricted feature — same checklist discipline as RBAC
-- Every plan-restricted template element requires a matching `{% if company.meets_plan %}` guard
+- Every plan-restricted template element requires a matching `{% raw %}{% if company.meets_plan %}{% endraw %}` guard
 - NGN prices are maintained independently — not derived from USD via FX rate
 - Paystack and Stripe credentials stored in environment variables, never in code
 - Webhook endpoints must be excluded from CSRF protection (use `@csrf_exempt` with signature verification instead)
