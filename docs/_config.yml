@@ -16,3 +16,7 @@ plugins:
 relative_links:
   enabled: true
   collections: true
+
+# Disable Liquid processing in markdown — docs contain Django/Jinja template
+# syntax ({%  %}, {{ }}) in code examples that Jekyll would misparse as Liquid
+render_with_liquid: false
