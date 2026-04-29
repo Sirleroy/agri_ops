@@ -18,6 +18,12 @@ def org_admin_required(view_func):
             return redirect('dashboard:index')
         if not request.user.company:
             return redirect('dashboard:index')
+        if not request.user.company.is_active:
+            from django.contrib.auth import logout
+            from django.contrib import messages
+            logout(request)
+            messages.error(request, 'Your organisation account has been suspended. Please contact AgriOps support.')
+            return redirect('login')
         return view_func(request, *args, **kwargs)
     wrapper.__name__ = view_func.__name__
     return wrapper

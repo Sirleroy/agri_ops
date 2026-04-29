@@ -9,10 +9,13 @@ ROLE_HIERARCHY = {
 
 
 class IsTenantMember(BasePermission):
-    """Request user must belong to a company."""
+    """Request user must belong to an active company."""
     def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated
-                    and request.user.company_id)
+        return bool(
+            request.user and request.user.is_authenticated
+            and request.user.company_id
+            and request.user.company.is_active
+        )
 
 
 class IsStaffOrAbove(IsTenantMember):
