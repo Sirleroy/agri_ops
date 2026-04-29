@@ -1,3 +1,9 @@
+---
+layout: default
+title: "ADR 010 — Billing Architecture"
+render_with_liquid: false
+---
+
 # ADR 010 — Billing Architecture: Dual Processor, Isolated App, Plan-Gated Access
 
 **Date:** April 2026
