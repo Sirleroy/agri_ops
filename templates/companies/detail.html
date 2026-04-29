@@ -10,10 +10,12 @@
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
       Back to Companies
     </a>
+    {% if request.user.is_org_admin %}
     <div class="flex gap-2">
       <a href="{% url 'companies:update' company.pk %}?next={{ request.path }}" class="px-4 py-2 bg-card border border-border rounded-lg text-sm text-slate-300 hover:text-slate-100 transition-colors">Edit</a>
       <button @click="openDeleteModal('{% url 'companies:delete' company.pk %}', '{{ company.name|escapejs }}')" class="px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400 hover:text-red-300 transition-colors">Delete</button>
     </div>
+    {% endif %}
   </div>
 
   <div class="bg-card border border-border rounded-xl p-6 space-y-4">
