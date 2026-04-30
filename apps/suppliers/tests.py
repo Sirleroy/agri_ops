@@ -7,10 +7,10 @@ class SupplierTenantIsolationTest(TestCase):
 
     def setUp(self):
         self.company1 = Company.objects.create(
-            name='Company One', country='Nigeria', plan_tier='free'
+            name='Company One', country='Nigeria', plan_tier='starter'
         )
         self.company2 = Company.objects.create(
-            name='Company Two', country='Nigeria', plan_tier='free'
+            name='Company Two', country='Nigeria', plan_tier='starter'
         )
         self.supplier1 = Supplier.objects.create(
             company=self.company1, name='Supplier One', category='seeds'
@@ -33,7 +33,7 @@ class FarmComplianceTest(TestCase):
 
     def setUp(self):
         self.company = Company.objects.create(
-            name='Test Company', country='Nigeria', plan_tier='free'
+            name='Test Company', country='Nigeria', plan_tier='starter'
         )
         self.supplier = Supplier.objects.create(
             company=self.company, name='Test Supplier', category='seeds'

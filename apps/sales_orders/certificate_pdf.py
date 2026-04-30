@@ -337,6 +337,78 @@ def generate_certificate(batch):
 
             story.append(Spacer(1, 3*mm))
 
+    # ── GPS Verification Evidence ─────────────────────────────
+    # Root hash anchors all farm polygons; centroid table gives auditor
+    # geographic evidence without printing a 64-char hash per farm.
+    eudr_mapped_farms = sorted(
+        [f for f in farms if f.geolocation and f.geometry_hash],
+        key=lambda f: f.pk,
+    )
+    if eudr_mapped_farms:
+        import hashlib as _hashlib
+        eudr_root_hash = _hashlib.sha256(
+            ''.join(f.geometry_hash for f in eudr_mapped_farms).encode()
+        ).hexdigest()
+
+        story.append(Paragraph("GPS Verification Evidence", ParagraphStyle(
+            "s_gve2", fontName="Helvetica-Bold", fontSize=11, textColor=DARK,
+            spaceBefore=6*mm, spaceAfter=3*mm,
+        )))
+        story.append(Paragraph(
+            "Farm boundary polygons are anchored by a batch-level Geometry Integrity Hash — "
+            "a SHA-256 computed from all farm polygon hashes in farm-ID order. "
+            "Any modification to a recorded boundary changes the root hash, "
+            "invalidating this certificate. Individual farm polygon hashes are retained "
+            "in the AgriOps platform and available for on-demand verification.",
+            ParagraphStyle("gve_intro2", fontName="Helvetica", fontSize=8, textColor=SLATE, spaceAfter=3*mm),
+        ))
+
+        _LBL2 = ParagraphStyle("gve_lbl2", fontName="Helvetica-Bold", fontSize=8, textColor=colors.HexColor("#334155"), leading=11)
+        _VAL2 = ParagraphStyle("gve_val2", fontName="Helvetica",      fontSize=8, textColor=colors.HexColor("#1e293b"), leading=11)
+        _HSH2 = ParagraphStyle("gve_hsh2", fontName="Helvetica",      fontSize=7, textColor=colors.HexColor("#0f172a"), leading=10, wordWrap='CJK')
+        root_data2 = [
+            [_p("Batch Geometry Root (SHA-256)", _LBL2), Paragraph(eudr_root_hash, _HSH2)],
+            [_p("GPS-mapped farms",              _LBL2), _p(str(len(eudr_mapped_farms)), _VAL2)],
+            [_p("Hash method",                   _LBL2), _p("SHA-256 of sorted concatenation of farm polygon hashes (ascending farm ID)", _VAL2)],
+        ]
+        root_t2 = Table(root_data2, colWidths=[52*mm, 122*mm])
+        root_t2.setStyle(TableStyle([
+            ("BACKGROUND",    (0,0), (-1,-1), colors.HexColor("#f1f5f9")),
+            ("BACKGROUND",    (0,0), (0,-1), colors.HexColor("#e2e8f0")),
+            ("GRID",          (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+            ("TOPPADDING",    (0,0), (-1,-1), 5),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 5),
+            ("LEFTPADDING",   (0,0), (-1,-1), 6),
+            ("VALIGN",        (0,0), (-1,-1), "TOP"),
+        ]))
+        story.append(root_t2)
+        story.append(Spacer(1, 4*mm))
+
+        coord_headers2 = [_p(h, _CELL_HDR) for h in ["Farm", "GPS Centroid", "Area", "Mapping Date"]]
+        coord_data2 = [coord_headers2]
+        for farm in eudr_mapped_farms:
+            centroid = _gps_centroid(farm.geolocation) or "—"
+            area_str = f"{farm.area_hectares} ha" if farm.area_hectares else "—"
+            map_date = farm.mapping_date.strftime("%d %b %Y") if farm.mapping_date else "—"
+            coord_data2.append([_p(farm.name), _p(centroid), _p(area_str), _p(map_date)])
+
+        coord_t2 = Table(coord_data2, colWidths=[60*mm, 65*mm, 22*mm, 27*mm])
+        coord_t2.setStyle(TableStyle([
+            ("BACKGROUND",     (0,0), (-1,0), DARK),
+            ("FONTSIZE",       (0,0), (-1,-1), 8),
+            ("GRID",           (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+            ("ROWBACKGROUNDS", (0,1), (-1,-1), [WHITE, colors.HexColor("#f8fafc")]),
+            ("TOPPADDING",     (0,0), (-1,-1), 4),
+            ("BOTTOMPADDING",  (0,0), (-1,-1), 4),
+            ("LEFTPADDING",    (0,0), (-1,-1), 5),
+            ("VALIGN",         (0,0), (-1,-1), "TOP"),
+        ]))
+        story.append(coord_t2)
+        story.append(Paragraph(
+            "Individual farm polygon hashes are retained in the AgriOps platform and available for verification on request.",
+            ParagraphStyle("gve_note2", fontName="Helvetica-Oblique", fontSize=7, textColor=SLATE, spaceBefore=2*mm),
+        ))
+
     # ── Compliance Documents ──────────────────────────────────
     phyto_certs   = list(batch.phytosanitary_certs.all())
     quality_tests = list(batch.quality_tests.all())
@@ -546,56 +618,78 @@ def generate_neutral_certificate(batch):
     story.append(farm_t)
 
     # ── GPS Verification Evidence ─────────────────────────────
-    # Show geometry hash and centroid for farms that have a polygon
-    mapped_farms = [f for f in farms if f.geolocation and f.geometry_hash]
+    # Root hash anchors all farm polygons; centroid table gives auditor
+    # geographic evidence without printing a 64-char hash per farm.
+    mapped_farms = sorted(
+        [f for f in farms if f.geolocation and f.geometry_hash],
+        key=lambda f: f.pk,
+    )
     if mapped_farms:
+        import hashlib as _hashlib
+        root_hash = _hashlib.sha256(
+            ''.join(f.geometry_hash for f in mapped_farms).encode()
+        ).hexdigest()
+
         story.append(Paragraph("GPS Verification Evidence", ParagraphStyle(
             "s_gve", fontName="Helvetica-Bold", fontSize=11, textColor=DARK,
             spaceBefore=6*mm, spaceAfter=3*mm,
         )))
         story.append(Paragraph(
-            "Each farm boundary polygon is anchored by a SHA-256 hash of the canonical GeoJSON geometry. "
-            "The hash is immutable once recorded — any boundary modification produces a different hash, "
-            "providing tamper-evident proof of the recorded geolocation at time of verification.",
+            "Farm boundary polygons are anchored by a batch-level Geometry Integrity Hash — "
+            "a SHA-256 computed from all farm polygon hashes in farm-ID order. "
+            "Any modification to a recorded boundary changes the root hash, "
+            "invalidating this certificate. Individual farm polygon hashes are retained "
+            "in the AgriOps platform and available for on-demand verification.",
             ParagraphStyle("gve_intro", fontName="Helvetica", fontSize=8, textColor=SLATE, spaceAfter=3*mm),
         ))
 
+        # Root hash block
         _LBL = ParagraphStyle("gve_lbl", fontName="Helvetica-Bold", fontSize=8, textColor=colors.HexColor("#334155"), leading=11)
         _VAL = ParagraphStyle("gve_val", fontName="Helvetica",      fontSize=8, textColor=colors.HexColor("#1e293b"), leading=11)
-        _HSH = ParagraphStyle("gve_hash", fontName="Helvetica",     fontSize=7, textColor=colors.HexColor("#475569"), leading=10, wordWrap='CJK')
+        _HSH = ParagraphStyle("gve_hash", fontName="Helvetica",     fontSize=7, textColor=colors.HexColor("#0f172a"), leading=10, wordWrap='CJK')
+        root_data = [
+            [_p("Batch Geometry Root (SHA-256)", _LBL), Paragraph(root_hash, _HSH)],
+            [_p("GPS-mapped farms",              _LBL), _p(str(len(mapped_farms)), _VAL)],
+            [_p("Hash method",                   _LBL), _p("SHA-256 of sorted concatenation of farm polygon hashes (ascending farm ID)", _VAL)],
+        ]
+        root_t = Table(root_data, colWidths=[52*mm, 122*mm])
+        root_t.setStyle(TableStyle([
+            ("BACKGROUND",    (0,0), (-1,-1), colors.HexColor("#f1f5f9")),
+            ("BACKGROUND",    (0,0), (0,-1), colors.HexColor("#e2e8f0")),
+            ("GRID",          (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+            ("TOPPADDING",    (0,0), (-1,-1), 5),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 5),
+            ("LEFTPADDING",   (0,0), (-1,-1), 6),
+            ("VALIGN",        (0,0), (-1,-1), "TOP"),
+        ]))
+        story.append(root_t)
+        story.append(Spacer(1, 4*mm))
 
+        # Per-farm coordinate table — centroid + area + mapping date, no individual hash
+        coord_headers = [_p(h, _CELL_HDR) for h in ["Farm", "GPS Centroid", "Area", "Mapping Date"]]
+        coord_data = [coord_headers]
         for farm in mapped_farms:
-            story.append(Table(
-                [[Paragraph(farm.name, ParagraphStyle("gve_farm", fontName="Helvetica-Bold", fontSize=9, textColor=DARK, leading=12))]],
-                colWidths=[PAGE_W],
-                style=TableStyle([
-                    ("BACKGROUND",    (0,0), (-1,-1), colors.HexColor("#f1f5f9")),
-                    ("LEFTPADDING",   (0,0), (-1,-1), 6),
-                    ("TOPPADDING",    (0,0), (-1,-1), 5),
-                    ("BOTTOMPADDING", (0,0), (-1,-1), 5),
-                ]),
-            ))
             centroid = _gps_centroid(farm.geolocation) or "—"
             area_str = f"{farm.area_hectares} ha" if farm.area_hectares else "—"
             map_date = farm.mapping_date.strftime("%d %b %Y") if farm.mapping_date else "—"
-            geo_data = [
-                [_p("GPS Centroid",    _LBL), _p(centroid,            _VAL), _p("Area",        _LBL), _p(area_str,  _VAL)],
-                [_p("Mapping Date",    _LBL), _p(map_date,            _VAL), _p("Mapped by",   _LBL), _p(farm.mapped_by or "—", _VAL)],
-                [_p("Geometry SHA-256", _LBL), Paragraph(farm.geometry_hash, _HSH), _p("", _LBL), _p("", _VAL)],
-            ]
-            geo_t = Table(geo_data, colWidths=[30*mm, 57*mm, 30*mm, 57*mm])
-            geo_t.setStyle(TableStyle([
-                ("GRID",           (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
-                ("TOPPADDING",     (0,0), (-1,-1), 4),
-                ("BOTTOMPADDING",  (0,0), (-1,-1), 4),
-                ("LEFTPADDING",    (0,0), (-1,-1), 5),
-                ("VALIGN",         (0,0), (-1,-1), "TOP"),
-                ("ROWBACKGROUNDS", (0,0), (-1,-1), [WHITE, colors.HexColor("#f8fafc"), WHITE]),
-                # Span the hash value across the last two columns of row 2
-                ("SPAN",           (1,2), (3,2)),
-            ]))
-            story.append(geo_t)
-            story.append(Spacer(1, 3*mm))
+            coord_data.append([_p(farm.name), _p(centroid), _p(area_str), _p(map_date)])
+
+        coord_t = Table(coord_data, colWidths=[60*mm, 65*mm, 22*mm, 27*mm])
+        coord_t.setStyle(TableStyle([
+            ("BACKGROUND",     (0,0), (-1,0), DARK),
+            ("FONTSIZE",       (0,0), (-1,-1), 8),
+            ("GRID",           (0,0), (-1,-1), 0.3, colors.HexColor("#cbd5e1")),
+            ("ROWBACKGROUNDS", (0,1), (-1,-1), [WHITE, colors.HexColor("#f8fafc")]),
+            ("TOPPADDING",     (0,0), (-1,-1), 4),
+            ("BOTTOMPADDING",  (0,0), (-1,-1), 4),
+            ("LEFTPADDING",    (0,0), (-1,-1), 5),
+            ("VALIGN",         (0,0), (-1,-1), "TOP"),
+        ]))
+        story.append(coord_t)
+        story.append(Paragraph(
+            "Individual farm polygon hashes are retained in the AgriOps platform and available for verification on request.",
+            ParagraphStyle("gve_note", fontName="Helvetica-Oblique", fontSize=7, textColor=SLATE, spaceBefore=2*mm),
+        ))
 
     # ── Compliance Documents ──────────────────────────────────
     phyto_certs   = list(batch.phytosanitary_certs.all())

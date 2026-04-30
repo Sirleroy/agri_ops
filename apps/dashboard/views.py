@@ -2,13 +2,14 @@ from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils import timezone
 from datetime import timedelta
+from apps.users.permissions import StaffRequiredMixin
 
 
 class UserManualView(LoginRequiredMixin, TemplateView):
     template_name = 'help/user_manual.html'
 
 
-class DashboardView(LoginRequiredMixin, TemplateView):
+class DashboardView(StaffRequiredMixin, TemplateView):
     template_name = 'dashboard/index.html'
 
     def get_context_data(self, **kwargs):
