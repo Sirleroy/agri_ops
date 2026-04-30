@@ -339,9 +339,14 @@ class PublicTraceView(View):
         cache.set(cache_key, hits + 1, timeout=3600)
 
         batch = get_object_or_404(Batch, public_token=token)
-        farms = list(batch.farms.select_related('supplier', 'verified_by').prefetch_related('certifications').all())
+        farms        = list(batch.farms.select_related('supplier', 'verified_by').prefetch_related('certifications').all())
+        phyto_certs  = list(batch.phytosanitary_certs.all())
+        quality_tests = list(batch.quality_tests.all())
+        readiness = batch.certificate_readiness(
+            farms=farms, phyto_certs=phyto_certs, quality_tests=quality_tests
+        )
         return HttpResponse(
-            self._render(batch, farms),
+            self._render(batch, farms, readiness),
             content_type='text/html'
         )
 
@@ -365,7 +370,7 @@ class PublicTraceView(View):
         except (KeyError, IndexError, TypeError, ZeroDivisionError):
             return None
 
-    def _render(self, batch, farms):
+    def _render(self, batch, farms, readiness):
         farm_count = len(farms)
 
         # ── Farm overview rows / cards ────────────────────────
@@ -475,6 +480,7 @@ class PublicTraceView(View):
     h1 {{ font-family: 'Syne', sans-serif; font-size: clamp(20px, 5vw, 28px); color: #f8fafc; margin: 0 0 8px 0; word-break: break-word; line-height: 1.2; }}
     .meta {{ font-size: 13px; color: #64748b; margin: 4px 0; word-break: break-word; }}
     .verified-badge {{ display: inline-flex; align-items: center; gap: 6px; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: #22c55e; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-family: 'JetBrains Mono', monospace; margin-top: 14px; }}
+    .pending-badge  {{ display: inline-flex; align-items: center; gap: 6px; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); color: #f59e0b; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-family: 'JetBrains Mono', monospace; margin-top: 14px; }}
 
     /* Cards */
     .card {{ background: #131f2e; border: 1px solid #1e2d40; border-radius: 12px; padding: 20px; margin-bottom: 16px; overflow: hidden; }}
@@ -529,7 +535,7 @@ class PublicTraceView(View):
     <h1>Batch: {html.escape(str(batch.batch_number))}</h1>
     <p class="meta">Commodity: {html.escape(str(batch.commodity))} &nbsp;·&nbsp; Created: {batch.created_at.strftime('%d %B %Y')}</p>
     {so_line}
-    <div class="verified-badge">✓ Verified Supply Chain Record</div>
+    {'<div class="verified-badge">✓ Verified Supply Chain Record</div>' if readiness['can_download_certificate'] else '<div class="pending-badge">⚠ Compliance Pending</div>'}
   </div>
 
   <div class="card">
@@ -551,7 +557,7 @@ class PublicTraceView(View):
 
   <div class="footer">
     AgriOps &middot; app.agriops.io &middot; Agricultural Supply Chain Intelligence<br>
-    This record was generated from verified supply chain data and is intended for EU buyer compliance under EUDR (Regulation (EU) 2023/1115 as amended by Regulation (EU) 2025/2650).
+    {'This record was generated from verified supply chain data and is intended for EU buyer compliance under EUDR (Regulation (EU) 2023/1115 as amended by Regulation (EU) 2025/2650).' if readiness['can_download_certificate'] else 'This supply chain record is maintained in AgriOps. Compliance verification for this batch is ongoing.'}
   </div>
 
 </div>
