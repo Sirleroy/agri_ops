@@ -26,7 +26,7 @@
       <div>
         <h2 class="text-xl font-black text-slate-100">{{ profile.username }}</h2>
         <p class="text-sm text-slate-500 mt-1">
-          {% if profile.email %}<a href="mailto:{{ profile.email }}" class="hover:text-green transition-colors">{{ profile.email }}</a>{% else %}No email set{% endif %}
+          {% if profile.email %}<a href="mailto:{{ profile.email }}" class="hover:text-green transition-colors break-all">{{ profile.email }}</a>{% else %}No email set{% endif %}
         </p>
       </div>
       <div class="ml-auto flex gap-2">
