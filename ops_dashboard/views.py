@@ -703,7 +703,7 @@ def ops_geometry(request):
     drifted  = []
     missing  = []
 
-    for farm in farms_qs.iterator():
+    for farm in farms_qs.iterator(chunk_size=200):
         total += 1
         try:
             canonical = json.dumps(farm.geolocation, sort_keys=True, separators=(',', ':'))
