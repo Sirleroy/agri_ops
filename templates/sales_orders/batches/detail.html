@@ -112,14 +112,21 @@
         {% if readiness.purchase_orders %}✓{% else %}○{% endif %} POs linked
       </span>
     </div>
-    {% if readiness.blockers %}
+    {% if readiness.blocker_groups %}
     <div class="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4">
-      <p class="text-xs font-mono text-red-300 uppercase tracking-widest mb-2">Certificate Download Blocked</p>
-      <ul class="space-y-1">
-        {% for blocker in readiness.blockers %}
-        <li class="text-sm text-red-200">{{ blocker }}</li>
+      <p class="text-xs font-mono text-red-300 uppercase tracking-widest mb-3">Certificate Download Blocked</p>
+      <div class="space-y-3">
+        {% for group in readiness.blocker_groups %}
+        <div>
+          <p class="text-xs font-mono text-red-400 uppercase tracking-widest mb-1">{{ group.label }}</p>
+          <ul class="space-y-0.5">
+            {% for item in group.items %}
+            <li class="text-sm text-red-200 font-mono pl-2 border-l border-red-500/30">{{ item }}</li>
+            {% endfor %}
+          </ul>
+        </div>
         {% endfor %}
-      </ul>
+      </div>
     </div>
     {% endif %}
   </div>

@@ -129,28 +129,62 @@ class Batch(models.Model):
         }
 
         blockers = []
+        blocker_groups = []
+
         if not checks['farms']:
             blockers.append('No farms are linked to this batch.')
+            blocker_groups.append({
+                'label': 'Farm compliance issues',
+                'items': ['No farms are linked to this batch.'],
+            })
         elif non_compliant_farms:
             blockers.append(
-                'All linked farms must be EUDR compliant and verification-current. '
-                f'Blocked farms: {", ".join(farm.name for farm in non_compliant_farms[:5])}'
-                f'{"..." if len(non_compliant_farms) > 5 else ""}.'
+                'One or more farms do not meet compliance requirements (unverified, expired, or high-risk).'
             )
+            farm_names = [f.name for f in non_compliant_farms[:5]]
+            if len(non_compliant_farms) > 5:
+                farm_names.append(f'… and {len(non_compliant_farms) - 5} more')
+            blocker_groups.append({
+                'label': 'Farm compliance issues',
+                'items': farm_names,
+            })
+
         if not checks['quantity']:
             blockers.append('Batch quantity is missing.')
+            blocker_groups.append({
+                'label': 'Batch details',
+                'items': ['Batch quantity is missing.'],
+            })
+
         if not checks['phyto']:
             if expired_phyto_certs:
-                blockers.append('The phytosanitary certificate on record is expired.')
+                msg = 'Phytosanitary certificate on record is expired.'
             else:
-                blockers.append('A current phytosanitary certificate is required.')
+                msg = 'No valid phytosanitary certificate on record.'
+            blockers.append(msg)
+            blocker_groups.append({
+                'label': 'Missing documentation',
+                'items': [msg],
+            })
+
         if failed_quality_tests:
-            blockers.append('A failed quality test is recorded for this batch.')
+            msg = 'A failed quality test is recorded for this batch.'
+            blockers.append(msg)
+            blocker_groups.append({
+                'label': 'Quality validation',
+                'items': [msg],
+            })
         elif not passed_quality_tests:
-            blockers.append('At least one passing quality test is required.')
+            msg = 'No passing quality test recorded.'
+            blockers.append(msg)
+            blocker_groups.append({
+                'label': 'Quality validation',
+                'items': [msg],
+            })
 
         checks['can_download_certificate'] = not blockers
         checks['blockers'] = blockers
+        checks['blocker_groups'] = blocker_groups
         checks['non_compliant_farms'] = non_compliant_farms
         return checks
 

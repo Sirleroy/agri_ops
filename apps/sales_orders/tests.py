@@ -100,7 +100,9 @@ class CertificateDownloadBlockerTests(TestCase):
 
         self.assertFalse(readiness['can_download_certificate'])
         self.assertFalse(readiness['farm_compliance'])
-        self.assertIn('Unverified Farm', ' '.join(readiness['blockers']))
+        # farm names appear in blocker_groups, not the flat blockers list
+        farm_group = next(g for g in readiness['blocker_groups'] if g['label'] == 'Farm compliance issues')
+        self.assertIn('Unverified Farm', farm_group['items'])
 
     def test_certificate_readiness_blocks_expired_phytosanitary_certificate(self):
         self.batch.farms.add(self.make_compliant_farm())
@@ -116,7 +118,8 @@ class CertificateDownloadBlockerTests(TestCase):
 
         self.assertFalse(readiness['can_download_certificate'])
         self.assertFalse(readiness['phyto'])
-        self.assertIn('phytosanitary certificate on record is expired', ' '.join(readiness['blockers']))
+        doc_group = next(g for g in readiness['blocker_groups'] if g['label'] == 'Missing documentation')
+        self.assertIn('Phytosanitary certificate on record is expired.', doc_group['items'])
 
     def test_certificate_download_redirects_when_readiness_is_blocked(self):
         self.client.force_login(self.user)
