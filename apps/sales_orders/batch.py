@@ -76,6 +76,84 @@ class Batch(models.Model):
             raise PermissionDenied("This batch is locked and cannot be deleted. Locked batches must be retained for 5 years under EUDR Article 9.")
         super().delete(*args, **kwargs)
 
+    def certificate_readiness(self, farms=None, phyto_certs=None, quality_tests=None, purchase_orders=None):
+        """
+        Return certificate readiness flags plus blocking reasons.
+
+        These rules gate certificate downloads, so keep them conservative and
+        auditable: a certificate should not be generated if required compliance
+        evidence is missing, expired, failed, or still pending.
+        """
+        farms = list(farms) if farms is not None else list(self.farms.all())
+        phyto_certs = (
+            list(phyto_certs)
+            if phyto_certs is not None
+            else list(self.phytosanitary_certs.all())
+        )
+        quality_tests = (
+            list(quality_tests)
+            if quality_tests is not None
+            else list(self.quality_tests.all())
+        )
+        purchase_orders = (
+            list(purchase_orders)
+            if purchase_orders is not None
+            else list(self.purchase_orders.all())
+        )
+
+        non_compliant_farms = [
+            farm for farm in farms
+            if farm.compliance_status != 'compliant'
+        ]
+        current_phyto_certs = [cert for cert in phyto_certs if cert.is_current]
+        expired_phyto_certs = [
+            cert for cert in phyto_certs
+            if cert.expiry_date and not cert.is_current
+        ]
+        passed_quality_tests = [
+            test for test in quality_tests
+            if test.result == 'pass'
+        ]
+        failed_quality_tests = [
+            test for test in quality_tests
+            if test.result == 'fail'
+        ]
+
+        checks = {
+            'farms': bool(farms),
+            'farm_compliance': bool(farms) and not non_compliant_farms,
+            'quantity': bool(self.quantity_kg),
+            'phyto': bool(current_phyto_certs),
+            'quality': bool(passed_quality_tests) and not failed_quality_tests,
+            'purchase_orders': bool(purchase_orders),
+        }
+
+        blockers = []
+        if not checks['farms']:
+            blockers.append('No farms are linked to this batch.')
+        elif non_compliant_farms:
+            blockers.append(
+                'All linked farms must be EUDR compliant and verification-current. '
+                f'Blocked farms: {", ".join(farm.name for farm in non_compliant_farms[:5])}'
+                f'{"..." if len(non_compliant_farms) > 5 else ""}.'
+            )
+        if not checks['quantity']:
+            blockers.append('Batch quantity is missing.')
+        if not checks['phyto']:
+            if expired_phyto_certs:
+                blockers.append('The phytosanitary certificate on record is expired.')
+            else:
+                blockers.append('A current phytosanitary certificate is required.')
+        if failed_quality_tests:
+            blockers.append('A failed quality test is recorded for this batch.')
+        elif not passed_quality_tests:
+            blockers.append('At least one passing quality test is required.')
+
+        checks['can_download_certificate'] = not blockers
+        checks['blockers'] = blockers
+        checks['non_compliant_farms'] = non_compliant_farms
+        return checks
+
     def save(self, *args, **kwargs):
         if not self.batch_number:
             for _ in range(10):

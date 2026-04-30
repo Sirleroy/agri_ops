@@ -24,6 +24,7 @@
       {% endif %}
     </div>
     <div class="flex items-center gap-3">
+      {% if readiness.can_download_certificate %}
       <a href="{% url 'sales_orders:batch_certificate' batch.pk %}"
          class="bg-green hover:bg-green-dim text-bg font-bold text-xs px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -31,7 +32,18 @@
         </svg>
         Download Certificate
       </a>
+      {% else %}
+      <button type="button" disabled
+        class="bg-slate-700/60 text-slate-400 cursor-not-allowed font-bold text-xs px-4 py-2 rounded-lg flex items-center gap-2"
+        title="Resolve certificate blockers first">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Download Blocked
+      </button>
+      {% endif %}
       {% if request.user.company.plan_tier == 'enterprise' %}
+      {% if readiness.can_download_certificate %}
       <a href="{% url 'sales_orders:batch_neutral_certificate' batch.pk %}"
          class="border border-green/30 text-green hover:bg-green/10 font-bold text-xs px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -39,6 +51,16 @@
         </svg>
         Traceability Certificate
       </a>
+      {% else %}
+      <button type="button" disabled
+        class="border border-slate-700 text-slate-500 cursor-not-allowed font-bold text-xs px-4 py-2 rounded-lg flex items-center gap-2"
+        title="Resolve certificate blockers first">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7 12a5 5 0 1110 0 5 5 0 01-10 0z"/>
+        </svg>
+        Traceability Blocked
+      </button>
+      {% endif %}
       {% endif %}
       {% if not batch.is_locked %}
       <a href="{% url 'sales_orders:batch_update' batch.pk %}"
@@ -70,6 +92,10 @@
         {% if readiness.farms %}✓{% else %}⚠{% endif %} Farms linked
       </span>
       <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono border
+        {% if readiness.farm_compliance %}bg-green/10 text-green border-green/20{% else %}bg-red-500/10 text-red-400 border-red-500/20{% endif %}">
+        {% if readiness.farm_compliance %}✓{% else %}✗{% endif %} Farms compliant
+      </span>
+      <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono border
         {% if readiness.quantity %}bg-green/10 text-green border-green/20{% else %}bg-yellow-500/10 text-yellow-400 border-yellow-500/20{% endif %}">
         {% if readiness.quantity %}✓{% else %}⚠{% endif %} Quantity set
       </span>
@@ -86,6 +112,16 @@
         {% if readiness.purchase_orders %}✓{% else %}○{% endif %} POs linked
       </span>
     </div>
+    {% if readiness.blockers %}
+    <div class="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4">
+      <p class="text-xs font-mono text-red-300 uppercase tracking-widest mb-2">Certificate Download Blocked</p>
+      <ul class="space-y-1">
+        {% for blocker in readiness.blockers %}
+        <li class="text-sm text-red-200">{{ blocker }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
   </div>
 
   <div class="bg-card border border-border rounded-xl p-6">

@@ -2,10 +2,11 @@
 set -euo pipefail
 
 # ── AgriOps Security & Integrity Verification ────────────────────────────────
-# Runs the regression test suite covering the three highest-risk areas:
-#   1. Tenant isolation  — no data leakage between companies
-#   2. Suspended company — blocked at web, dashboard, admin panel, and API
-#   3. Audit integrity   — correct logging, company scoping, no cross-tenant leakage
+# Runs the regression test suite covering the four highest-risk areas:
+#   1. Tenant isolation        — no data leakage between companies
+#   2. Suspended company       — blocked at web, dashboard, admin panel, and API
+#   3. Audit integrity         — correct logging, company scoping, no cross-tenant leakage
+#   4. Certificate blocking    — expired/non-compliant evidence cannot produce a certificate
 #
 # Run this:
 #   - After setup.sh, to confirm the environment is healthy
@@ -35,13 +36,14 @@ fi
 export DJANGO_SETTINGS_MODULE=config.settings.development
 
 # ── Run the suite ─────────────────────────────────────────────────────────────
-step "Running AgriOps security regression suite (28 tests)"
+step "Running AgriOps security regression suite (34 tests)"
 echo ""
 
 if echo "yes" | python manage.py test \
   apps.companies.tests \
   apps.audit.tests \
   apps.suppliers.tests \
+  apps.sales_orders.tests \
   --verbosity=2; then
 
   echo ""

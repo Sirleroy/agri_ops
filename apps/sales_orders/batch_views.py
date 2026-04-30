@@ -2,7 +2,7 @@ import html
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.views import View
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.core.cache import cache
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -36,8 +36,9 @@ class BatchDetailView(StaffRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        farms = list(self.object.farms.all())
         phyto_certs = list(self.object.phytosanitary_certs.all())
-        quality_tests = self.object.quality_tests.all()
+        quality_tests = list(self.object.quality_tests.all())
         context['phytosanitary_certs'] = phyto_certs
         context['quality_tests'] = quality_tests
         batch_pos = list(
@@ -47,13 +48,12 @@ class BatchDetailView(StaffRequiredMixin, DetailView):
             .order_by('order_date')
         )
         context['batch_purchase_orders'] = batch_pos
-        context['readiness'] = {
-            'farms': self.object.farms.exists(),
-            'quantity': bool(self.object.quantity_kg),
-            'phyto': any(c.is_current for c in phyto_certs),
-            'quality': quality_tests.filter(result='pass').exists(),
-            'purchase_orders': bool(batch_pos),
-        }
+        context['readiness'] = self.object.certificate_readiness(
+            farms=farms,
+            phyto_certs=phyto_certs,
+            quality_tests=quality_tests,
+            purchase_orders=batch_pos,
+        )
         return context
 
 
@@ -291,6 +291,11 @@ class BatchCertificateView(StaffRequiredMixin, View):
     """Download PDF certificate for a batch."""
     def get(self, request, pk):
         batch = get_object_or_404(Batch, pk=pk, company=request.user.company)
+        readiness = batch.certificate_readiness()
+        if not readiness['can_download_certificate']:
+            from django.contrib import messages
+            messages.error(request, "Certificate download blocked: " + " ".join(readiness['blockers']))
+            return redirect('sales_orders:batch_detail', pk=pk)
         from .certificate_pdf import generate_certificate
         buffer = generate_certificate(batch)
         filename = f"AgriOps_Certificate_{batch.batch_number}.pdf"
@@ -306,6 +311,11 @@ class NeutralCertificateView(StaffRequiredMixin, View):
         if request.user.company.plan_tier != 'enterprise':
             from django.contrib import messages
             messages.error(request, "Supply Chain Traceability Certificates are available on the Enterprise plan.")
+            return redirect('sales_orders:batch_detail', pk=pk)
+        readiness = batch.certificate_readiness()
+        if not readiness['can_download_certificate']:
+            from django.contrib import messages
+            messages.error(request, "Certificate download blocked: " + " ".join(readiness['blockers']))
             return redirect('sales_orders:batch_detail', pk=pk)
         from .certificate_pdf import generate_neutral_certificate
         buffer = generate_neutral_certificate(batch)
