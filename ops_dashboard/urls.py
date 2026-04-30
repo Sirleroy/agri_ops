@@ -15,4 +15,5 @@ urlpatterns = [
     path('ops/metrics/', views.ops_metrics, name='ops_metrics'),
     path('ops/health/',    views.ops_health,    name='ops_health'),
     path('ops/corridor/',  views.ops_corridor,  name='ops_corridor'),
+    path('ops/geometry/',  views.ops_geometry,  name='ops_geometry'),
 ]

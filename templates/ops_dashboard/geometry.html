@@ -1,0 +1,163 @@
+{% extends "ops_dashboard/base.html" %}
+{% block title %}Geometry Integrity — AgriOps Ops{% endblock %}
+{% block nav_geometry %}active{% endblock %}
+{% block page_title %}Geometry Integrity{% endblock %}
+
+{% block content %}
+
+<div class="grid-4" style="margin-bottom:1.5rem">
+  <div class="card">
+    <div class="card-title">Total Farms Checked</div>
+    <div class="card-value">{{ total }}</div>
+    <div class="card-sub">with stored geolocation</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Clean</div>
+    <div class="card-value" style="color:#4ade80">{{ clean }}</div>
+    <div class="card-sub">hash matches computed</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Drifted</div>
+    <div class="card-value" style="color:{% if drifted %}#f87171{% else %}#4ade80{% endif %}">{{ drifted|length }}</div>
+    <div class="card-sub">stored ≠ computed</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Missing Hash</div>
+    <div class="card-value" style="color:{% if missing %}#facc15{% else %}#4ade80{% endif %}">{{ missing|length }}</div>
+    <div class="card-sub">run backfill command</div>
+  </div>
+</div>
+
+{% if drifted %}
+<div class="section-title" style="color:#f87171">⚠ Drifted Hashes — Investigate Before Fixing</div>
+<div class="card" style="margin-bottom:1.5rem;border-color:rgba(220,38,38,0.4)">
+  <p style="font-size:0.8rem;color:var(--muted);margin-bottom:1rem">
+    A drifted hash means the farm's geolocation polygon was changed after the hash was last written.
+    This may be a legitimate edit (check the audit log) or tampering via a back-channel write.
+    Do not use <code>--fix</code> until the audit log is reviewed for each farm below.
+  </p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Farm</th>
+          <th>Tenant</th>
+          <th>Stored Hash</th>
+          <th>Computed Hash</th>
+          <th>Locked Batches</th>
+          <th>Audit</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in drifted %}
+        <tr>
+          <td>
+            <div style="font-weight:500">{{ row.farm.name }}</div>
+            <div style="font-size:0.75rem;color:var(--dim)">ID {{ row.farm.pk }}</div>
+          </td>
+          <td style="color:var(--muted)">{{ row.company }}</td>
+          <td>
+            <code style="font-size:0.75rem;color:#f87171;word-break:break-all">{{ row.stored|slice:":32" }}…</code>
+          </td>
+          <td>
+            <code style="font-size:0.75rem;color:#facc15;word-break:break-all">{{ row.computed|slice:":32" }}…</code>
+          </td>
+          <td>
+            {% if row.locked_batches %}
+              <span class="badge-error">{{ row.locked_batches|length }} locked</span>
+            {% else %}
+              <span style="color:var(--dim);font-size:0.8rem">none</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="/audit/?model=Farm&object_id={{ row.farm.pk }}"
+               style="font-size:0.8rem;color:var(--muted);text-decoration:underline">
+              View log
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div style="margin-top:1rem;padding:0.75rem 1rem;background:rgba(220,38,38,0.08);border-radius:6px;border:1px solid rgba(220,38,38,0.2)">
+    <code style="font-size:0.8rem;color:#f87171">python manage.py check_geometry_integrity --fix</code>
+    <span style="font-size:0.8rem;color:var(--muted);margin-left:0.75rem">only after audit log review</span>
+  </div>
+</div>
+{% endif %}
+
+{% if missing %}
+<div class="section-title" style="color:#facc15">Missing Hashes — Needs Backfill</div>
+<div class="card" style="margin-bottom:1.5rem;border-color:rgba(202,138,4,0.4)">
+  <p style="font-size:0.8rem;color:var(--muted);margin-bottom:1rem">
+    These farms have geolocation data but no stored hash. They were likely created before
+    the geometry_hash field was introduced or imported via bulk update(). Run the backfill
+    command to anchor them.
+  </p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Farm</th>
+          <th>Tenant</th>
+          <th>Locked Batches</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in missing %}
+        <tr>
+          <td>
+            <div style="font-weight:500">{{ row.farm.name }}</div>
+            <div style="font-size:0.75rem;color:var(--dim)">ID {{ row.farm.pk }}</div>
+          </td>
+          <td style="color:var(--muted)">{{ row.company }}</td>
+          <td>
+            {% if row.locked_batches %}
+              <span class="badge-warning">{{ row.locked_batches|length }} locked</span>
+            {% else %}
+              <span style="color:var(--dim);font-size:0.8rem">none</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div style="margin-top:1rem;padding:0.75rem 1rem;background:rgba(202,138,4,0.08);border-radius:6px;border:1px solid rgba(202,138,4,0.2)">
+    <code style="font-size:0.8rem;color:#facc15">python manage.py backfill_geometry_hashes</code>
+  </div>
+</div>
+{% endif %}
+
+{% if not drifted and not missing %}
+<div class="card" style="border-color:rgba(22,163,74,0.4);text-align:center;padding:3rem">
+  <div style="font-size:2rem;margin-bottom:0.5rem">✓</div>
+  <div style="font-size:1rem;font-weight:600;color:#4ade80;margin-bottom:0.25rem">All geometry hashes are clean</div>
+  <div style="font-size:0.85rem;color:var(--muted)">{{ total }} farm{{ total|pluralize }} checked — stored hash matches computed hash on every record</div>
+</div>
+{% endif %}
+
+<div style="margin-top:2rem;padding:1rem 1.25rem;background:var(--surface);border:1px solid var(--border);border-radius:8px">
+  <div class="section-title" style="margin-bottom:0.5rem">Command Reference</div>
+  <div style="display:flex;flex-direction:column;gap:0.4rem">
+    <div>
+      <code style="font-size:0.8rem;color:#94a3b8">python manage.py check_geometry_integrity</code>
+      <span style="font-size:0.8rem;color:var(--dim);margin-left:0.75rem">scan + report, no writes</span>
+    </div>
+    <div>
+      <code style="font-size:0.8rem;color:#94a3b8">python manage.py check_geometry_integrity --fix</code>
+      <span style="font-size:0.8rem;color:var(--dim);margin-left:0.75rem">rewrite drifted hashes (post audit-log review only)</span>
+    </div>
+    <div>
+      <code style="font-size:0.8rem;color:#94a3b8">python manage.py check_geometry_integrity --company-id &lt;id&gt;</code>
+      <span style="font-size:0.8rem;color:var(--dim);margin-left:0.75rem">scope to one tenant</span>
+    </div>
+    <div>
+      <code style="font-size:0.8rem;color:#94a3b8">python manage.py backfill_geometry_hashes</code>
+      <span style="font-size:0.8rem;color:var(--dim);margin-left:0.75rem">write missing hashes (safe — skip existing)</span>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

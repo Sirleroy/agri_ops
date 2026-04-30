@@ -662,19 +662,41 @@
   <script>
     /* Navigation progress bar */
     (function () {
+      var _timer = null;
+
       function startNav() {
         document.documentElement.classList.add('nav-loading');
+        /* Auto-clear after 8s — handles PDF downloads and any click that
+           doesn't actually navigate away from the page. */
+        clearTimeout(_timer);
+        _timer = setTimeout(function () {
+          document.documentElement.classList.remove('nav-loading');
+        }, 8000);
       }
+
+      /* When the page is truly leaving, snap bar to 100% before reset. */
+      window.addEventListener('pagehide', function () {
+        clearTimeout(_timer);
+        var bar = document.getElementById('nav-bar');
+        if (bar) {
+          bar.style.transition = 'width 0.15s ease-out';
+          bar.style.width = '100%';
+        }
+      });
+
       document.addEventListener('click', function (e) {
         var a = e.target.closest('a[href]');
         if (!a) return;
         var href = a.getAttribute('href') || '';
         if (!href || href[0] === '#' || /^(javascript|mailto|tel):/.test(href) ||
             a.target === '_blank' || e.metaKey || e.ctrlKey || e.shiftKey) return;
+        /* Skip links that are explicitly file downloads. */
+        if (a.hasAttribute('download')) return;
         startNav();
       });
+
       document.addEventListener('submit', function (e) {
-        /* Skip download forms — they don't navigate away */
+        /* Skip download forms — they don't navigate away. */
         if (e.target.hasAttribute('data-download')) return;
         startNav();
       });

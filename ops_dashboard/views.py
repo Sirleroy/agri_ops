@@ -1,3 +1,5 @@
+import hashlib
+import json
 import qrcode
 import qrcode.image.svg
 import io
@@ -677,4 +679,58 @@ def ops_corridor(request):
         'total_verified':  total_verified,
         'platform_pct':    platform_pct,
         'corridor_count':  len(corridors),
+    })
+
+
+@ops_required
+def ops_geometry(request):
+    """
+    Geometry Integrity — scans all farms with geolocation and surfaces any
+    where the stored geometry_hash no longer matches a freshly computed hash.
+    Drift means the polygon was modified after the hash was written, whether
+    through the UI (audit log will have the update) or via a back-channel.
+    """
+    farms_qs = (
+        Farm.objects
+        .exclude(geolocation=None)
+        .select_related('company')
+        .prefetch_related('batches')
+        .order_by('company__name', 'name')
+    )
+
+    total    = 0
+    clean    = 0
+    drifted  = []
+    missing  = []
+
+    for farm in farms_qs.iterator():
+        total += 1
+        try:
+            canonical = json.dumps(farm.geolocation, sort_keys=True, separators=(',', ':'))
+            computed  = hashlib.sha256(canonical.encode()).hexdigest()
+        except (TypeError, ValueError):
+            continue
+
+        if not farm.geometry_hash:
+            missing.append({
+                'farm':        farm,
+                'company':     farm.company.name,
+                'locked_batches': [b for b in farm.batches.all() if b.is_locked],
+            })
+        elif farm.geometry_hash != computed:
+            drifted.append({
+                'farm':          farm,
+                'company':       farm.company.name,
+                'stored':        farm.geometry_hash,
+                'computed':      computed,
+                'locked_batches': [b for b in farm.batches.all() if b.is_locked],
+            })
+        else:
+            clean += 1
+
+    return render(request, 'ops_dashboard/geometry.html', {
+        'total':   total,
+        'clean':   clean,
+        'drifted': drifted,
+        'missing': missing,
     })
