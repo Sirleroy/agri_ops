@@ -60,6 +60,7 @@ AgriOps is a secure, multi-tenant SaaS platform for agricultural SMEs and cooper
 | [Seed Data](runbooks/seed-data.md) | Loading test data |
 | [Incident Response](runbooks/incident-response.md) | How to respond to production incidents |
 | [Backup and Restore](runbooks/backup-restore.md) | Database backup and restore procedures |
+| [Geometry Drift Detection](runbooks/geometry_drift_test.md) | Verify GPS polygon hash integrity — inject drift, run check, restore |
 
 ---
 
