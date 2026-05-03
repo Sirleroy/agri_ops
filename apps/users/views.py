@@ -3,7 +3,7 @@ from django.views.generic import ListView, DetailView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.utils.http import url_has_allowed_host_and_scheme
 from .models import CustomUser
-from .permissions import OrgAdminRequiredMixin, ManagerRequiredMixin
+from .permissions import OrgAdminRequiredMixin, ManagerRequiredMixin, CompanyOwnedMixin
 
 
 class UserListView(ManagerRequiredMixin, ListView):
@@ -17,31 +17,17 @@ class UserListView(ManagerRequiredMixin, ListView):
         return super().get_queryset().filter(company=self.request.user.company)
 
 
-class UserDetailView(ManagerRequiredMixin, DetailView):
+class UserDetailView(CompanyOwnedMixin, ManagerRequiredMixin, DetailView):
     model = CustomUser
     template_name = 'users/detail.html'
     context_object_name = 'profile'
 
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
-
-class UserUpdateView(AuditUpdateMixin, OrgAdminRequiredMixin, UpdateView):
+class UserUpdateView(AuditUpdateMixin, CompanyOwnedMixin, OrgAdminRequiredMixin, UpdateView):
     model = CustomUser
     template_name = 'users/form.html'
     fields = ['username', 'first_name', 'last_name', 'email',
               'job_title', 'phone', 'is_active']
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
     def get_success_url(self):
         next_url = self.request.GET.get('next', '').strip()
@@ -50,7 +36,7 @@ class UserUpdateView(AuditUpdateMixin, OrgAdminRequiredMixin, UpdateView):
         return reverse_lazy('users:detail', kwargs={'pk': self.object.pk})
 
 
-class UserSystemRoleUpdateView(AuditUpdateMixin, OrgAdminRequiredMixin, UpdateView):
+class UserSystemRoleUpdateView(AuditUpdateMixin, CompanyOwnedMixin, OrgAdminRequiredMixin, UpdateView):
     """
     Separate view for changing system_role.
     OrgAdmin only. Isolated so system_role is never
@@ -61,22 +47,8 @@ class UserSystemRoleUpdateView(AuditUpdateMixin, OrgAdminRequiredMixin, UpdateVi
     fields = ['system_role']
     success_url = reverse_lazy('users:list')
 
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
-
-class UserDeleteView(AuditDeleteMixin, OrgAdminRequiredMixin, DeleteView):
+class UserDeleteView(AuditDeleteMixin, CompanyOwnedMixin, OrgAdminRequiredMixin, DeleteView):
     model = CustomUser
     template_name = 'users/confirm_delete.html'
     success_url = reverse_lazy('users:list')
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj

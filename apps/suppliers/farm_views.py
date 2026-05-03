@@ -5,7 +5,10 @@ from django.shortcuts import get_object_or_404, render
 from .models import Supplier, Farm, FarmCertification
 from .forms import FarmForm, FarmUpdateForm
 from .import_pipeline import parse_file_to_features, run_farm_geojson_import  # noqa: F401
-from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin, OtherRevealMixin
+from apps.users.permissions import (
+    StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin, OtherRevealMixin,
+    CompanyOwnedMixin, CompanySetMixin,
+)
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 
 
@@ -260,17 +263,10 @@ class FarmListView(StaffRequiredMixin, ListView):
         return ctx
 
 
-class FarmDetailView(StaffRequiredMixin, DetailView):
+class FarmDetailView(CompanyOwnedMixin, StaffRequiredMixin, DetailView):
     model = Farm
     template_name = 'suppliers/farms/detail.html'
     context_object_name = 'farm'
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -296,7 +292,7 @@ def _farmer_crops_json(company):
     return raw.replace('&', r'\u0026').replace('<', r'\u003c').replace('>', r'\u003e')
 
 
-class FarmCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
+class FarmCreateView(DatePickerMixin, AuditCreateMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
     model = Farm
     template_name = 'suppliers/farms/form.html'
     form_class = FarmForm
@@ -312,23 +308,12 @@ class FarmCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, Crea
         context['farmer_crops_json'] = _farmer_crops_json(self.request.user.company)
         return context
 
-    def form_valid(self, form):
-        form.instance.company = self.request.user.company
-        return super().form_valid(form)
 
-
-class FarmUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, UpdateView):
+class FarmUpdateView(DatePickerMixin, AuditUpdateMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
     model = Farm
     template_name = 'suppliers/farms/form.html'
     form_class = FarmUpdateForm
     success_url = reverse_lazy('suppliers:farm_list')
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -341,24 +326,17 @@ class FarmUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, Upda
         return context
 
 
-class FarmDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
+class FarmDeleteView(AuditDeleteMixin, CompanyOwnedMixin, ManagerRequiredMixin, DeleteView):
     model = Farm
     template_name = 'suppliers/farms/confirm_delete.html'
     success_url = reverse_lazy('suppliers:farm_list')
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
 
 # ─────────────────────────────────────
 # FARM CERTIFICATION VIEWS
 # ─────────────────────────────────────
 
-class FarmCertificationCreateView(OtherRevealMixin, DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
+class FarmCertificationCreateView(OtherRevealMixin, DatePickerMixin, AuditCreateMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
     model = FarmCertification
     template_name = 'suppliers/farms/certification_form.html'
     fields = ['cert_type', 'certifying_body', 'certificate_number', 'issued_date', 'expiry_date', 'notes']
@@ -373,24 +351,15 @@ class FarmCertificationCreateView(OtherRevealMixin, DatePickerMixin, AuditCreate
         return context
 
     def form_valid(self, form):
-        farm = self.get_farm()
-        form.instance.farm = farm
-        form.instance.company = self.request.user.company
+        form.instance.farm = self.get_farm()
         return super().form_valid(form)
 
     def get_success_url(self):
         return reverse_lazy('suppliers:farm_detail', kwargs={'pk': self.kwargs['farm_pk']})
 
 
-class FarmCertificationDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
+class FarmCertificationDeleteView(AuditDeleteMixin, CompanyOwnedMixin, ManagerRequiredMixin, DeleteView):
     model = FarmCertification
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
     def get_success_url(self):
         return reverse_lazy('suppliers:farm_detail', kwargs={'pk': self.object.farm_id})

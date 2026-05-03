@@ -2,7 +2,10 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.urls import reverse_lazy
 from django.utils.http import url_has_allowed_host_and_scheme
 from .models import Supplier
-from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin, OtherRevealMixin
+from apps.users.permissions import (
+    StaffRequiredMixin, ManagerRequiredMixin, OtherRevealMixin,
+    CompanyOwnedMixin, CompanySetMixin,
+)
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 
 
@@ -16,17 +19,10 @@ class SupplierListView(StaffRequiredMixin, ListView):
         return super().get_queryset().filter(company=self.request.user.company)
 
 
-class SupplierDetailView(StaffRequiredMixin, DetailView):
+class SupplierDetailView(CompanyOwnedMixin, StaffRequiredMixin, DetailView):
     model = Supplier
     template_name = 'suppliers/detail.html'
     context_object_name = 'supplier'
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -36,22 +32,18 @@ class SupplierDetailView(StaffRequiredMixin, DetailView):
         return context
 
 
-class SupplierCreateView(OtherRevealMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
+class SupplierCreateView(OtherRevealMixin, AuditCreateMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
     model = Supplier
     template_name = 'suppliers/form.html'
     fields = ['name', 'category', 'contact_person', 'phone', 'email',
               'country', 'city', 'address', 'is_active']
     other_reveal_fields = ['category']
 
-    def form_valid(self, form):
-        form.instance.company = self.request.user.company
-        return super().form_valid(form)
-
     def get_success_url(self):
         return reverse_lazy('suppliers:detail', kwargs={'pk': self.object.pk})
 
 
-class SupplierUpdateView(OtherRevealMixin, AuditUpdateMixin, StaffRequiredMixin, UpdateView):
+class SupplierUpdateView(OtherRevealMixin, AuditUpdateMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
     model = Supplier
     template_name = 'suppliers/form.html'
     fields = ['name', 'category', 'contact_person', 'phone', 'email',
@@ -64,22 +56,8 @@ class SupplierUpdateView(OtherRevealMixin, AuditUpdateMixin, StaffRequiredMixin,
             return next_url
         return reverse_lazy('suppliers:detail', kwargs={'pk': self.object.pk})
 
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
-
-class SupplierDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
+class SupplierDeleteView(AuditDeleteMixin, CompanyOwnedMixin, ManagerRequiredMixin, DeleteView):
     model = Supplier
     template_name = 'suppliers/confirm_delete.html'
     success_url = reverse_lazy('suppliers:list')
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj

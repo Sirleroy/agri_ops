@@ -6,7 +6,10 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.core.cache import cache
 from django.utils.http import url_has_allowed_host_and_scheme
-from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin, OtherRevealMixin
+from apps.users.permissions import (
+    StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin, OtherRevealMixin,
+    CompanyOwnedMixin, CompanySetMixin,
+)
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 from .batch import Batch
 from .quality import PhytosanitaryCertificate, BatchQualityTest
@@ -22,17 +25,10 @@ class BatchListView(StaffRequiredMixin, ListView):
         return Batch.objects.filter(company=self.request.user.company).select_related('sales_order')
 
 
-class BatchDetailView(StaffRequiredMixin, DetailView):
+class BatchDetailView(CompanyOwnedMixin, StaffRequiredMixin, DetailView):
     model = Batch
     template_name = 'sales_orders/batches/detail.html'
     context_object_name = 'batch'
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -57,7 +53,7 @@ class BatchDetailView(StaffRequiredMixin, DetailView):
         return context
 
 
-class BatchCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
+class BatchCreateView(AuditCreateMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
     model = Batch
     template_name = 'sales_orders/batches/form.html'
     fields = ['sales_order', 'commodity', 'quantity_kg', 'farms', 'purchase_orders', 'notes']
@@ -83,25 +79,14 @@ class BatchCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
         context['selected_po_ids'] = set()
         return context
 
-    def form_valid(self, form):
-        form.instance.company = self.request.user.company
-        return super().form_valid(form)
-
     def get_success_url(self):
         return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.object.pk})
 
 
-class BatchUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
+class BatchUpdateView(AuditUpdateMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
     model = Batch
     template_name = 'sales_orders/batches/form.html'
     fields = ['sales_order', 'commodity', 'quantity_kg', 'farms', 'purchase_orders', 'notes']
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
     def dispatch(self, request, *args, **kwargs):
         obj = self.get_object()
@@ -146,7 +131,7 @@ class BatchUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
 # PHYTOSANITARY CERTIFICATE VIEWS
 # ─────────────────────────────────────
 
-class PhytosanitaryCertCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
+class PhytosanitaryCertCreateView(DatePickerMixin, AuditCreateMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
     model = PhytosanitaryCertificate
     template_name = 'sales_orders/batches/phytosanitary_form.html'
     fields = ['certificate_number', 'issuing_office', 'inspector_name',
@@ -161,27 +146,18 @@ class PhytosanitaryCertCreateView(DatePickerMixin, AuditCreateMixin, StaffRequir
         return context
 
     def form_valid(self, form):
-        batch = self.get_batch()
-        form.instance.batch = batch
-        form.instance.company = self.request.user.company
+        form.instance.batch = self.get_batch()
         return super().form_valid(form)
 
     def get_success_url(self):
         return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.kwargs['batch_pk']})
 
 
-class PhytosanitaryCertUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, UpdateView):
+class PhytosanitaryCertUpdateView(DatePickerMixin, AuditUpdateMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
     model = PhytosanitaryCertificate
     template_name = 'sales_orders/batches/phytosanitary_form.html'
     fields = ['certificate_number', 'issuing_office', 'inspector_name',
               'inspection_date', 'issued_date', 'expiry_date', 'notes']
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -192,15 +168,8 @@ class PhytosanitaryCertUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequir
         return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.object.batch_id})
 
 
-class PhytosanitaryCertDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
+class PhytosanitaryCertDeleteView(AuditDeleteMixin, CompanyOwnedMixin, ManagerRequiredMixin, DeleteView):
     model = PhytosanitaryCertificate
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
     def get_success_url(self):
         return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.object.batch_id})
@@ -210,7 +179,7 @@ class PhytosanitaryCertDeleteView(AuditDeleteMixin, ManagerRequiredMixin, Delete
 # BATCH QUALITY TEST VIEWS
 # ─────────────────────────────────────
 
-class BatchQualityTestCreateView(OtherRevealMixin, DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
+class BatchQualityTestCreateView(OtherRevealMixin, DatePickerMixin, AuditCreateMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
     model = BatchQualityTest
     template_name = 'sales_orders/batches/quality_form.html'
     fields = ['test_type', 'lab_name', 'lab_certificate_ref', 'test_date', 'result', 'notes']
@@ -225,27 +194,18 @@ class BatchQualityTestCreateView(OtherRevealMixin, DatePickerMixin, AuditCreateM
         return context
 
     def form_valid(self, form):
-        batch = self.get_batch()
-        form.instance.batch = batch
-        form.instance.company = self.request.user.company
+        form.instance.batch = self.get_batch()
         return super().form_valid(form)
 
     def get_success_url(self):
         return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.kwargs['batch_pk']})
 
 
-class BatchQualityTestUpdateView(OtherRevealMixin, DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, UpdateView):
+class BatchQualityTestUpdateView(OtherRevealMixin, DatePickerMixin, AuditUpdateMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
     model = BatchQualityTest
     template_name = 'sales_orders/batches/quality_form.html'
     fields = ['test_type', 'lab_name', 'lab_certificate_ref', 'test_date', 'result', 'notes']
     other_reveal_fields = ['test_type']
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -256,15 +216,8 @@ class BatchQualityTestUpdateView(OtherRevealMixin, DatePickerMixin, AuditUpdateM
         return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.object.batch_id})
 
 
-class BatchQualityTestDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
+class BatchQualityTestDeleteView(AuditDeleteMixin, CompanyOwnedMixin, ManagerRequiredMixin, DeleteView):
     model = BatchQualityTest
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
     def get_success_url(self):
         return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.object.batch_id})

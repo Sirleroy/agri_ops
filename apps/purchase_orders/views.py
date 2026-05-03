@@ -7,7 +7,10 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from decimal import Decimal, InvalidOperation
 from .models import PurchaseOrder, PurchaseOrderItem
 from apps.products.models import Product
-from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin
+from apps.users.permissions import (
+    StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin,
+    CompanyOwnedMixin, CompanySetMixin,
+)
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 from apps.audit.mixins import log_action
 
@@ -22,17 +25,10 @@ class PurchaseOrderListView(StaffRequiredMixin, ListView):
         return super().get_queryset().filter(company=self.request.user.company).select_related('supplier', 'company')
 
 
-class PurchaseOrderDetailView(StaffRequiredMixin, DetailView):
+class PurchaseOrderDetailView(CompanyOwnedMixin, StaffRequiredMixin, DetailView):
     model = PurchaseOrder
     template_name = 'purchase_orders/detail.html'
     context_object_name = 'order'
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -62,7 +58,7 @@ class PurchaseOrderDetailView(StaffRequiredMixin, DetailView):
         return context
 
 
-class PurchaseOrderCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
+class PurchaseOrderCreateView(DatePickerMixin, AuditCreateMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
     model = PurchaseOrder
     template_name = 'purchase_orders/form.html'
     fields = ['supplier', 'expected_delivery', 'notes']
@@ -76,22 +72,14 @@ class PurchaseOrderCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMi
         year = timezone.now().year
         count = PurchaseOrder.objects.filter(company=company).count()
         form.instance.order_number = f"{year}-{count + 1:04d}"
-        form.instance.company = company
         return super().form_valid(form)
 
 
-class PurchaseOrderUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, UpdateView):
+class PurchaseOrderUpdateView(DatePickerMixin, AuditUpdateMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
     model = PurchaseOrder
     template_name = 'purchase_orders/form.html'
     fields = ['supplier', 'order_number', 'status', 'expected_delivery', 'notes']
     success_url = reverse_lazy('purchase_orders:list')
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
     def form_valid(self, form):
         from apps.inventory.models import Inventory
@@ -122,17 +110,10 @@ class PurchaseOrderUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMi
         return reverse_lazy('purchase_orders:detail', kwargs={'pk': self.object.pk})
 
 
-class PurchaseOrderDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
+class PurchaseOrderDeleteView(AuditDeleteMixin, CompanyOwnedMixin, ManagerRequiredMixin, DeleteView):
     model = PurchaseOrder
     template_name = 'purchase_orders/confirm_delete.html'
     success_url = reverse_lazy('purchase_orders:list')
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
 
 class PurchaseOrderMarkReceivedView(StaffRequiredMixin, View):

@@ -7,7 +7,10 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from decimal import Decimal, InvalidOperation
 from .models import SalesOrder, SalesOrderItem
 from apps.products.models import Product
-from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin
+from apps.users.permissions import (
+    StaffRequiredMixin, ManagerRequiredMixin,
+    CompanyOwnedMixin, CompanySetMixin,
+)
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin, log_action
 
 
@@ -21,17 +24,10 @@ class SalesOrderListView(StaffRequiredMixin, ListView):
         return super().get_queryset().filter(company=self.request.user.company).select_related('company')
 
 
-class SalesOrderDetailView(StaffRequiredMixin, DetailView):
+class SalesOrderDetailView(CompanyOwnedMixin, StaffRequiredMixin, DetailView):
     model = SalesOrder
     template_name = 'sales_orders/detail.html'
     context_object_name = 'order'
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -64,7 +60,7 @@ class SalesOrderDetailView(StaffRequiredMixin, DetailView):
         return context
 
 
-class SalesOrderCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
+class SalesOrderCreateView(AuditCreateMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
     model = SalesOrder
     template_name = 'sales_orders/form.html'
     fields = ['customer_name', 'customer_email', 'customer_phone', 'is_eu_export', 'nxp_reference', 'notes']
@@ -74,7 +70,6 @@ class SalesOrderCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
         year = timezone.now().year
         count = SalesOrder.objects.filter(company=company).count()
         form.instance.order_number = f"{year}-{count + 1:04d}"
-        form.instance.company = company
         form.instance.created_by = self.request.user
         return super().form_valid(form)
 
@@ -82,18 +77,11 @@ class SalesOrderCreateView(AuditCreateMixin, StaffRequiredMixin, CreateView):
         return reverse_lazy('sales_orders:detail', kwargs={'pk': self.object.pk})
 
 
-class SalesOrderUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
+class SalesOrderUpdateView(AuditUpdateMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
     model = SalesOrder
     template_name = 'sales_orders/form.html'
     fields = ['order_number', 'customer_name', 'customer_email', 'customer_phone',
               'status', 'nxp_reference', 'certificate_of_origin_ref', 'is_eu_export', 'notes']
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
     def get_success_url(self):
         next_url = self.request.GET.get('next', '').strip()
@@ -102,17 +90,10 @@ class SalesOrderUpdateView(AuditUpdateMixin, StaffRequiredMixin, UpdateView):
         return reverse_lazy('sales_orders:detail', kwargs={'pk': self.object.pk})
 
 
-class SalesOrderDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
+class SalesOrderDeleteView(AuditDeleteMixin, CompanyOwnedMixin, ManagerRequiredMixin, DeleteView):
     model = SalesOrder
     template_name = 'sales_orders/confirm_delete.html'
     success_url = reverse_lazy('sales_orders:list')
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
 
 class SalesOrderItemCreateView(StaffRequiredMixin, View):

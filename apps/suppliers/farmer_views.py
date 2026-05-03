@@ -5,7 +5,10 @@ from django.shortcuts import render
 from django.utils.http import url_has_allowed_host_and_scheme
 from .models import Farmer
 from .forms import FarmerForm
-from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin
+from apps.users.permissions import (
+    StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin,
+    CompanyOwnedMixin, CompanySetMixin,
+)
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 
 
@@ -48,17 +51,10 @@ class FarmerListView(StaffRequiredMixin, ListView):
         return ctx
 
 
-class FarmerDetailView(StaffRequiredMixin, DetailView):
+class FarmerDetailView(CompanyOwnedMixin, StaffRequiredMixin, DetailView):
     model = Farmer
     template_name = 'suppliers/farmers/detail.html'
     context_object_name = 'farmer'
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -68,7 +64,7 @@ class FarmerDetailView(StaffRequiredMixin, DetailView):
         return context
 
 
-class FarmerCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, CreateView):
+class FarmerCreateView(DatePickerMixin, AuditCreateMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
     model = Farmer
     template_name = 'suppliers/farmers/form.html'
     form_class = FarmerForm
@@ -78,15 +74,11 @@ class FarmerCreateView(DatePickerMixin, AuditCreateMixin, StaffRequiredMixin, Cr
         kwargs['company'] = self.request.user.company
         return kwargs
 
-    def form_valid(self, form):
-        form.instance.company = self.request.user.company
-        return super().form_valid(form)
-
     def get_success_url(self):
         return reverse_lazy('suppliers:farmer_detail', kwargs={'pk': self.object.pk})
 
 
-class FarmerUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, UpdateView):
+class FarmerUpdateView(DatePickerMixin, AuditUpdateMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
     model = Farmer
     template_name = 'suppliers/farmers/form.html'
     form_class = FarmerForm
@@ -96,13 +88,6 @@ class FarmerUpdateView(DatePickerMixin, AuditUpdateMixin, StaffRequiredMixin, Up
         if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={self.request.get_host()}):
             return next_url
         return reverse_lazy('suppliers:farmer_detail', kwargs={'pk': self.object.pk})
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -310,13 +295,6 @@ class FarmerImportView(StaffRequiredMixin, View):
         return render(request, self.template_name, {'result': result})
 
 
-class FarmerDeleteView(AuditDeleteMixin, ManagerRequiredMixin, DeleteView):
+class FarmerDeleteView(AuditDeleteMixin, CompanyOwnedMixin, ManagerRequiredMixin, DeleteView):
     model = Farmer
     success_url = reverse_lazy('suppliers:farmer_list')
-
-    def get_object(self):
-        obj = super().get_object()
-        if obj.company != self.request.user.company:
-            from django.http import Http404
-            raise Http404
-        return obj

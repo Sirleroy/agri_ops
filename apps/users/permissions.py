@@ -1,5 +1,6 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
+from django.http import Http404
 
 
 class RoleRequiredMixin(LoginRequiredMixin):
@@ -47,6 +48,32 @@ class ManagerRequiredMixin(RoleRequiredMixin):
 
 class OrgAdminRequiredMixin(RoleRequiredMixin):
     required_role = 'org_admin'
+
+
+class CompanyOwnedMixin:
+    """
+    Tenant-isolation guard for DetailView / UpdateView / DeleteView.
+    Raises 404 if the fetched object does not belong to the requesting
+    user's company. Mandatory on any view that fetches a tenant-scoped
+    object by pk — a missing check is a cross-tenant data leak.
+    """
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        if obj.company != self.request.user.company:
+            raise Http404
+        return obj
+
+
+class CompanySetMixin:
+    """
+    Stamps form.instance.company with the requesting user's company before
+    save. Use on CreateView (and UpdateView where rebinding is desired).
+    Subclasses that override form_valid should call super().form_valid(form)
+    so the company stamp still runs.
+    """
+    def form_valid(self, form):
+        form.instance.company = self.request.user.company
+        return super().form_valid(form)
 
 
 class OtherRevealMixin:
