@@ -39,7 +39,7 @@ class Command(BaseCommand):
 
             user = CustomUser.objects.create_superuser(
                 username='ezinna',
-                email='ohahezinna@gmail.com',
+                email='founder@agriops.io',
                 password='AgriOps2026!Secure',
                 system_role='org_admin',
                 company=company,

@@ -197,7 +197,7 @@ LOGOUT_REDIRECT_URL = '/login/'
 SITE_URL = 'http://localhost:8001'
 
 # ── Founder notifications ─────────────────────────────────────
-FOUNDER_EMAIL = 'ohahezinna@gmail.com'
+FOUNDER_EMAIL = 'founder@agriops.io'
 
 # ── Ops dashboard ─────────────────────────────────────────────
 OPS_SESSION_COOKIE_AGE = 7200   # 2 hours

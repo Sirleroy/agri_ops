@@ -60,6 +60,28 @@ jobs:
       - name: Run tests
         run: python manage.py test --verbosity=2
 
+  security:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install security tools
+        run: pip install pip-audit bandit
+
+      - name: pip-audit — check for known CVEs in dependencies
+        run: pip-audit -r requirements.txt
+
+      - name: bandit — static security analysis
+        run: bandit -r apps/ ops_dashboard/ -x apps/migrations,apps/*/migrations --severity-level medium --quiet
+
   deploy:
     needs: test
     runs-on: ubuntu-latest
