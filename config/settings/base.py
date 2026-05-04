@@ -50,6 +50,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'axes.middleware.AxesMiddleware',
     'apps.audit.middleware.SentryTenantContextMiddleware',
+    'apps.audit.middleware.SecurityHeadersMiddleware',
 ]
 
 ROOT_URLCONF = 'agri_ops_project.urls'
