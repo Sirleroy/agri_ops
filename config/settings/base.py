@@ -49,6 +49,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'axes.middleware.AxesMiddleware',
+    'apps.audit.middleware.SentryTenantContextMiddleware',
 ]
 
 ROOT_URLCONF = 'agri_ops_project.urls'

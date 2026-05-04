@@ -16,11 +16,52 @@ if os.environ.get('DATABASE_URL'):
 DEBUG = False
 ALLOWED_HOSTS = config('ALLOWED_HOSTS').split(',')
 
+# ── Sentry ───────────────────────────────────────────────────
+# Hard-coded list of field names whose values must never be transmitted
+# to Sentry. Covers Nigerian DPA personal data (NIN, phone, name) plus
+# anything that could identify a farm location or a customer.
+_SENTRY_SENSITIVE_KEYS = {
+    'nin', 'phone', 'phone_number',
+    'email', 'customer_email', 'customer_phone',
+    'password', 'secret', 'token', 'api_key',
+    'csrfmiddlewaretoken', 'sessionid',
+    'geolocation', 'coordinates', 'lat', 'lng', 'latitude', 'longitude',
+    'first_name', 'last_name', 'full_name',
+    'customer_name', 'contact_person',
+}
+
+
+def _sentry_scrub(obj):
+    if isinstance(obj, dict):
+        return {
+            k: ('[scrubbed]' if k.lower() in _SENTRY_SENSITIVE_KEYS else _sentry_scrub(v))
+            for k, v in obj.items()
+        }
+    if isinstance(obj, list):
+        return [_sentry_scrub(item) for item in obj]
+    return obj
+
+
+def _sentry_before_send(event, hint):
+    request = event.get('request')
+    if request and isinstance(request.get('data'), (dict, list)):
+        request['data'] = _sentry_scrub(request['data'])
+    if isinstance(event.get('extra'), dict):
+        event['extra'] = _sentry_scrub(event['extra'])
+    breadcrumbs = event.get('breadcrumbs') or {}
+    for crumb in breadcrumbs.get('values', []):
+        if isinstance(crumb.get('data'), (dict, list)):
+            crumb['data'] = _sentry_scrub(crumb['data'])
+    return event
+
+
 sentry_sdk.init(
     dsn=os.environ.get('SENTRY_DSN'),
     environment=os.environ.get('DJANGO_ENV', 'production'),
+    release=os.environ.get('RENDER_GIT_COMMIT') or os.environ.get('GIT_SHA'),
     traces_sample_rate=0.2,
     send_default_pii=False,
+    before_send=_sentry_before_send,
 )
 
 # ── HTTPS enforcement ─────────────────────────────────────────

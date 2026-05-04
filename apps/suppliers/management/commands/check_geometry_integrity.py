@@ -11,6 +11,8 @@ Usage:
 import hashlib
 import json
 
+import sentry_sdk
+from sentry_sdk.crons import monitor
 from django.core.management.base import BaseCommand
 
 from apps.suppliers.models import Farm
@@ -34,6 +36,7 @@ class Command(BaseCommand):
             help='Rewrite drifted hashes in place (use after confirming drift is not tampering)',
         )
 
+    @monitor(monitor_slug='check-geometry-integrity')
     def handle(self, *args, **options):
         company_id = options['company_id']
         fix        = options['fix']
@@ -84,6 +87,10 @@ class Command(BaseCommand):
                 self.stdout.write(f'  Farm {farm.pk} [{farm.company.name}] {farm.name}')
 
         if drifted:
+            sentry_sdk.capture_message(
+                f'Geometry drift detected on {len(drifted)} farm(s)',
+                level='error',
+            )
             self.stdout.write(self.style.ERROR('\nFarms with DRIFTED hash (geometry may have changed):'))
             for farm, stored, computed in drifted:
                 self.stdout.write(
