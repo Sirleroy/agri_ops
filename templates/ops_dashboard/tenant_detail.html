@@ -272,7 +272,7 @@
           <td style="font-size:0.8rem">{{ log.user|default:"—" }}</td>
           <td style="font-size:0.8rem">{{ log.action }}</td>
           <td style="color:var(--muted);font-size:0.8rem">{{ log.model_name }}</td>
-          <td style="color:var(--dim);font-size:0.8rem">{{ log.object_repr }}</td>
+          <td style="color:var(--dim);font-size:0.8rem">{{ log.object_repr|escape }}</td>
         </tr>
         {% empty %}
         <tr><td colspan="5" style="color:var(--dim)">No activity recorded</td></tr>

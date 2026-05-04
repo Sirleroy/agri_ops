@@ -135,7 +135,7 @@
             {% endif %}
           </td>
           <td class="px-4 py-3 text-slate-400 whitespace-nowrap">{{ log.model_name }}</td>
-          <td class="px-4 py-3 text-slate-300 max-w-xs truncate">{{ log.object_repr }}</td>
+          <td class="px-4 py-3 text-slate-300 max-w-xs truncate">{{ log.object_repr|escape }}</td>
           <td class="px-4 py-3 text-slate-600 whitespace-nowrap">{{ log.ip_address|default:"—" }}</td>
           <td class="px-4 py-3">
             {% if log.changes %}

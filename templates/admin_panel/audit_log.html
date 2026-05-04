@@ -52,7 +52,7 @@
           {% else %}<span class="badge badge-slate">{{ log.action }}</span>{% endif %}
         </td>
         <td style="color:var(--muted);">{{ log.model_name }}</td>
-        <td>{{ log.object_repr }}</td>
+        <td>{{ log.object_repr|escape }}</td>
         <td style="color:var(--dim);font-family:monospace;font-size:0.78rem;">{{ log.ip_address|default:"—" }}</td>
       </tr>
       {% empty %}

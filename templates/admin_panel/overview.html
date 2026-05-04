@@ -42,7 +42,7 @@
         <td>{{ log.user|default:"—" }}</td>
         <td>{{ log.action }}</td>
         <td>{{ log.model_name }}</td>
-        <td>{{ log.object_repr }}</td>
+        <td>{{ log.object_repr|escape }}</td>
       </tr>
       {% empty %}
       <tr><td colspan="5" style="color:var(--dim)">No activity yet</td></tr>
