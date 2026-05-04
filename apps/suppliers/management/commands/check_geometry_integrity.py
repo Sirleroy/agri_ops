@@ -36,7 +36,7 @@ class Command(BaseCommand):
             help='Rewrite drifted hashes in place (use after confirming drift is not tampering)',
         )
 
-    @monitor(monitor_slug='check-geometry-integrity')
+    @monitor(monitor_slug='geometry-integrity-check')
     def handle(self, *args, **options):
         company_id = options['company_id']
         fix        = options['fix']
