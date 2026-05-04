@@ -1,4 +1,4 @@
-Django==6.0.3
+Django==6.0.4
 PyJWT==2.12.0
 asgiref==3.11.1
 backoff==2.2.1
@@ -19,7 +19,7 @@ numpy==2.4.2
 openpyxl==3.1.5
 packaging==26.0
 pandas==3.0.1
-pillow==12.1.1
+pillow==12.2.0
 posthog==7.9.12
 psycopg2-binary==2.9.11
 python-dateutil==2.9.0.post0
