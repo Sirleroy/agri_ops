@@ -273,8 +273,21 @@ class CorridorExportView(StaffRequiredMixin, View):
 
         fmt = request.GET.get('format', 'csv')
         if fmt == 'pdf':
-            return self._pdf(company, corridors)
-        return self._csv(company, corridors)
+            response = self._pdf(company, corridors)
+        else:
+            response = self._csv(company, corridors)
+
+        AuditLog.objects.create(
+            company=company,
+            user=request.user,
+            action='download',
+            model_name='CorridorReport',
+            object_repr=f'Corridor Compliance Summary ({fmt.upper()})',
+            changes={'format': fmt},
+            ip_address=get_client_ip(request),
+        )
+
+        return response
 
     def _csv(self, company, corridors):
         filename = f"AgriOps_Corridor_Summary_{company.name.replace(' ', '_')}_{timezone.now().strftime('%Y%m%d')}.csv"
