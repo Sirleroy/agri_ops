@@ -33,10 +33,10 @@ class Command(BaseCommand):
     def _flush(self):
         from apps.companies.models import Company
         from apps.users.models import CustomUser
-        names = ['Ake Collective', 'Agro Foods Nigeria Ltd']
+        names = ['AgriOps Trading LTD', 'Agro Foods Nigeria Ltd']
         Company.objects.filter(name__in=names).delete()
         CustomUser.objects.filter(username__in=[
-            'ake_admin', 'ake_manager', 'ake_staff', 'ake_viewer',
+            'agriops_admin', 'agriops_manager', 'agriops_staff', 'agriops_viewer',
             'agro_admin', 'agro_staff',
         ]).delete()
         self.stdout.write('  Flushed existing seed data.')
@@ -52,34 +52,34 @@ class Command(BaseCommand):
         from apps.sales_orders.models import SalesOrder
         from apps.sales_orders.batch import Batch
 
-        # ── TENANT 1: Ake Collective ─────────────────────────────
-        ake, _ = Company.objects.get_or_create(
-            name='Ake Collective',
+        # ── TENANT 1: AgriOps Trading LTD ─────────────────────────────
+        company1, _ = Company.objects.get_or_create(
+            name='AgriOps Trading LTD',
             defaults={
                 'country': 'Nigeria',
                 'city': 'Kano',
                 'address': '12 Zaria Road, Kano',
                 'phone': '+234 802 000 0001',
-                'email': 'info@akecollective.ng',
+                'email': 'info@agriops-trading.ng',
                 'plan_tier': 'pro',
                 'is_active': True,
             }
         )
-        self.stdout.write(f'  Company: {ake}')
+        self.stdout.write(f'  Company: {company1}')
 
         # Users — Ake
-        self._make_user('ake_admin', 'Amara', 'Okafor',
-                                    'org_admin', ake, 'Operations Director')
-        ake_mgr   = self._make_user('ake_manager', 'Bello', 'Musa',
-                                    'manager', ake, 'Procurement Manager')
-        ake_staff = self._make_user('ake_staff', 'Chisom', 'Eze',
-                                    'staff', ake, 'Field Officer')
-        self._make_user('ake_viewer', 'Dayo', 'Adeyemi',
-                                    'viewer', ake, 'Finance Analyst')
+        self._make_user('agriops_admin', 'Amara', 'Okafor',
+                                    'org_admin', company1, 'Operations Director')
+        co_mgr   = self._make_user('agriops_manager', 'Bello', 'Musa',
+                                    'manager', company1, 'Procurement Manager')
+        co_staff = self._make_user('agriops_staff', 'Chisom', 'Eze',
+                                    'staff', company1, 'Field Officer')
+        self._make_user('agriops_viewer', 'Dayo', 'Adeyemi',
+                                    'viewer', company1, 'Finance Analyst')
 
         # Suppliers — Ake
         sup1, _ = Supplier.objects.get_or_create(
-            name='Kano Agro Inputs Ltd', company=ake,
+            name='Kano Agro Inputs Ltd', company=company1,
             defaults={
                 'category': 'fertilizer',
                 'contact_person': 'Ibrahim Sule',
@@ -90,7 +90,7 @@ class Command(BaseCommand):
             }
         )
         sup2, _ = Supplier.objects.get_or_create(
-            name='Sahel Seeds Co-op', company=ake,
+            name='Sahel Seeds Co-op', company=company1,
             defaults={
                 'category': 'seeds',
                 'contact_person': 'Fatima Abubakar',
@@ -101,7 +101,7 @@ class Command(BaseCommand):
             }
         )
         sup3, _ = Supplier.objects.get_or_create(
-            name='West Africa Packaging', company=ake,
+            name='West Africa Packaging', company=company1,
             defaults={
                 'category': 'packaging',
                 'contact_person': 'Emeka Nwosu',
@@ -115,7 +115,7 @@ class Command(BaseCommand):
 
         # Farmers — Ake (linked to farms)
         farmer1, _ = Farmer.objects.get_or_create(
-            first_name='Haruna', last_name='Sule', company=ake,
+            first_name='Haruna', last_name='Sule', company=company1,
             defaults={
                 'gender': 'M',
                 'phone': '+234 803 123 0001',
@@ -128,7 +128,7 @@ class Command(BaseCommand):
             }
         )
         farmer2, _ = Farmer.objects.get_or_create(
-            first_name='Ramatu', last_name='Abubakar', company=ake,
+            first_name='Ramatu', last_name='Abubakar', company=company1,
             defaults={
                 'gender': 'F',
                 'phone': '+234 803 123 0002',
@@ -144,7 +144,7 @@ class Command(BaseCommand):
 
         # Farms — Ake (EUDR traceability, fully filled for DDS)
         farm1, _ = Farm.objects.get_or_create(
-            name='Sule Family Farm', company=ake,
+            name='Sule Family Farm', company=company1,
             defaults={
                 'supplier': sup2,
                 'farmer': farmer1,
@@ -157,15 +157,15 @@ class Command(BaseCommand):
                 'deforestation_reference_date': datetime.date(2020, 12, 31),
                 'land_cleared_after_cutoff': False,
                 'mapping_date': datetime.date(2026, 3, 15),
-                'mapped_by': ake_staff,
+                'mapped_by': co_staff,
                 'is_eudr_verified': True,
-                'verified_by': ake_mgr,
+                'verified_by': co_mgr,
                 'verified_date': datetime.date(2026, 3, 20),
                 'verification_expiry': datetime.date(2027, 3, 20),
             }
         )
         farm2, _ = Farm.objects.get_or_create(
-            name='Abubakar Cooperative Plot B', company=ake,
+            name='Abubakar Cooperative Plot B', company=company1,
             defaults={
                 'supplier': sup2,
                 'farmer': farmer2,
@@ -178,7 +178,7 @@ class Command(BaseCommand):
                 'deforestation_reference_date': datetime.date(2020, 12, 31),
                 'land_cleared_after_cutoff': False,
                 'mapping_date': datetime.date(2026, 3, 15),
-                'mapped_by': ake_staff,
+                'mapped_by': co_staff,
                 'is_eudr_verified': False,
             }
         )
@@ -186,7 +186,7 @@ class Command(BaseCommand):
 
         # Products — Ake
         prod1, _ = Product.objects.get_or_create(
-            name='NPK Fertilizer 20-10-10', company=ake,
+            name='NPK Fertilizer 20-10-10', company=company1,
             defaults={
                 'supplier': sup1,
                 'category': 'fertilizer',
@@ -197,7 +197,7 @@ class Command(BaseCommand):
             }
         )
         prod2, _ = Product.objects.get_or_create(
-            name='Certified Soybean Seed (Improved)', company=ake,
+            name='Certified Soybean Seed (Improved)', company=company1,
             defaults={
                 'supplier': sup2,
                 'category': 'seeds',
@@ -208,7 +208,7 @@ class Command(BaseCommand):
             }
         )
         prod3, _ = Product.objects.get_or_create(
-            name='Woven Polypropylene Bag 50kg', company=ake,
+            name='Woven Polypropylene Bag 50kg', company=company1,
             defaults={
                 'supplier': sup3,
                 'category': 'packaging',
@@ -222,22 +222,22 @@ class Command(BaseCommand):
 
         # Inventory — Ake
         Inventory.objects.get_or_create(
-            company=ake, product=prod1, warehouse_location='Kano Main Store',
+            company=company1, product=prod1, warehouse_location='Kano Main Store',
             defaults={'quantity': 120, 'low_stock_threshold': 20}
         )
         Inventory.objects.get_or_create(
-            company=ake, product=prod2, warehouse_location='Kano Main Store',
+            company=company1, product=prod2, warehouse_location='Kano Main Store',
             defaults={'quantity': 8, 'low_stock_threshold': 50}
         )
         Inventory.objects.get_or_create(
-            company=ake, product=prod3, warehouse_location='Lagos Depot',
+            company=company1, product=prod3, warehouse_location='Lagos Depot',
             defaults={'quantity': 500, 'low_stock_threshold': 100}
         )
         self.stdout.write('  Inventory seeded for Ake.')
 
         # Purchase Orders — Ake
         po1, _ = PurchaseOrder.objects.get_or_create(
-            order_number='AKE-PO-2026-001', company=ake,
+            order_number='AKE-PO-2026-001', company=company1,
             defaults={
                 'supplier': sup1,
                 'status': 'delivered',
@@ -245,7 +245,7 @@ class Command(BaseCommand):
             }
         )
         po2, _ = PurchaseOrder.objects.get_or_create(
-            order_number='AKE-PO-2026-002', company=ake,
+            order_number='AKE-PO-2026-002', company=company1,
             defaults={
                 'supplier': sup2,
                 'status': 'pending',
@@ -256,7 +256,7 @@ class Command(BaseCommand):
 
         # Sales Orders — Ake
         so1, _ = SalesOrder.objects.get_or_create(
-            order_number='AKE-SO-2026-001', company=ake,
+            order_number='AKE-SO-2026-001', company=company1,
             defaults={
                 'customer_name': 'Kano State Farmers Cooperative',
                 'customer_email': 'procurement@kanofarmers.ng',
@@ -267,7 +267,7 @@ class Command(BaseCommand):
         )
         # EU export SO — EUDR compliance required
         so2, _ = SalesOrder.objects.get_or_create(
-            order_number='AKE-SO-2026-002', company=ake,
+            order_number='AKE-SO-2026-002', company=company1,
             defaults={
                 'customer_name': 'Nexira SAS',
                 'customer_email': 'procurement@nexira.eu',
@@ -280,9 +280,9 @@ class Command(BaseCommand):
         self.stdout.write(f'  Sales Orders: {so1}, {so2}')
 
         # Batch — EUDR traceability chain: Farm → Batch → EU Sales Order
-        if not Batch.objects.filter(company=ake, sales_order=so2).exists():
+        if not Batch.objects.filter(company=company1, sales_order=so2).exists():
             batch = Batch(
-                company=ake,
+                company=company1,
                 sales_order=so2,
                 commodity='Soy',
                 quantity_kg=12500.000,

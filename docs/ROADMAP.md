@@ -72,7 +72,7 @@ Two gap analyses completed against EU and Nigerian export regulations. All gaps 
 ---
 
 ## Phase 4.6 — UX Simplification & Farmer Registry ✅ Complete
-Shipped March 2026. Driven by live contract execution (soy export, Ake Collective) — all features confirmed against real operational need, not hypothetical users.
+Shipped March 2026. Driven by live contract execution (soy export, AgriOps Trading LTD) — all features confirmed against real operational need, not hypothetical users.
 
 - **Farmer model** — proper farmer registry (name, phone, village, LGA, NIN). Replaces free-text `farmer_name` on Farm with a FK to a structured Farmer record ✅
 - **Farm form** — `farmer` dropdown scoped to tenant, `farmer_name` field retired from UI ✅

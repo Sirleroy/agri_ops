@@ -19,7 +19,7 @@ class Command(BaseCommand):
         with transaction.atomic():
             # Create company
             company, created = Company.objects.get_or_create(
-                name='Ake Collective',
+                name='AgriOps Trading LTD',
                 defaults={
                     'country': 'Nigeria',
                     'city': 'Kano',

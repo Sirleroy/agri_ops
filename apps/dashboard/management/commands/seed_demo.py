@@ -114,7 +114,7 @@ class Command(BaseCommand):
             self._seed(ake)
 
         self.stdout.write(self.style.SUCCESS('\nDemo chain seeded. Ready for demo.'))
-        self.stdout.write('  Login: ake_admin / agriops2026!')
+        self.stdout.write('  Login: agriops_admin / agriops2026!')
 
     # ──────────────────────────────────────────────────────────────────────────
 

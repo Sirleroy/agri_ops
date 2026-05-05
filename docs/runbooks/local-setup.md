@@ -144,7 +144,7 @@ Obtain a JWT token:
 ```bash
 curl -s -X POST http://localhost:8001/api/v1/token/ \
   -H "Content-Type: application/json" \
-  -d '{"username": "ake_admin", "password": "agriops2026!"}' \
+  -d '{"username: agriops_admin", "password": "agriops2026!"}' \
   | python3 -m json.tool
 ```
 

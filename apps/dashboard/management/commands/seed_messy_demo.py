@@ -1,7 +1,7 @@
 """
 Management command: seed_messy_demo
 
-End-to-end import of intentionally messy GeoJSON field data for Ake Collective,
+End-to-end import of intentionally messy GeoJSON field data for AgriOps Trading LTD,
 then builds the full traceability chain through to a locked batch with a
 downloadable EUDR certificate.
 
@@ -226,7 +226,7 @@ FEATURES = [
 
 
 class Command(BaseCommand):
-    help = 'Seed messy field-condition demo data for Ake Collective'
+    help = 'Seed messy field-condition demo data for AgriOps Trading LTD'
 
     def add_arguments(self, parser):
         parser.add_argument('--flush', action='store_true',
@@ -248,22 +248,22 @@ class Command(BaseCommand):
         from apps.products.models import Product
 
         try:
-            ake = Company.objects.get(name='Ake Collective')
+            company1 = Company.objects.get(name='AgriOps Trading LTD')
         except Company.DoesNotExist:
-            self.stdout.write('  Ake Collective not found — nothing to flush.')
+            self.stdout.write('  AgriOps Trading LTD not found — nothing to flush.')
             return
 
         # Delete farms first — Farm.supplier is SET_NULL on delete, so farms
         # must be removed before the supplier or they become orphaned and block re-import
         from apps.suppliers.models import Farm
-        coop_qs = Supplier.objects.filter(name=SUPPLIER_NAME, company=ake)
-        Farm.objects.filter(company=ake, supplier__in=coop_qs).delete()
+        coop_qs = Supplier.objects.filter(name=SUPPLIER_NAME, company=company1)
+        Farm.objects.filter(company=company1, supplier__in=coop_qs).delete()
         coop_qs.delete()
-        SalesOrder.objects.filter(order_number=SO_NUMBER, company=ake).delete()
-        PurchaseOrder.objects.filter(order_number=PO_NUMBER, company=ake).delete()
-        Product.objects.filter(name=PRODUCT_NAME, company=ake).delete()
+        SalesOrder.objects.filter(order_number=SO_NUMBER, company=company1).delete()
+        PurchaseOrder.objects.filter(order_number=PO_NUMBER, company=company1).delete()
+        Product.objects.filter(name=PRODUCT_NAME, company=company1).delete()
         Farmer.objects.filter(
-            first_name='Zainab', last_name='Garba', company=ake
+            first_name='Zainab', last_name='Garba', company=company1
         ).delete()
         self.stdout.write('  Flushed messy demo records.')
 
@@ -285,23 +285,23 @@ class Command(BaseCommand):
 
         # ── Tenant ───────────────────────────────────────────────────────────
         try:
-            ake = Company.objects.get(name='Ake Collective')
+            company1 = Company.objects.get(name='AgriOps Trading LTD')
         except Company.DoesNotExist:
             self.stdout.write(self.style.ERROR(
-                '  Ake Collective not found — run seed_data first.'
+                '  AgriOps Trading LTD not found — run seed_data first.'
             ))
             return
 
-        ake_staff = CustomUser.objects.filter(
-            username='ake_staff', company=ake
+        co_staff = CustomUser.objects.filter(
+            username='agriops_staff', company=company1
         ).first()
-        ake_mgr = CustomUser.objects.filter(
-            username='ake_manager', company=ake
+        co_mgr = CustomUser.objects.filter(
+            username='agriops_manager', company=company1
         ).first()
 
         # ── Supplier ─────────────────────────────────────────────────────────
         coop, _ = Supplier.objects.get_or_create(
-            name=SUPPLIER_NAME, company=ake,
+            name=SUPPLIER_NAME, company=company1,
             defaults={
                 'category': 'cooperative',
                 'contact_person': 'Malam Garba Sule',
@@ -316,7 +316,7 @@ class Command(BaseCommand):
 
         # ── Pre-create Zainab Garba (tests commodity fallback from farmer.crops) ──
         Farmer.objects.get_or_create(
-            first_name='Zainab', last_name='Garba', company=ake,
+            first_name='Zainab', last_name='Garba', company=company1,
             defaults={
                 'gender': 'F',
                 'village': 'Ganjuwa',
@@ -330,7 +330,7 @@ class Command(BaseCommand):
 
         # ── Run import pipeline ───────────────────────────────────────────────
         result = run_farm_geojson_import(
-            company=ake,
+            company=company1,
             supplier=coop,
             features=FEATURES,
             default_commodity='',
@@ -339,8 +339,8 @@ class Command(BaseCommand):
 
         # Write FarmImportLog exactly as the view does
         FarmImportLog.objects.create(
-            company=ake,
-            uploaded_by=ake_staff,
+            company=company1,
+            uploaded_by=co_staff,
             supplier=coop,
             filename=FILENAME,
             dry_run=False,
@@ -359,10 +359,10 @@ class Command(BaseCommand):
         )
 
         # Write AuditLog for the import
-        if result['created'] and ake_staff:
+        if result['created'] and co_staff:
             AuditLog.objects.create(
-                company=ake,
-                user=ake_staff,
+                company=company1,
+                user=co_staff,
                 action='import',
                 model_name='Farm',
                 object_repr=f"{result['created']} farms — {FILENAME}"[:255],
@@ -393,16 +393,16 @@ class Command(BaseCommand):
 
         # ── Post-import: verify, certify, flag ───────────────────────────────
         farm_haruna  = Farm.objects.filter(
-            company=ake, supplier=coop, name='Haruna Musa Farm — Alkaleri'
+            company=company1, supplier=coop, name='Haruna Musa Farm — Alkaleri'
         ).first()
         farm_zainab  = Farm.objects.filter(
-            company=ake, supplier=coop, name='Zainab Garba Holdings'
+            company=company1, supplier=coop, name='Zainab Garba Holdings'
         ).first()
         farm_fatima  = Farm.objects.filter(
-            company=ake, supplier=coop, name='Fatima Yakubu Plot C'
+            company=company1, supplier=coop, name='Fatima Yakubu Plot C'
         ).first()
         farm_aliyu   = Farm.objects.filter(
-            company=ake, supplier=coop, name='Aliyu Ibrahim Large Plot'
+            company=company1, supplier=coop, name='Aliyu Ibrahim Large Plot'
         ).first()
 
         if farm_haruna:
@@ -411,9 +411,9 @@ class Command(BaseCommand):
                 deforestation_reference_date=datetime.date(2020, 12, 31),
                 land_cleared_after_cutoff=False,
                 mapping_date=datetime.date(2026, 4, 5),
-                mapped_by=ake_staff,
+                mapped_by=co_staff,
                 is_eudr_verified=True,
-                verified_by=ake_mgr,
+                verified_by=co_mgr,
                 verified_date=datetime.date(2026, 4, 10),
                 verification_expiry=datetime.date(2027, 4, 10),
                 harvest_year=2025,
@@ -426,7 +426,7 @@ class Command(BaseCommand):
                 fvf_expansion_intent=False,
             )
             AuditLog.objects.create(
-                company=ake, user=ake_mgr, action='update',
+                company=company1, user=co_mgr, action='update',
                 model_name='Farm',
                 object_repr=str(farm_haruna),
                 changes={'is_eudr_verified': True, 'fvf_consent_given': True},
@@ -440,9 +440,9 @@ class Command(BaseCommand):
                 deforestation_reference_date=datetime.date(2020, 12, 31),
                 land_cleared_after_cutoff=False,
                 mapping_date=datetime.date(2026, 4, 5),
-                mapped_by=ake_staff,
+                mapped_by=co_staff,
                 is_eudr_verified=True,
-                verified_by=ake_mgr,
+                verified_by=co_mgr,
                 verified_date=datetime.date(2026, 4, 12),
                 verification_expiry=datetime.date(2027, 4, 12),
                 harvest_year=2025,
@@ -451,7 +451,7 @@ class Command(BaseCommand):
             )
             # FarmCertification — Fairtrade on Zainab's farm
             FarmCertification.objects.get_or_create(
-                company=ake, farm=farm_zainab,
+                company=company1, farm=farm_zainab,
                 cert_type='fairtrade',
                 certifying_body='Fairtrade Africa',
                 defaults={
@@ -466,14 +466,14 @@ class Command(BaseCommand):
             Farm.objects.filter(pk=farm_aliyu.pk).update(
                 deforestation_risk_status='high',
                 mapping_date=datetime.date(2026, 4, 5),
-                mapped_by=ake_staff,
+                mapped_by=co_staff,
                 is_eudr_verified=False,
             )
             self.stdout.write(f'  Flagged high-risk (large plot): {farm_aliyu.name}')
 
         # ── Product / Inventory / Purchase Order ──────────────────────────────
         prod, _ = Product.objects.get_or_create(
-            name=PRODUCT_NAME, company=ake,
+            name=PRODUCT_NAME, company=company1,
             defaults={
                 'supplier': coop,
                 'category': 'produce',
@@ -485,12 +485,12 @@ class Command(BaseCommand):
         )
 
         inv, _ = Inventory.objects.get_or_create(
-            company=ake, product=prod, warehouse_location='Bauchi Collection Point',
+            company=company1, product=prod, warehouse_location='Bauchi Collection Point',
             defaults={'quantity': 18000, 'low_stock_threshold': 2000}
         )
 
         po, _ = PurchaseOrder.objects.get_or_create(
-            order_number=PO_NUMBER, company=ake,
+            order_number=PO_NUMBER, company=company1,
             defaults={
                 'supplier': coop,
                 'status': 'received',
@@ -501,7 +501,7 @@ class Command(BaseCommand):
 
         # ── EU Sales Order ────────────────────────────────────────────────────
         so, _ = SalesOrder.objects.get_or_create(
-            order_number=SO_NUMBER, company=ake,
+            order_number=SO_NUMBER, company=company1,
             defaults={
                 'customer_name': 'Olam Agri B.V.',
                 'customer_email': 'procurement@olam.eu',
@@ -529,9 +529,9 @@ class Command(BaseCommand):
         self.stdout.write(f'  SO: {so.order_number}  ·  Customer: {so.customer_name}')
 
         # ── Batch ─────────────────────────────────────────────────────────────
-        if not Batch.objects.filter(company=ake, sales_order=so).exists():
+        if not Batch.objects.filter(company=company1, sales_order=so).exists():
             batch = Batch(
-                company=ake,
+                company=company1,
                 sales_order=so,
                 commodity='Soybeans',
                 quantity_kg=15000.000,
@@ -546,7 +546,7 @@ class Command(BaseCommand):
             batch.farms.set(linked_farms)
 
             AuditLog.objects.create(
-                company=ake, user=ake_mgr, action='create',
+                company=company1, user=co_mgr, action='create',
                 model_name='Batch',
                 object_repr=str(batch),
                 changes={'farms_linked': len(linked_farms), 'quantity_kg': 15000},
@@ -559,7 +559,7 @@ class Command(BaseCommand):
 
             # Phytosanitary certificate
             PhytosanitaryCertificate.objects.get_or_create(
-                company=ake, batch=batch,
+                company=company1, batch=batch,
                 certificate_number='NAQS/BCH/2026/00719',
                 defaults={
                     'issuing_office': 'NAQS Bauchi State Office',
@@ -573,7 +573,7 @@ class Command(BaseCommand):
 
             # Quality tests
             BatchQualityTest.objects.get_or_create(
-                company=ake, batch=batch, test_type='mrl',
+                company=company1, batch=batch, test_type='mrl',
                 defaults={
                     'lab_name': 'SGS Nigeria Ltd',
                     'lab_certificate_ref': 'SGS-NGR-2026-MRL-4419',
@@ -583,7 +583,7 @@ class Command(BaseCommand):
                 }
             )
             BatchQualityTest.objects.get_or_create(
-                company=ake, batch=batch, test_type='aflatoxin',
+                company=company1, batch=batch, test_type='aflatoxin',
                 defaults={
                     'lab_name': 'Intertek Nigeria',
                     'lab_certificate_ref': '',
@@ -601,7 +601,7 @@ class Command(BaseCommand):
             batch.is_locked = True
             batch.save(update_fields=['is_locked', 'updated_at'])
             AuditLog.objects.create(
-                company=ake, user=ake_mgr, action='update',
+                company=company1, user=co_mgr, action='update',
                 model_name='Batch',
                 object_repr=str(batch),
                 changes={'is_locked': True},

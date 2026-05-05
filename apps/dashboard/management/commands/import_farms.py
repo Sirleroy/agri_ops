@@ -3,8 +3,8 @@ Management command: import_farms
 Imports farm records from a SW Maps GeoJSON FeatureCollection export.
 
 Usage:
-    python manage.py import_farms --file /path/to/farms.geojson --company "Ake Collective" --supplier "Sahel Seeds Co-op" --commodity Soy
-    python manage.py import_farms --file /path/to/farms.geojson --company "Ake Collective" --supplier "Sahel Seeds Co-op" --commodity Soy --dry-run
+    python manage.py import_farms --file /path/to/farms.geojson --company "AgriOps Trading LTD" --supplier "Sahel Seeds Co-op" --commodity Soy
+    python manage.py import_farms --file /path/to/farms.geojson --company "AgriOps Trading LTD" --supplier "Sahel Seeds Co-op" --commodity Soy --dry-run
 
 The GeoJSON file should be a FeatureCollection where each Feature represents one farm.
 

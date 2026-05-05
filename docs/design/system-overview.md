@@ -2,7 +2,7 @@
 
 **Version:** 3.0
 **Date:** 28 March 2026
-**Status:** Phase 4.6 Complete — live contract execution (Ake Collective soy export)
+**Status:** Phase 4.6 Complete — live contract execution (AgriOps Trading LTD soy export)
 
 ---
 

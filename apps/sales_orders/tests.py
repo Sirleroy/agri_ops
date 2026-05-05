@@ -16,12 +16,12 @@ from apps.users.models import CustomUser
 class CertificateDownloadBlockerTests(TestCase):
     def setUp(self):
         self.company = Company.objects.create(
-            name='Ake Collective',
+            name='AgriOps Trading LTD',
             country='Nigeria',
             plan_tier='enterprise',
         )
         self.user = CustomUser.objects.create_user(
-            username='ake_staff',
+            username='agriops_staff',
             password='testpass',
             company=self.company,
             system_role='staff',
