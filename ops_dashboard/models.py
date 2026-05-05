@@ -9,6 +9,9 @@ class OpsEventLog(models.Model):
         ('otp_setup', 'OTP Setup'),
         ('otp_verified', 'OTP Verified'),
         ('otp_failed', 'OTP Failed'),
+        ('tenant_suspended', 'Tenant Suspended'),
+        ('tenant_unsuspended', 'Tenant Unsuspended'),
+        ('tenant_deleted', 'Tenant Deleted'),
     ]
     user       = models.ForeignKey(
                     settings.AUTH_USER_MODEL,

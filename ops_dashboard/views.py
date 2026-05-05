@@ -29,10 +29,11 @@ from .models import OpsEventLog
 
 # --- Helpers ---
 
-def _log_event(request, event, user=None):
+def _log_event(request, event, user=None, detail=''):
     OpsEventLog.objects.create(
         user=user,
         event=event,
+        detail=detail,
         ip_address=request.META.get('REMOTE_ADDR'),
     )
 
@@ -598,7 +599,7 @@ def ops_tenant_suspend(request, pk):
     company.save(update_fields=['is_active'])
 
     action = 'tenant_unsuspended' if company.is_active else 'tenant_suspended'
-    _log_event(request, f'{action}:{company.pk}:{company.name}', user=request.user)
+    _log_event(request, action, user=request.user, detail=f'{company.pk}:{company.name}')
 
     status = 'reactivated' if company.is_active else 'suspended'
     from django.contrib import messages
@@ -638,7 +639,7 @@ def ops_tenant_delete(request, pk):
         return redirect('ops_tenant_detail', pk=pk)
 
     name = company.name
-    _log_event(request, f'tenant_deleted:{company.pk}:{name}', user=request.user)
+    _log_event(request, 'tenant_deleted', user=request.user, detail=f'{company.pk}:{name}')
     company.delete()
     messages.success(request, f'Tenant "{name}" has been permanently deleted.')
     return redirect('ops_tenants')
