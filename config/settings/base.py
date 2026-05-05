@@ -170,6 +170,7 @@ AXES_LOCKOUT_PARAMETERS = ['username', 'ip_address']
 AXES_RESET_ON_SUCCESS = True
 AXES_LOCKOUT_TEMPLATE = None
 AXES_VERBOSE = False
+AXES_USERNAME_CALLABLE = lambda request, credentials: (credentials.get('username') or '')[:150]
 
 # ── CORS ─────────────────────────────────────────────────────
 CORS_ALLOWED_ORIGINS = [
