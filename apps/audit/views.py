@@ -1,15 +1,15 @@
 import csv
 from datetime import timedelta
 
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
 from django.utils import timezone
 from django.views.generic import ListView
 
+from apps.users.permissions import StaffRequiredMixin
 from .models import AuditLog
 
 
-class AuditLogListView(LoginRequiredMixin, ListView):
+class AuditLogListView(StaffRequiredMixin, ListView):
     model = AuditLog
     template_name = 'audit/audit_log.html'
     context_object_name = 'logs'
