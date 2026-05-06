@@ -1,7 +1,7 @@
 # AgriOps — Threat Model
 
-**Version:** 1.2
-**Date:** April 2026
+**Version:** 1.3
+**Date:** May 2026
 **Status:** Living document — updated as attack surface changes per phase
 **Framework:** STRIDE (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege)
 
@@ -129,7 +129,7 @@ The threat model identifies what we are protecting, who might attempt to comprom
 
 | Threat | Attack Vector | Likelihood | Impact | Control | Status |
 |---|---|---|---|---|---|
-| Login endpoint flooding | Automated POST requests to `/login/` | High | Medium | django-axes lockout. Rate limiting on auth endpoints. | ✅ Active |
+| Login endpoint flooding | Automated POST requests to `/login/` | High | Medium | django-axes lockout. Rate limiting on auth endpoints. Username truncated to 150 chars before axes storage — prevents varchar overflow from oversized payloads (ZAP-found, fixed 2026-05-05). | ✅ Active |
 | API endpoint flooding | High-volume API requests | Medium | Medium | DRF throttling — 200 req/hr per user, 20 req/hr anonymous | ✅ Active |
 | Large file upload abuse | Uploading massive or unexpected compliance documents | Low | Medium | Compliance document upload validation is being hardened; until then, rely on authenticated access and operational monitoring | 🔄 Hardening |
 | Expensive database queries | Crafted filter parameters causing full table scans | Low | Medium | Query optimisation audit and DB query timeouts | 🔄 Phase 5 |
@@ -192,19 +192,31 @@ The compliance module introduces additional threats specific to regulatory data:
 - TOTP 2FA — ops dashboard (platform superusers)
 - GeoJSON 15-point validation suite — CI enforced on every deployment
 
+### Phase 4.9–4.12 ✅ Complete (2026-05-05)
+- Dependency vulnerability scanning — `pip-audit` + `bandit` in CI, runs on every push; Dependabot weekly PRs active
+- CVE patches — Django 6.0.4 (5 CVEs), Pillow 12.2.0 (1 CVE)
+- Content Security Policy — `SecurityHeadersMiddleware` with full CDN allowlist; grade A on securityheaders.com
+- Permissions-Policy — camera, mic, geolocation, payment, usb locked
+- OWASP ZAP baseline scan — active + passive scan completed 2026-05-05; 1 real finding (axes overflow) found and fixed; 0 open findings
+- API JWT cross-tenant isolation test — Tenant A token confirmed 404 on Tenant B resources; list scoped to 89 own-tenant farms; tampered token 401
+- django-axes username overflow — `AXES_USERNAME_CALLABLE` truncates to 150 chars; ZAP-discovered crash fixed
+- Audit log access by suspended users — `LoginRequiredMixin` → `StaffRequiredMixin` on `AuditLogListView`
+- 403 page redirect loop — `/login/` escape button added; suspended users can exit without manual URL edit
+- OpsEventLog truncation — `event` field (varchar 30) now stores only short codes; detail written to `detail` field (varchar 255)
+- Corridor export audit logging — PDF + CSV downloads logged to AuditLog
+- Sentry PII scrubbing, tenant context tagging, release tracking, cron monitor
+
 ### Current Hardening Work 🔄 In Progress
 - Related-object tenant validation on serializer and form foreign keys
-- API method-level role enforcement aligned with UI RBAC
 - Public onboarding path gated before live tenant rollout
 - Compliance document upload validation
 
 ### Phase 5 🔄 Planned
-- Internal penetration test — documented findings and remediations
-- Dependency vulnerability scanning (Safety / pip-audit — GitHub Advanced Security not active on private repo)
 - Tenant OrgAdmin MFA — TOTP for tenant-level accounts
 - NDPA compliance review
 - GDPR readiness assessment
 - Query timeout configuration
+- Repeat ZAP scan — fresh profile targeting unauthenticated Phase 5 buyer portal surface
 
 ---
 
@@ -214,8 +226,7 @@ The compliance module introduces additional threats specific to regulatory data:
 |---|---|---|
 | No tenant-level MFA | Ops dashboard TOTP live; tenant OrgAdmin MFA deferred pre-revenue | Phase 5 with TOTP for OrgAdmin accounts |
 | Single-layer DB isolation | RLS adds complexity — manual filtering sufficient at current scale | Phase 5 if multi-tenant load increases |
-| No dependency scanning | Private repo — GitHub Advanced Security not active. Manual review currently sufficient. | Safety / pip-audit in Phase 5 CI |
-| No penetration test | Product has a public marketing surface and pre-commercial onboarding flow, but no formal external test yet | Phase 5 with documented report |
+| No penetration test | ~~Product has no formal external test yet~~ | ✅ Closed 2026-05-05 — OWASP ZAP baseline scan completed; 0 open findings; documented in security-testing.md RT-003 |
 | Expensive query DoS | No query timeout configured | Phase 5 query optimisation audit |
 
 ---

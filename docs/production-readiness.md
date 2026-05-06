@@ -5,7 +5,7 @@ title: Production Readiness Audit
 # AgriOps — Production Readiness Audit
 
 A full audit of the platform against common production failure modes.
-Last reviewed: 2026-04-17. Status reflects the current `main` branch.
+Last reviewed: 2026-05-05. Status reflects the current `main` branch.
 
 ---
 
@@ -32,7 +32,7 @@ Last reviewed: 2026-04-17. Status reflects the current `main` branch.
 | Logging | ✅ | Production: rotating file handler + console at WARNING level. `django.security` errors captured separately. `AuditLog` model records every create/update/delete with user, IP, and before/after field changes. |
 | Backups | ✅ | Render managed PostgreSQL — daily automated backups included. See `docs/runbooks/backup-restore.md`. |
 | Stripe webhook verification | ✅ N/A | Stripe not integrated. Parked until first paying tenant. |
-| Brute force protection | ✅ | `django-axes` — see Rate limiting above. |
+| Brute force protection | ✅ | `django-axes` — see Rate limiting above. `AXES_USERNAME_CALLABLE` truncates submitted usernames to 150 chars before storage — prevents varchar overflow from oversized payloads (ZAP-found crash, fixed 2026-05-05). |
 | Tenant isolation | ✅ | Every view filters by `company=request.user.company`. No middleware — enforced manually in `get_queryset()` and `get_object()` on every view. See ADR 003. |
 
 ---
