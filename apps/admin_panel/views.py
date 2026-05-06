@@ -246,13 +246,21 @@ def admin_roles(request):
 
 def _send_invite_email(user, set_password_url, company, invited_by):
     from django.core.mail import EmailMultiAlternatives
+    from django.utils.html import conditional_escape
+
+    invitee_first_name = conditional_escape(user.first_name)
+    invited_by_name = conditional_escape(invited_by.get_full_name() or invited_by.username)
+    company_name = conditional_escape(company.name)
+    username = conditional_escape(user.username)
+    escaped_url = conditional_escape(set_password_url)
+
     subject = f"You've been invited to join {company.name} on AgriOps"
     body_text = (
         f"Hi {user.first_name},\n\n"
         f"{invited_by.get_full_name() or invited_by.username} has invited you to join "
         f"{company.name} on AgriOps.\n\n"
         f"Username: {user.username}\n\n"
-        f"Set your password here (valid for 3 days):\n{set_password_url}\n\n"
+        f"Set your password here (valid for 24 hours):\n{set_password_url}\n\n"
         f"AgriOps · app.agriops.io"
     )
     body_html = f"""
@@ -262,26 +270,26 @@ def _send_invite_email(user, set_password_url, company, invited_by):
         <h1 style="color:#ffffff;font-size:20px;margin:0;">You've been invited</h1>
       </div>
       <div style="background:#ffffff;padding:24px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px;">
-        <p style="color:#1e293b;font-size:14px;">Hi <strong>{user.first_name}</strong>,</p>
+        <p style="color:#1e293b;font-size:14px;">Hi <strong>{invitee_first_name}</strong>,</p>
         <p style="color:#1e293b;font-size:14px;">
-          <strong>{invited_by.get_full_name() or invited_by.username}</strong> has invited you
-          to join <strong>{company.name}</strong> on AgriOps.
+          <strong>{invited_by_name}</strong> has invited you
+          to join <strong>{company_name}</strong> on AgriOps.
         </p>
         <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:16px;margin:20px 0;">
           <table style="width:100%;font-size:13px;">
             <tr><td style="color:#64748b;font-weight:bold;padding:4px 0;width:40%;">Organisation</td>
-                <td style="color:#1e293b;">{company.name}</td></tr>
+                <td style="color:#1e293b;">{company_name}</td></tr>
             <tr><td style="color:#64748b;font-weight:bold;padding:4px 0;">Username</td>
-                <td style="color:#1e293b;font-family:monospace;">{user.username}</td></tr>
+                <td style="color:#1e293b;font-family:monospace;">{username}</td></tr>
           </table>
         </div>
-        <a href="{set_password_url}"
+        <a href="{escaped_url}"
            style="background:#22c55e;color:#0a0f1a;padding:10px 20px;border-radius:6px;
                   text-decoration:none;font-weight:bold;font-size:13px;">
           Accept Invitation
         </a>
         <p style="margin-top:24px;font-size:11px;color:#94a3b8;">
-          This link expires in 3 days. AgriOps · app.agriops.io
+          This link expires in 24 hours. AgriOps · app.agriops.io
         </p>
       </div>
     </div>

@@ -209,3 +209,29 @@ class SuspendedCompanyTests(TestCase):
         api.credentials(HTTP_AUTHORIZATION=f'Bearer {token.access_token}')
         r = api.get('/api/v1/farms/')
         self.assertEqual(r.status_code, 403)
+
+
+class TenantCompanyLifecycleTests(TestCase):
+    """
+    Tenant users can view/update their own company profile, but creating or
+    deleting tenants is a platform-ops action, not a tenant action.
+    """
+
+    def setUp(self):
+        self.company = make_company('Alpha')
+        self.admin = make_user(self.company, role='org_admin', username='alpha_admin')
+
+    def test_tenant_org_admin_cannot_create_company(self):
+        self.client.force_login(self.admin)
+        r = self.client.post(reverse('companies:create'), {
+            'name': 'Orphan Tenant',
+            'country': 'Nigeria',
+        })
+        self.assertEqual(r.status_code, 403)
+        self.assertFalse(Company.objects.filter(name='Orphan Tenant').exists())
+
+    def test_tenant_org_admin_cannot_delete_company(self):
+        self.client.force_login(self.admin)
+        r = self.client.post(reverse('companies:delete', kwargs={'pk': self.company.pk}))
+        self.assertEqual(r.status_code, 403)
+        self.assertTrue(Company.objects.filter(pk=self.company.pk).exists())

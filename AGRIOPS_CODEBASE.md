@@ -38,6 +38,31 @@ agri_ops/
 - The app is primarily server-rendered Django templates, with DRF used for API access and integration.
 - Geospatial data is stored as GeoJSON in a `JSONField`, not PostGIS geometry columns.
 
+### Defense-in-depth posture
+
+AgriOps does not rely on one control to protect tenant and compliance data. The current MVP posture is layered:
+
+- authentication uses Django sessions for the web app and JWT for the API
+- role-based access is centralized in permission mixins and API permission classes
+- tenant isolation is enforced through company-scoped querysets and object ownership checks
+- suspended companies are blocked across web views, dashboard, admin panel, and API
+- tenant lifecycle control is separated from tenant self-service; create/delete/suspend/reactivate belongs in the TOTP-gated ops dashboard
+- write actions are captured in tenant-scoped audit logs
+- certificate downloads are blocked until required batch compliance evidence passes `Batch.certificate_readiness()`
+- farm geometries carry SHA-256 integrity hashes, with a management command to detect drift
+- production settings enforce HTTPS, secure cookies, HSTS, CSRF, clickjacking protection, throttling, brute-force protection, and Sentry scrubbing
+- the regression suite proves tenant isolation, active-company enforcement, audit integrity, API scoping, and certificate blockers
+
+PostgreSQL row-level security is intentionally deferred as a later defense-in-depth layer. RLS becomes the right investment when a major tenant, government/institutional due diligence process, or larger engineering team requires database-enforced isolation in addition to application enforcement.
+
+RLS constraints to account for before implementation:
+
+- each request must set the active tenant ID into the database connection or transaction
+- management commands, imports, migrations, data repair scripts, and background jobs need explicit tenant context or privileged bypass
+- ops dashboard views intentionally query across tenants and need a designed platform-access path
+- tests must prove both application-level scoping and raw database-level blocking
+- app-level RBAC, audit logging, certificate blockers, and UI permission checks remain required even after RLS
+
 ### Main domain chain
 
 The high-level traceability model is:
@@ -57,6 +82,33 @@ Company
 ```
 
 The `suppliers` app is where the farm registry, farmer registry, geolocation storage, and GeoJSON import pipeline live.
+
+### Tenant lifecycle boundary
+
+Tenant users can view and update their own `Company` profile, but they must not create or delete `Company` records from the tenant application. Tenant creation, suspension/reactivation, and empty-tenant deletion are platform operations handled through `ops_dashboard`.
+
+This keeps tenant self-service settings separate from platform tenancy control and prevents orphan companies or accidental cascading deletion of business data.
+
+### Certificate readiness boundary
+
+`apps.sales_orders.batch.Batch.certificate_readiness()` is the single gate for certificate PDF download readiness. Both the EUDR certificate and the buyer-neutral traceability certificate must call this method before generating a PDF.
+
+The blocker is intentionally conservative:
+
+- linked farms are required
+- every linked farm must be compliance-current
+- batch quantity is required
+- a current phytosanitary certificate is required
+- at least one passing quality test is required, with no failed test on record
+- linked purchase orders are tracked as attribution evidence but currently remain advisory rather than blocking
+
+Batch detail pages pass preloaded farms, phytosanitary certs, quality tests, and purchase orders into `certificate_readiness()` to avoid duplicate display/readiness queries.
+
+### Geometry integrity boundary
+
+`Farm.geometry_hash` is the SHA-256 fingerprint of canonical farm GeoJSON. `Farm.save()` recomputes it; the import pipeline also computes it manually because `bulk_create()` bypasses `save()`.
+
+Use `python manage.py check_geometry_integrity` before certificate/auditor demos. A drifted hash means the stored polygon changed without the normal save path and should be investigated before using `--fix`.
 
 ## Bulk Import Pipeline End-to-End
 

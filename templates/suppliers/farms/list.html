@@ -148,7 +148,7 @@
             <div class="flex items-center gap-2">
               <a href="{% url 'suppliers:farm_update' farm.pk %}"
                  class="text-xs text-slate-400 hover:text-green transition-colors">Edit</a>
-              {% if request.user.system_role == 'org_admin' %}
+              {% if request.user.is_manager_or_above %}
               <button @click="openDeleteModal('{% url 'suppliers:farm_delete' farm.pk %}', '{{ farm.name|escapejs }}')"
                       class="text-xs text-slate-400 hover:text-red-400 transition-colors">Delete</button>
               {% endif %}
@@ -216,7 +216,7 @@
       </div>
       <div class="flex items-center gap-3 pt-3 border-t border-border">
         <a href="{% url 'suppliers:farm_update' farm.pk %}" class="text-xs text-slate-400 hover:text-green transition-colors">Edit</a>
-        {% if request.user.system_role == 'org_admin' %}
+        {% if request.user.is_manager_or_above %}
         <button @click="openDeleteModal('{% url 'suppliers:farm_delete' farm.pk %}', '{{ farm.name|escapejs }}')" class="text-xs text-slate-400 hover:text-red-400 transition-colors">Delete</button>
         {% endif %}
         <a href="{% url 'suppliers:farm_detail' farm.pk %}" class="ml-auto text-xs text-slate-400 hover:text-slate-100 transition-colors">View →</a>

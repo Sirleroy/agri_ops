@@ -1,5 +1,6 @@
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
+from django.core.exceptions import PermissionDenied
 from .models import Company
 from apps.users.permissions import OrgAdminRequiredMixin, StaffRequiredMixin, DatePickerMixin
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
@@ -34,6 +35,9 @@ class CompanyCreateView(DatePickerMixin, AuditCreateMixin, OrgAdminRequiredMixin
               'nepc_registration_number', 'nepc_registration_expiry']
     success_url = reverse_lazy('companies:list')
 
+    def dispatch(self, request, *args, **kwargs):
+        raise PermissionDenied("Tenant creation is managed from the ops dashboard.")
+
 
 class CompanyUpdateView(DatePickerMixin, AuditUpdateMixin, OrgAdminRequiredMixin, UpdateView):
     model = Company
@@ -54,6 +58,9 @@ class CompanyDeleteView(AuditDeleteMixin, OrgAdminRequiredMixin, DeleteView):
     model = Company
     template_name = 'companies/confirm_delete.html'
     success_url = reverse_lazy('companies:list')
+
+    def dispatch(self, request, *args, **kwargs):
+        raise PermissionDenied("Tenant deletion is managed from the ops dashboard.")
 
     def get_object(self):
         obj = super().get_object()
