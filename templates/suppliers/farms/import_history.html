@@ -128,10 +128,11 @@
                       </svg>
                     </button>
                   </div>
+                  <p class="text-[10px] font-mono text-slate-600 mb-2">Events on rejected rows are shown for traceability — not applied to the farm registry.</p>
                   <ul class="space-y-2">
                     {% for t in log.transformation_log %}
                     {# geometry_clean entries are technical — hidden until operator expands #}
-                    <li class="flex flex-col gap-1 text-xs font-mono py-0.5"
+                    <li class="flex flex-col gap-1 text-xs font-mono py-0.5 {% if t.outcome and t.outcome != 'applied' %}opacity-40{% endif %}"
                         x-show="'{{ t.reason|escapejs }}' !== 'geometry_clean' || techOpen">
                       <div class="flex flex-wrap sm:flex-nowrap sm:items-center gap-1 sm:gap-3">
                         {# Row + farm name #}
@@ -174,6 +175,13 @@
                           {% elif t.reason == 'farmer_crop_fallback' %}commodity from farmer profile
                           {% else %}{{ t.reason }}{% endif %}
                         </span>
+                        {# Outcome badge — surfaces when a row was rejected downstream and this event never reached a farm #}
+                        {% if t.outcome and t.outcome != 'applied' %}
+                        <span class="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-800/60 text-slate-500 border border-slate-700/50"
+                          title="This event was logged during processing but the row did not reach the farm registry.">
+                          row {{ t.outcome }}
+                        </span>
+                        {% endif %}
                       </div>
                       {# Detail line — raw-preserved framing (visible by default — explains the skip) #}
                       {% if t.detail and t.field == 'geometry' and t.reason == 'geometry_raw_preserved' %}

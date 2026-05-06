@@ -151,3 +151,42 @@ def test_threshold_breach_hash_matches_raw(tenant):
         json.dumps(farm.geolocation, sort_keys=True, separators=(',', ':')).encode()
     ).hexdigest()
     assert farm.geometry_hash == expected
+
+
+def test_transformation_events_tagged_with_row_outcome(tenant):
+    """Transformation events carry the row's final outcome so the UI can
+    distinguish events that landed on a farm from events whose row was
+    rejected downstream (overlap, duplicate, validation error)."""
+    company, supplier = tenant
+
+    # Existing farm — incoming overlapping row will be blocked by overlap detection
+    existing_ring = _square(7.0, 9.0, side=0.010)
+    Farm.objects.create(
+        company=company, supplier=supplier, name='existing',
+        country='Nigeria', commodity='Soy',
+        geolocation={'type': 'Polygon', 'coordinates': [existing_ring]},
+    )
+
+    overlap_ring = _square(7.0, 9.0, side=0.005)  # fully contained in existing
+    fresh_ring   = _square(8.0, 10.0, side=0.005)  # far away
+
+    result = run_farm_geojson_import(
+        company=company, supplier=supplier,
+        features=[
+            _feature('overlap_farm', overlap_ring),
+            _feature('fresh_farm',   fresh_ring),
+        ],
+    )
+
+    # Every transformation must carry an outcome tag
+    assert all('outcome' in t for t in result['transformations'])
+
+    # Overlap row → 'blocked' on every event for that row
+    overlap_events = [t for t in result['transformations'] if t['farm'] == 'overlap_farm']
+    assert overlap_events, "no transformations recorded for overlap_farm"
+    assert all(t['outcome'] == 'blocked' for t in overlap_events)
+
+    # Fresh row → 'applied'
+    fresh_events = [t for t in result['transformations'] if t['farm'] == 'fresh_farm']
+    assert fresh_events, "no transformations recorded for fresh_farm"
+    assert all(t['outcome'] == 'applied' for t in fresh_events)

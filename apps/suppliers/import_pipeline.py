@@ -645,6 +645,20 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
             geometry_hash=geometry_hash,
         ))
 
+    # Tag each transformation event with the row's final outcome so the UI can
+    # distinguish events that landed on a real farm from events whose row was
+    # rejected downstream. Rejected events stay in the log for traceability
+    # but should not read as platform decisions about saved data.
+    rejected_outcomes = {}
+    for e in errors:
+        rejected_outcomes[e['row']] = 'errored'
+    for d in duplicates:
+        rejected_outcomes[d['row']] = 'duplicate'
+    for b in blocked:
+        rejected_outcomes[b['row']] = 'blocked'
+    for t in transformations:
+        t['outcome'] = rejected_outcomes.get(t['row'], 'applied')
+
     created_count = 0
     created_names = []
     if not dry_run:
