@@ -150,26 +150,42 @@
                           {{ t.field }}
                         </span>
                         {# From → To (shown for lga, commodity, farmer, area events) #}
-                        {% if t.from and t.to and t.reason != 'geometry_normalised' and t.reason != 'geometry_clean' %}
+                        {% if t.from and t.to and t.reason != 'geometry_normalised' and t.reason != 'geometry_clean' and t.reason != 'geometry_raw_preserved' %}
                         <span class="flex items-center gap-1.5 min-w-0">
                           <span class="text-slate-500 truncate max-w-[100px]" title="{{ t.from }}">{{ t.from }}</span>
                           <span class="text-slate-600 shrink-0">→</span>
                           <span class="text-slate-200 truncate max-w-[120px]" title="{{ t.to }}">{{ t.to }}</span>
                         </span>
                         {% endif %}
-                        {# Reason chip #}
-                        <span class="shrink-0 text-[10px] font-mono text-slate-500">
+                        {# Reason chip — severity-coloured for area cross-check (>15% red, >5% amber) #}
+                        <span class="shrink-0 text-[10px] font-mono
+                          {% if t.reason == 'geometry_raw_preserved' %}text-amber-300/80
+                          {% elif t.reason == 'area_source_comparison' and t.detail.delta_pct and t.detail.delta_pct > 15 %}text-red-400/90
+                          {% elif t.reason == 'area_source_comparison' and t.detail.delta_pct and t.detail.delta_pct > 5 %}text-amber-300/80
+                          {% else %}text-slate-500{% endif %}">
                           {% if t.reason == 'fuzzy_match' %}LGA matched
                           {% elif t.reason == 'canonical_name' %}spelling corrected
                           {% elif t.reason == 'geometry_normalised' %}geometry corrected
                           {% elif t.reason == 'geometry_clean' %}validated — no changes
-                          {% elif t.reason == 'area_source_comparison' %}area cross-check
+                          {% elif t.reason == 'geometry_raw_preserved' %}raw GPS preserved — normalisation skipped
+                          {% elif t.reason == 'area_source_comparison' %}area cross-check{% if t.detail.delta_pct is not None %} · Δ {{ t.detail.delta_pct }}%{% endif %}
                           {% elif t.reason == 'farmer_merged' %}linked to existing farmer
                           {% elif t.reason == 'farmer_created' %}new farmer record created
                           {% elif t.reason == 'farmer_crop_fallback' %}commodity from farmer profile
                           {% else %}{{ t.reason }}{% endif %}
                         </span>
                       </div>
+                      {# Detail line — raw-preserved framing (visible by default — explains the skip) #}
+                      {% if t.detail and t.field == 'geometry' and t.reason == 'geometry_raw_preserved' %}
+                      <div class="ml-12 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] font-mono text-amber-300/70">
+                        {% if t.detail.would_change_area_pct is not None %}
+                          <span>would have changed area by Δ {{ t.detail.would_change_area_pct }}%</span>
+                        {% endif %}
+                        {% if t.detail.would_shift_centroid_m is not None %}
+                          <span>would have shifted centroid {{ t.detail.would_shift_centroid_m|floatformat:1 }}m</span>
+                        {% endif %}
+                      </div>
+                      {% endif %}
                       {# Detail line — geometry metrics (technical — hidden until expanded) #}
                       {% if t.detail and t.field == 'geometry' %}
                       <div x-show="techOpen"

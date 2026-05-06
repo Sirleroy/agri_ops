@@ -303,76 +303,88 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
             except Exception:
                 pass
 
-        if geometry:
-            geometry = normalize_field_gps_geometry(
-                geometry, simplify_tolerance=simplification_tolerance
-            )
-
-        geom_was_corrected = bool(raw_geometry) and geometry != raw_geometry
+        # Compute the normalised candidate, then decide whether to use it.
+        # If normalisation would change the polygon beyond spec thresholds, we
+        # preserve the raw GPS trace as the geometry of record. The hash is
+        # computed downstream from whatever ends up on Farm.geolocation, so
+        # the integrity guarantee is identical for both paths.
+        candidate = (
+            normalize_field_gps_geometry(geometry, simplify_tolerance=simplification_tolerance)
+            if geometry else None
+        )
+        geom_was_corrected = False
 
         if raw_geometry:
-            # Always emit a geometry event — 'geometry_normalised' if changed,
-            # 'geometry_clean' if it passed without modification (invariant guarantee)
-            proc_vertices    = _geom_vertex_count(geometry)
-            proc_centroid    = _geom_centroid(geometry)
+            cand_vertices    = _geom_vertex_count(candidate)
+            cand_centroid    = _geom_centroid(candidate)
             area_before_m2   = round(_compute_area_ha(raw_geometry) * 10_000, 1) if _compute_area_ha(raw_geometry) else None
-            area_after_m2    = round(_compute_area_ha(geometry)     * 10_000, 1) if _compute_area_ha(geometry)     else None
+            area_after_m2    = round(_compute_area_ha(candidate)    * 10_000, 1) if _compute_area_ha(candidate)    else None
             area_delta_pct   = None
             if area_before_m2 and area_after_m2 and area_before_m2 > 0:
                 area_delta_pct = round(abs(area_after_m2 - area_before_m2) / area_before_m2 * 100, 2)
             centroid_shift_m = None
-            if raw_centroid and proc_centroid:
+            if raw_centroid and cand_centroid:
                 centroid_shift_m = _haversine_m(
                     raw_centroid[0], raw_centroid[1],
-                    proc_centroid[0], proc_centroid[1],
+                    cand_centroid[0], cand_centroid[1],
                 )
             vertex_reduction_pct = (
-                round((1 - proc_vertices / raw_vertices) * 100)
+                round((1 - cand_vertices / raw_vertices) * 100)
                 if raw_vertices > 0 else 0
             )
-            # Severity: flag review if any geometry correction breached spec thresholds
-            # Spec: area delta ≤ 0.5%, centroid shift ≤ 15m
-            geom_severity = 'info'
+
+            # Spec: area delta ≤ 0.5%, centroid shift ≤ 15m.
+            # Breach → keep raw as the geometry of record (no human review needed).
             threshold_breach = []
-            if geom_was_corrected:
+            cand_changed = candidate != raw_geometry
+            if cand_changed:
                 if area_delta_pct is not None and area_delta_pct > 0.5:
-                    geom_severity = 'review'
                     threshold_breach.append(f"area_delta {area_delta_pct}% > 0.5% threshold")
                 if centroid_shift_m is not None and centroid_shift_m > 15:
-                    geom_severity = 'review'
                     threshold_breach.append(f"centroid_shift {centroid_shift_m:.1f}m > 15m threshold")
+
+            if threshold_breach:
+                geometry            = raw_geometry
+                geom_was_corrected  = False
+                reason              = 'geometry_raw_preserved'
+            else:
+                geometry            = candidate
+                geom_was_corrected  = cand_changed
+                reason              = 'geometry_normalised' if cand_changed else 'geometry_clean'
+
+            # The processing log records what actually landed on the farm row,
+            # plus the deltas the normaliser would have produced (informational).
+            stored_vertices = _geom_vertex_count(geometry)
+            stored_area_m2  = round(_compute_area_ha(geometry) * 10_000, 1) if _compute_area_ha(geometry) else None
+            stored_delta_pct = None
+            if area_before_m2 and stored_area_m2 and area_before_m2 > 0:
+                stored_delta_pct = round(abs(stored_area_m2 - area_before_m2) / area_before_m2 * 100, 2)
 
             import datetime as _dt
             transformations.append({
                 'row': row, 'farm': name, 'field': 'geometry',
                 'from': None, 'to': None,
-                'reason': 'geometry_normalised' if geom_was_corrected else 'geometry_clean',
-                'severity': geom_severity,
+                'reason': reason,
+                'severity': 'info',
                 'ts': _dt.datetime.utcnow().isoformat() + 'Z',
                 'detail': {
-                    'had_elevation':          had_elevation,
-                    'had_duplicates':         raw_vertices > proc_vertices,
-                    'topology_repaired':      not raw_is_valid,
-                    'topology_valid':         raw_is_valid or True,
-                    'vertex_count_before':    raw_vertices,
-                    'vertex_count_after':     proc_vertices,
-                    'vertex_reduction_pct':   vertex_reduction_pct,
-                    'area_before_m2':         area_before_m2,
-                    'area_after_m2':          area_after_m2,
-                    'area_delta_pct':         area_delta_pct,
-                    'centroid_shift_m':       centroid_shift_m,
+                    'had_elevation':            had_elevation,
+                    'had_duplicates':           raw_vertices > cand_vertices,
+                    'topology_repaired':        not raw_is_valid,
+                    'topology_valid':           raw_is_valid or True,
+                    'vertex_count_before':      raw_vertices,
+                    'vertex_count_after':       stored_vertices,
+                    'vertex_reduction_pct':     vertex_reduction_pct,
+                    'area_before_m2':           area_before_m2,
+                    'area_after_m2':            stored_area_m2,
+                    'area_delta_pct':           stored_delta_pct,
+                    'centroid_shift_m':         centroid_shift_m if not threshold_breach else 0,
                     'simplification_tolerance': simplification_tolerance,
-                    'threshold_breach':       threshold_breach or None,
+                    'threshold_breach':         threshold_breach or None,
+                    'would_change_area_pct':    area_delta_pct,
+                    'would_shift_centroid_m':   centroid_shift_m,
                 },
             })
-
-            # Escalate to manual review if thresholds breached
-            if threshold_breach:
-                row_warnings.append(
-                    f"Geometry normalisation exceeded spec thresholds: "
-                    + '; '.join(threshold_breach)
-                    + ". Manual review recommended before committing."
-                )
 
         # ── LGA canonicalisation — tiered confidence response ────────────────
         import difflib as _difflib
