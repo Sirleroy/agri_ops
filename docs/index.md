@@ -13,6 +13,15 @@ AgriOps is a secure, multi-tenant SaaS platform for agricultural SMEs and cooper
 
 ---
 
+## Start Here
+
+| Document | When to read it |
+|---|---|
+| [How to navigate these docs](README.md) | First visit — reading orders, document types, contribution rules |
+| [Project Roadmap](ROADMAP.md) | Phase-by-phase build plan, current and upcoming work |
+
+---
+
 ## User Guide
 
 | Document | Description |
@@ -83,12 +92,6 @@ AgriOps is a secure, multi-tenant SaaS platform for agricultural SMEs and cooper
 
 ---
 
-## Project Roadmap
-
-See [ROADMAP.md](ROADMAP.md) for the full phase-by-phase build plan.
-
----
-
 ## Platform URLs
 
 | URL | Purpose |
@@ -99,4 +102,4 @@ See [ROADMAP.md](ROADMAP.md) for the full phase-by-phase build plan.
 
 ---
 
-*Built by [Sirleroy](https://github.com/Sirleroy/agri_ops) · Phase 4.12 complete · April 2026*
+*Built by [Sirleroy](https://github.com/Sirleroy/agri_ops) · Phase 4 in progress · May 2026*
