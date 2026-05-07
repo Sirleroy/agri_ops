@@ -37,7 +37,7 @@ fi
 export DJANGO_SETTINGS_MODULE=config.settings.development
 
 # ── Run the suite ─────────────────────────────────────────────────────────────
-step "Running AgriOps security regression suite (34 tests)"
+step "Running AgriOps security regression suite (36 tests)"
 echo ""
 
 if ! echo "yes" | python manage.py test \
