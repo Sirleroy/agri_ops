@@ -118,3 +118,89 @@ class AuditViewIntegrationTests(TestCase):
             AuditLog.objects.filter(action='update', model_name='CustomUser').exists(),
             'Role change via admin panel did not write an audit log'
         )
+
+
+class AuditLogChangesRenderingTests(TestCase):
+    """
+    The eye icon and detail modal on the audit log page must:
+      1. Always render (never hidden when changes is empty/null)
+      2. Carry valid JSON in the data-changes attribute so JSON.parse can read it
+    """
+
+    def setUp(self):
+        self.company = make_company('Render Co')
+        self.staff = make_user(self.company, role='staff', username='render_staff')
+        self.supplier = Supplier.objects.create(
+            company=self.company, name='Render Supplier', category='cooperative'
+        )
+
+    def _log_with_changes(self, changes):
+        request = RequestFactory().get('/')
+        request.user = self.staff
+        log_action(request, 'update', self.supplier, changes=changes)
+        return AuditLog.objects.latest('timestamp')
+
+    def test_to_json_filter_emits_valid_json_for_diff(self):
+        from apps.audit.templatetags.audit_extras import to_json
+        import json
+        changes = {'fvf_land_tenure': {'from': 'title_deed', 'to': 'village_consent'}}
+        rendered = str(to_json(changes))
+        # HTML-escaped JSON: parse after unescaping double-quote entities
+        unescaped = rendered.replace('&quot;', '"')
+        parsed = json.loads(unescaped)
+        self.assertEqual(parsed, changes)
+
+    def test_to_json_filter_handles_none(self):
+        from apps.audit.templatetags.audit_extras import to_json
+        rendered = str(to_json(None))
+        self.assertIn('{}', rendered)
+
+    def test_to_json_filter_handles_empty_dict(self):
+        from apps.audit.templatetags.audit_extras import to_json
+        rendered = str(to_json({}))
+        self.assertIn('{}', rendered)
+
+    def test_eye_icon_renders_on_row_with_diff(self):
+        self._log_with_changes(
+            {'fvf_land_tenure': {'from': 'title_deed', 'to': 'village_consent'}}
+        )
+        self.client.force_login(self.staff)
+        r = self.client.get(reverse('audit:list'))
+        self.assertEqual(r.status_code, 200)
+        body = r.content.decode()
+        # Eye-icon button is identifiable by its title and click handler
+        self.assertIn('title="View changes"', body)
+        # data-changes carries the field name (HTML-escaped JSON)
+        self.assertIn('fvf_land_tenure', body)
+
+    def test_eye_icon_renders_on_row_without_changes(self):
+        # Log an entry with no changes dict at all (mimicking actions whose
+        # diff was not captured — the case the user hit on the farm update)
+        request = RequestFactory().get('/')
+        request.user = self.staff
+        log_action(request, 'update', self.supplier, changes=None)
+        self.client.force_login(self.staff)
+        r = self.client.get(reverse('audit:list'))
+        self.assertEqual(r.status_code, 200)
+        body = r.content.decode()
+        # Icon must render — the operator should always have a path to the modal
+        self.assertIn('title="View changes"', body)
+
+    def test_data_changes_attribute_uses_double_quotes_not_python_repr(self):
+        """Regression guard: rendered changes must be JSON, not Python repr."""
+        self._log_with_changes(
+            {'fvf_land_tenure': {'from': 'title_deed', 'to': 'village_consent'}}
+        )
+        self.client.force_login(self.staff)
+        r = self.client.get(reverse('audit:list'))
+        body = r.content.decode()
+        # Python repr would emit single-quoted dict syntax. Valid JSON would
+        # emit double quotes (HTML-escaped to &quot;). The single-quoted
+        # token is the signature of the bug we just fixed.
+        self.assertNotIn(
+            "{&#x27;fvf_land_tenure&#x27;",
+            body,
+            'data-changes is rendering Python repr instead of JSON — JSON.parse will fail'
+        )
+        # Positive check: HTML-escaped JSON form is present
+        self.assertIn('&quot;fvf_land_tenure&quot;', body)
