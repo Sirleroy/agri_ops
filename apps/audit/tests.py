@@ -3,7 +3,7 @@ from django.urls import reverse
 
 from apps.companies.models import Company
 from apps.users.models import CustomUser
-from apps.suppliers.models import Supplier
+from apps.suppliers.models import Supplier, Farm
 from apps.audit.models import AuditLog
 from apps.audit.mixins import log_action
 
@@ -235,3 +235,148 @@ class CSPMapTilesTests(TestCase):
         csp = self._csp_header()
         self.assertIn("img-src 'self'", csp)
         self.assertIn('data:', csp)
+
+
+class CSPCoverageTests(TestCase):
+    """
+    Locks the full inventory of external resource hosts the platform loads,
+    each in its correct CSP directive. When a new CDN dependency is added,
+    update both the template and the row in EXPECTED below — failure to do
+    so produces a clear, single-line test failure rather than a silent
+    blocked-load regression like the satellite-tiles incident.
+    """
+
+    # (host_substring, directive_keyword) — both must appear inside the
+    # CSP directive section for the test to pass
+    EXPECTED = [
+        # Scripts
+        ('cdn.tailwindcss.com',         'script-src'),
+        ('cdn.jsdelivr.net',            'script-src'),
+        ('cdnjs.cloudflare.com',        'script-src'),
+        ('unpkg.com',                   'script-src'),
+        # Styles
+        ('cdn.jsdelivr.net',            'style-src'),
+        ('cdnjs.cloudflare.com',        'style-src'),
+        ('unpkg.com',                   'style-src'),
+        ('fonts.googleapis.com',        'style-src'),
+        # Fonts
+        ('fonts.gstatic.com',           'font-src'),
+        # Image / tile sources
+        ('tile.openstreetmap.org',      'img-src'),
+        ('server.arcgisonline.com',     'img-src'),
+    ]
+
+    def setUp(self):
+        self.company = make_company('Coverage Co')
+        self.staff = make_user(self.company, role='staff', username='coverage_staff')
+
+    def test_every_known_loading_host_is_in_correct_csp_directive(self):
+        from apps.audit.middleware import _CSP
+        import re
+        failures = []
+        for host, directive in self.EXPECTED:
+            m = re.search(rf'{directive}([^;]+);', _CSP)
+            if not m:
+                failures.append(f"directive '{directive}' missing from CSP entirely")
+                continue
+            if host not in m.group(1):
+                failures.append(
+                    f"host '{host}' missing from CSP {directive} — "
+                    f"current directive: {directive}{m.group(1).strip()}"
+                )
+        if failures:
+            self.fail(
+                "CSP allowlist drift detected:\n  " +
+                "\n  ".join(failures) +
+                "\n\nFix: update _CSP in apps/audit/middleware.py, OR if the host "
+                "was deliberately removed, update CSPCoverageTests.EXPECTED to match."
+            )
+
+
+class UserFacingPageSmokeTests(TestCase):
+    """
+    HTTP-level smoke tests for canonical user-facing pages — assert HTTP 200
+    + key rendering markers present in the response body. Catches template
+    render errors and silent feature breakage before users see them.
+
+    These do NOT execute JavaScript; they assert that the URLs and markup
+    the JS depends on are emitted by the server. Combined with CSPCoverageTests
+    above, that guards against the most common silent-failure modes:
+      - Template can't render (HTTP 500)
+      - Critical markup missing (regression in template)
+      - Asset URL missing from page (would-be CSP block silently OK because
+        nothing tries to load it)
+    """
+
+    def setUp(self):
+        self.company = make_company('Smoke Co')
+        self.org_admin = make_user(self.company, role='org_admin', username='smoke_admin')
+        self.staff = make_user(self.company, role='staff', username='smoke_staff')
+
+    def test_login_page_renders_with_csrf(self):
+        r = self.client.get(reverse('login'))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'csrfmiddlewaretoken')
+
+    def test_dashboard_renders_for_staff(self):
+        self.client.force_login(self.staff)
+        r = self.client.get(reverse('dashboard:index'))
+        self.assertEqual(r.status_code, 200)
+
+    def test_audit_log_renders_eye_icon_button(self):
+        """Eye icon must be in markup — guards against the {% if log.changes %}
+        guard regression and the to_json filter being removed."""
+        # Seed at least one audit log entry so the table renders rows
+        supplier = Supplier.objects.create(
+            company=self.company, name='Smoke Supplier Audit', category='cooperative'
+        )
+        request = RequestFactory().get('/')
+        request.user = self.staff
+        log_action(request, 'create', supplier)
+
+        self.client.force_login(self.staff)
+        r = self.client.get(reverse('audit:list'))
+        self.assertEqual(r.status_code, 200)
+        # The icon's title attribute is a stable identifier
+        self.assertContains(r, 'title="View changes"')
+
+    def test_farm_list_renders(self):
+        self.client.force_login(self.staff)
+        r = self.client.get(reverse('suppliers:farm_list'))
+        self.assertEqual(r.status_code, 200)
+
+    def test_farm_create_form_renders_map_with_both_tile_sources(self):
+        """Farm form Leaflet map must reference both tile providers in markup —
+        guards against template regressions or accidental removal of either
+        layer. Combined with CSPCoverageTests, this proves end-to-end:
+        URL is on the page AND CSP allows the load."""
+        self.client.force_login(self.staff)
+        r = self.client.get(reverse('suppliers:farm_create'))
+        self.assertEqual(r.status_code, 200)
+        body = r.content.decode()
+        self.assertIn('geo-map', body)                       # map container
+        self.assertIn('tile.openstreetmap.org', body)         # street layer URL
+        self.assertIn('server.arcgisonline.com', body)        # satellite layer URL
+
+    def test_farm_detail_renders_map_with_satellite_default(self):
+        """Farm detail map defaults to the satellite layer. The Esri URL must
+        be present in markup; if this fails the satellite-tile regression has
+        recurred."""
+        supplier = Supplier.objects.create(
+            company=self.company, name='Smoke Supplier', category='cooperative'
+        )
+        farm = Farm.objects.create(
+            company=self.company, supplier=supplier, name='Smoke Farm',
+            country='Nigeria', commodity='Soy',
+            geolocation={
+                'type': 'Polygon',
+                'coordinates': [[[7.0, 9.0], [7.1, 9.0], [7.1, 9.1], [7.0, 9.1], [7.0, 9.0]]],
+            },
+        )
+        self.client.force_login(self.staff)
+        r = self.client.get(reverse('suppliers:farm_detail', kwargs={'pk': farm.pk}))
+        self.assertEqual(r.status_code, 200)
+        body = r.content.decode()
+        self.assertIn('farm-map', body)
+        self.assertIn('server.arcgisonline.com', body)
+        self.assertIn('farm-geojson', body)  # json_script element id
