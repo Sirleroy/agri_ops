@@ -211,9 +211,13 @@
                           {% if t.detail.had_duplicates %}<span class="text-blue-400/70">dupes removed</span>{% endif %}
                           {% if t.detail.topology_repaired %}<span class="text-amber-400/80">topology repaired</span>{% endif %}
                         {% endif %}
-                        {# Vertex count — amber if reduction > 80% #}
+                        {# Vertex count — only show reduction % when before != after,
+                           so legacy log entries with stale stored percentages can't display
+                           "414→414 (98% reduced)" nonsense after a pipeline fix #}
                         {% if t.detail.vertex_count_before %}
-                          {% if t.detail.vertex_reduction_pct > 80 %}
+                          {% if t.detail.vertex_count_before == t.detail.vertex_count_after %}
+                            <span>{{ t.detail.vertex_count_before }}→{{ t.detail.vertex_count_after }} vertices</span>
+                          {% elif t.detail.vertex_reduction_pct > 80 %}
                             <span class="text-amber-400/80">{{ t.detail.vertex_count_before }}→{{ t.detail.vertex_count_after }} vertices ({{ t.detail.vertex_reduction_pct }}% reduced)</span>
                           {% else %}
                             <span>{{ t.detail.vertex_count_before }}→{{ t.detail.vertex_count_after }} vertices</span>

@@ -52,6 +52,17 @@ AgriOps does not rely on one control to protect tenant and compliance data. The 
 - farm geometries carry SHA-256 integrity hashes, with a management command to detect drift
 - production settings enforce HTTPS, secure cookies, HSTS, CSRF, clickjacking protection, throttling, brute-force protection, and Sentry scrubbing
 - the regression suite proves tenant isolation, active-company enforcement, audit integrity, API scoping, and certificate blockers
+- the regression suite also covers Content-Security-Policy allowlist coverage (every external host the platform loads is asserted in its correct CSP directive) and HTTP-level smoke tests for canonical user-facing pages (login, dashboard, audit log, farm list, farm form, farm detail) — together they catch the failure mode where a security or template change ships with passing security tests but the consumer (JS parser, browser CSP, template render) silently breaks
+- run `bash verify.sh` before every deploy; this executes the full regression suite (currently 52 tests across companies, audit, suppliers, sales_orders) and additionally verifies geometry hash integrity against the production database
+
+#### Security-fix consumer validation
+
+Any commit that changes Content-Security-Policy, escape filters, template encoding, browser-policy headers, or middleware that processes responses must either:
+
+- include a smoke test or assertion that exercises the affected user flow downstream of the change, or
+- be manually validated in a browser before merge
+
+Three browser-side regressions in May 2026 (audit-log JSON.parse failure, satellite-tile silent block, eye-icon disappearance on rows without changes) shared the same shape: a security control was correctly applied at the server, the test suite proved the control was in place, and the user-facing feature consuming the changed value broke silently. The CSP coverage and smoke test classes added afterwards catch most cases automatically; for anything they don't cover, manual browser exercise is the rule.
 
 PostgreSQL row-level security is intentionally deferred as a later defense-in-depth layer. RLS becomes the right investment when a major tenant, government/institutional due diligence process, or larger engineering team requires database-enforced isolation in addition to application enforcement.
 
