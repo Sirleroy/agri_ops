@@ -52,7 +52,7 @@ Implement RLS when any of the following becomes true:
 1. **First paying enterprise tenant with a security questionnaire** asking "is tenant isolation enforced at the database layer?" This is the most likely real trigger and the answer matters to commercial procurement.
 2. **Phase 5 buyer portal goes live.** External multi-tenant read consumers — the largest data-exposure blast radius the platform will ever have. RLS should be in place *before* this ships, not bolted on after.
 3. **Second active ORM-query author on the codebase.** The discipline of `.filter(company=request.user.company)` is conventionally enforced by review. With more than ~3 reviewers, drift is statistically inevitable. RLS becomes the backstop.
-4. **Government procurement, FCI4Africa+ grant due diligence, NDPR audit, or SOC 2 / ISO 27001 process** that explicitly probes data-layer enforcement.
+4. **Government procurement, grant due diligence, NDPR audit, or SOC 2 / ISO 27001 process** that explicitly probes data-layer enforcement.
 5. **Third-party DB-adjacent access** — read replicas given to partners, BI tools given direct connections, customer-facing JDBC. RLS lets you grant DB access without granting cross-tenant access.
 
 If none of the above applies, RLS is premature: the implementation tax outweighs the benefit at the current threat model.
