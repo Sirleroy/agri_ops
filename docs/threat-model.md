@@ -225,7 +225,7 @@ The compliance module introduces additional threats specific to regulatory data:
 | Risk | Reason Accepted | Mitigation Plan |
 |---|---|---|
 | No tenant-level MFA | Ops dashboard TOTP live; tenant OrgAdmin MFA deferred pre-revenue | Phase 5 with TOTP for OrgAdmin accounts |
-| Single-layer DB isolation | RLS adds complexity — manual filtering sufficient at current scale | Phase 5 if multi-tenant load increases |
+| Single-layer DB isolation | Application-enforced isolation backed by 36-test regression suite is sufficient at current scale; RLS adds non-trivial implementation tax (1–2 weeks) | Implement RLS per [ADR 011](adr/011-postgres-row-level-security-deferral.md) when any single trigger fires (first enterprise tenant security questionnaire, Phase 5 buyer portal, second active query author, regulatory due diligence, third-party DB-adjacent access) |
 | No penetration test | ~~Product has no formal external test yet~~ | ✅ Closed 2026-05-05 — OWASP ZAP baseline scan completed; 0 open findings; documented in security-testing.md RT-003 |
 | Expensive query DoS | No query timeout configured | Phase 5 query optimisation audit |
 

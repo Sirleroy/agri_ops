@@ -145,11 +145,11 @@ The following tests are mandatory before Phase 2 exit:
 
 ---
 
-## Phase 5 Upgrade Path
+## Database-Layer Upgrade Path
 
-In Phase 5, PostgreSQL Row-Level Security (RLS) will be added as a third layer of isolation — enforced at the database level independently of application code. This provides defence-in-depth: even if application-layer filtering is bypassed, the database itself refuses to return cross-tenant records.
+PostgreSQL Row-Level Security (RLS) is the planned third layer of isolation — enforced at the database level independently of application code, providing defence-in-depth even if application-layer filtering is bypassed.
 
-The shared schema approach chosen here is fully compatible with RLS — no schema changes required for the upgrade.
+The trigger criteria, pros/cons, AgriOps-specific considerations, and implementation shape are specified in [ADR 011 — PostgreSQL Row-Level Security: Deferral Criteria and Implementation Shape](011-postgres-row-level-security-deferral.md). The shared schema approach chosen here is fully compatible with RLS — no schema changes required for the upgrade beyond denormalising the indirect FKs on `PurchaseOrderItem` and `SalesOrderItem` as described in ADR 011.
 
 ---
 

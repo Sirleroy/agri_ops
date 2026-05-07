@@ -48,6 +48,7 @@ AgriOps is a secure, multi-tenant SaaS platform for agricultural SMEs and cooper
 | [ADR 008](adr/008-cloudflare-email-routing-interim.md) | Cloudflare Email Routing as interim MX |
 | [ADR 009](adr/009-production-hardening-indexes-async-email-env-validation.md) | Production hardening — DB indexes, async email, env validation |
 | [ADR 010](adr/010-billing-architecture.md) | Billing architecture — dual processor (Paystack/Stripe), isolated app, plan-gated access |
+| [ADR 011](adr/011-postgres-row-level-security-deferral.md) | PostgreSQL Row-Level Security — deferral criteria and implementation shape |
 
 ---
 
