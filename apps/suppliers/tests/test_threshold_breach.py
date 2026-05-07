@@ -130,6 +130,48 @@ def test_no_geometry_change_logs_clean_event(tenant):
     assert geom_events[0]['reason'] == 'geometry_clean'
 
 
+def test_raw_preserved_metrics_describe_stored_geometry(tenant):
+    """Stored metrics on the geometry transformation event must describe the
+    geometry that actually landed on Farm.geolocation, not the candidate that
+    was discarded. Raw-preserved rows therefore have:
+      - vertex_count_before == vertex_count_after
+      - vertex_reduction_pct == 0
+      - area_delta_pct == 0
+      - centroid_shift_m == 0
+    The 'would have' fields preserve the candidate-side metrics for diagnostic
+    framing on the UI."""
+    company, supplier = tenant
+    raw_ring = _square(7.0, 9.0, side=0.010)
+    smaller  = {"type": "Polygon", "coordinates": [_square(7.0, 9.0, side=0.007)]}
+
+    with patch(
+        'apps.suppliers.forms.normalize_field_gps_geometry',
+        return_value=smaller,
+    ):
+        result = run_farm_geojson_import(
+            company=company, supplier=supplier, features=[_feature('metrics', raw_ring)]
+        )
+
+    geom = next(t for t in result['transformations'] if t['field'] == 'geometry')
+    assert geom['reason'] == 'geometry_raw_preserved'
+    detail = geom['detail']
+
+    # Stored metrics describe the raw (which is what landed on the farm row)
+    assert detail['vertex_count_before'] == detail['vertex_count_after'], (
+        f"Stored vertex count drifted: before={detail['vertex_count_before']} "
+        f"after={detail['vertex_count_after']} — raw-preserved rows must show "
+        "the same count for both"
+    )
+    assert detail['vertex_reduction_pct'] == 0
+    assert detail['area_delta_pct'] == 0
+    assert detail['centroid_shift_m'] == 0
+
+    # "Would have" metrics reflect the candidate the normaliser would have produced
+    assert detail['would_change_area_pct'] is not None
+    assert detail['would_change_area_pct'] > 0
+    assert detail['candidate_vertex_count'] is not None
+
+
 def test_threshold_breach_hash_matches_raw(tenant):
     """Integrity invariant: whatever lands on Farm.geolocation is what's hashed."""
     import hashlib

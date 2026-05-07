@@ -328,7 +328,8 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                     raw_centroid[0], raw_centroid[1],
                     cand_centroid[0], cand_centroid[1],
                 )
-            vertex_reduction_pct = (
+            # Reduction the candidate would have produced (informational, not stored)
+            would_reduce_vertices_pct = (
                 round((1 - cand_vertices / raw_vertices) * 100)
                 if raw_vertices > 0 else 0
             )
@@ -352,13 +353,23 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                 geom_was_corrected  = cand_changed
                 reason              = 'geometry_normalised' if cand_changed else 'geometry_clean'
 
-            # The processing log records what actually landed on the farm row,
-            # plus the deltas the normaliser would have produced (informational).
+            # The processing log records what actually landed on the farm row.
+            # Vertex / area / centroid metrics here describe the STORED geometry
+            # (so before == after for raw-preserved rows). The "would have"
+            # fields below describe what the normaliser would have produced.
             stored_vertices = _geom_vertex_count(geometry)
             stored_area_m2  = round(_compute_area_ha(geometry) * 10_000, 1) if _compute_area_ha(geometry) else None
             stored_delta_pct = None
             if area_before_m2 and stored_area_m2 and area_before_m2 > 0:
                 stored_delta_pct = round(abs(stored_area_m2 - area_before_m2) / area_before_m2 * 100, 2)
+            stored_vertex_reduction_pct = (
+                round((1 - stored_vertices / raw_vertices) * 100)
+                if raw_vertices > 0 else 0
+            )
+            # had_* flags describe properties of the RAW input. They are true
+            # regardless of whether the normaliser was applied, so the template
+            # must label them differently for raw-preserved vs. normalised rows.
+            raw_had_duplicates = raw_vertices > cand_vertices
 
             import datetime as _dt
             transformations.append({
@@ -369,12 +380,12 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                 'ts': _dt.datetime.utcnow().isoformat() + 'Z',
                 'detail': {
                     'had_elevation':            had_elevation,
-                    'had_duplicates':           raw_vertices > cand_vertices,
+                    'had_duplicates':           raw_had_duplicates,
                     'topology_repaired':        not raw_is_valid,
                     'topology_valid':           raw_is_valid or True,
                     'vertex_count_before':      raw_vertices,
                     'vertex_count_after':       stored_vertices,
-                    'vertex_reduction_pct':     vertex_reduction_pct,
+                    'vertex_reduction_pct':     stored_vertex_reduction_pct,
                     'area_before_m2':           area_before_m2,
                     'area_after_m2':            stored_area_m2,
                     'area_delta_pct':           stored_delta_pct,
@@ -383,6 +394,8 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                     'threshold_breach':         threshold_breach or None,
                     'would_change_area_pct':    area_delta_pct,
                     'would_shift_centroid_m':   centroid_shift_m,
+                    'would_reduce_vertices_pct': would_reduce_vertices_pct,
+                    'candidate_vertex_count':   cand_vertices,
                 },
             })
 

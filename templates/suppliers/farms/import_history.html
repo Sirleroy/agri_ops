@@ -192,16 +192,25 @@
                         {% if t.detail.would_shift_centroid_m is not None %}
                           <span>would have shifted centroid {{ t.detail.would_shift_centroid_m|floatformat:1 }}m</span>
                         {% endif %}
+                        {% if t.detail.would_reduce_vertices_pct and t.detail.would_reduce_vertices_pct > 0 %}
+                          <span>would have reduced {{ t.detail.vertex_count_before }} vertices to {{ t.detail.candidate_vertex_count }} ({{ t.detail.would_reduce_vertices_pct }}%)</span>
+                        {% endif %}
                       </div>
                       {% endif %}
                       {# Detail line — geometry metrics (technical — hidden until expanded) #}
                       {% if t.detail and t.field == 'geometry' %}
                       <div x-show="techOpen"
                            class="ml-12 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] font-mono text-slate-500">
-                        {# Operation flags #}
-                        {% if t.detail.had_elevation %}<span class="text-blue-400/70">3D→2D</span>{% endif %}
-                        {% if t.detail.had_duplicates %}<span class="text-blue-400/70">dupes removed</span>{% endif %}
-                        {% if t.detail.topology_repaired %}<span class="text-amber-400/80">topology repaired</span>{% endif %}
+                        {# Property flags — labels differ depending on whether the operation was actually applied #}
+                        {% if t.reason == 'geometry_raw_preserved' %}
+                          {% if t.detail.had_elevation %}<span class="text-amber-300/70">raw was 3D</span>{% endif %}
+                          {% if t.detail.had_duplicates %}<span class="text-amber-300/70">raw had duplicates</span>{% endif %}
+                          {% if t.detail.topology_repaired %}<span class="text-amber-300/70">raw was self-intersecting</span>{% endif %}
+                        {% else %}
+                          {% if t.detail.had_elevation %}<span class="text-blue-400/70">3D→2D</span>{% endif %}
+                          {% if t.detail.had_duplicates %}<span class="text-blue-400/70">dupes removed</span>{% endif %}
+                          {% if t.detail.topology_repaired %}<span class="text-amber-400/80">topology repaired</span>{% endif %}
+                        {% endif %}
                         {# Vertex count — amber if reduction > 80% #}
                         {% if t.detail.vertex_count_before %}
                           {% if t.detail.vertex_reduction_pct > 80 %}
