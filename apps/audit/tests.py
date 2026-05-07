@@ -204,3 +204,34 @@ class AuditLogChangesRenderingTests(TestCase):
         )
         # Positive check: HTML-escaped JSON form is present
         self.assertIn('&quot;fvf_land_tenure&quot;', body)
+
+
+class CSPMapTilesTests(TestCase):
+    """
+    The CSP img-src directive must allow the tile providers used by the
+    Leaflet maps on the farm form and farm detail pages. A missing host
+    silently blocks tile loading — the map container renders but tiles
+    are blank — which is exactly the failure mode we hit when CSP shipped.
+    """
+
+    def setUp(self):
+        self.company = make_company('CSP Co')
+        self.staff = make_user(self.company, role='staff', username='csp_staff')
+
+    def _csp_header(self):
+        self.client.force_login(self.staff)
+        r = self.client.get(reverse('audit:list'))
+        return r.headers.get('Content-Security-Policy', '')
+
+    def test_csp_allows_openstreetmap_tile_host(self):
+        self.assertIn('*.tile.openstreetmap.org', self._csp_header())
+
+    def test_csp_allows_esri_world_imagery_tile_host(self):
+        """Regression: Esri ArcGIS World Imagery powers the satellite layer
+        on every farm map. Missing from img-src → blank satellite tiles."""
+        self.assertIn('server.arcgisonline.com', self._csp_header())
+
+    def test_csp_img_src_includes_self_and_data(self):
+        csp = self._csp_header()
+        self.assertIn("img-src 'self'", csp)
+        self.assertIn('data:', csp)

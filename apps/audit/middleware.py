@@ -7,7 +7,7 @@ _CSP = (
     "style-src 'self' 'unsafe-inline' "
     "fonts.googleapis.com cdn.jsdelivr.net unpkg.com cdnjs.cloudflare.com; "
     "font-src 'self' fonts.gstatic.com; "
-    "img-src 'self' data: *.tile.openstreetmap.org; "
+    "img-src 'self' data: *.tile.openstreetmap.org server.arcgisonline.com; "
     "connect-src 'self'; "
     "frame-ancestors 'none'; "
     "base-uri 'self'; "
