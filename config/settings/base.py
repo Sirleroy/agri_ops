@@ -207,3 +207,9 @@ OPS_LOGIN_URL = '/ops-access/9f3k/'
 
 POSTHOG_API_KEY = os.environ.get('POSTHOG_API_KEY', '')
 POSTHOG_HOST = 'https://us.i.posthog.com'
+
+# ── Deforestation reference data ──────────────────────────────
+# Local path to Hansen GFC lossyear tiles (GeoTIFF, EPSG:4326).
+# Tile naming: lossyear_{TOP_LAT}_{LEFT_LON}.tif  e.g. lossyear_10N_000E.tif
+# Set GFC_TILE_DIR via env var on Render once tiles are deployed there.
+GFC_TILE_DIR = os.environ.get('GFC_TILE_DIR', str(BASE_DIR / 'data' / 'gfc'))

@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Deforestation Preview — AgriOps{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h1 class="text-xl font-sans font-semibold text-slate-100">Deforestation Check Preview</h1>
+      <p class="text-xs font-mono text-slate-500 mt-0.5">Hansen GFC v1.12 · 30m resolution · EUDR reference date 31 Dec 2020</p>
+    </div>
+    <a href="{% url 'suppliers:farm_list' %}"
+       class="text-xs font-mono text-slate-400 hover:text-slate-200 transition-colors">
+      ← Back to farms
+    </a>
+  </div>
+
+  <!-- Preview notice -->
+  <div class="bg-amber-500/10 border border-amber-500/25 rounded-xl px-5 py-3 flex items-start gap-3">
+    <svg class="w-4 h-4 text-amber-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+    </svg>
+    <p class="text-xs font-mono text-amber-300/90 leading-relaxed">
+      Preview only — results are not saved to the farm record. This page runs live intersection checks
+      against locally available Hansen GFC tiles. It will be replaced by the automated
+      <strong class="text-amber-200">DeforestationCheck</strong> system once that is built.
+    </p>
+  </div>
+
+  <!-- Run form -->
+  <form method="post" class="bg-card border border-border rounded-xl p-5">
+    {% csrf_token %}
+    <div class="flex flex-col sm:flex-row gap-3 items-end">
+      <div class="flex-1">
+        <label class="block text-xs font-mono text-slate-400 mb-1.5">Supplier (leave blank to check all farms)</label>
+        <select name="supplier_id"
+                class="w-full bg-[#0a0f1a] border border-border rounded-lg px-3 py-2 text-sm font-mono text-slate-200
+                       focus:outline-none focus:border-green/50">
+          <option value="">All suppliers</option>
+          {% for s in suppliers %}
+          <option value="{{ s.pk }}" {% if s.pk == selected_id %}selected{% endif %}>
+            {{ s.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit"
+              class="shrink-0 px-5 py-2 bg-green hover:bg-green-dim text-white text-sm font-mono rounded-lg transition-colors">
+        Run checks
+      </button>
+    </div>
+  </form>
+
+  {% if results is not None %}
+
+  <!-- Summary strip -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div class="bg-card border border-border rounded-xl p-4 text-center">
+      <p class="text-2xl font-mono font-semibold text-slate-100">{{ total }}</p>
+      <p class="text-xs font-mono text-slate-500 mt-0.5">farms checked</p>
+    </div>
+    <div class="bg-card border border-green/20 rounded-xl p-4 text-center">
+      <p class="text-2xl font-mono font-semibold text-green">{{ clear }}</p>
+      <p class="text-xs font-mono text-slate-500 mt-0.5">clear</p>
+    </div>
+    <div class="bg-card border border-red-500/20 rounded-xl p-4 text-center">
+      <p class="text-2xl font-mono font-semibold {% if flagged > 0 %}text-red-400{% else %}text-slate-500{% endif %}">{{ flagged }}</p>
+      <p class="text-xs font-mono text-slate-500 mt-0.5">flagged</p>
+    </div>
+    <div class="bg-card border border-border rounded-xl p-4 text-center">
+      <p class="text-2xl font-mono font-semibold text-slate-400">{{ errors }}</p>
+      <p class="text-xs font-mono text-slate-500 mt-0.5">errors / no tile</p>
+    </div>
+  </div>
+
+  <!-- Missing tiles notice -->
+  {% if no_tile %}
+  <div class="bg-slate-800/50 border border-border rounded-xl px-5 py-3">
+    <p class="text-xs font-mono text-slate-400">
+      <span class="text-amber-400">Missing tiles:</span>
+      {% for t in no_tile %}lossyear_{{ t }}.tif{% if not forloop.last %}, {% endif %}{% endfor %}
+      — download and place in <code class="text-slate-300">data/gfc/</code> to check these farms.
+    </p>
+  </div>
+  {% endif %}
+
+  <!-- Results table -->
+  {% if results %}
+  <div class="bg-card border border-border rounded-xl overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm font-mono">
+        <thead>
+          <tr class="border-b border-border text-left">
+            <th class="px-4 py-3 text-xs text-slate-500 font-normal">Farm</th>
+            <th class="px-4 py-3 text-xs text-slate-500 font-normal">Supplier</th>
+            <th class="px-4 py-3 text-xs text-slate-500 font-normal text-right">Pixels</th>
+            <th class="px-4 py-3 text-xs text-slate-500 font-normal text-right">Loss px</th>
+            <th class="px-4 py-3 text-xs text-slate-500 font-normal text-right">Loss ha</th>
+            <th class="px-4 py-3 text-xs text-slate-500 font-normal">Years detected</th>
+            <th class="px-4 py-3 text-xs text-slate-500 font-normal">Result</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border">
+          {% for r in results %}
+          <tr class="hover:bg-white/[0.02] transition-colors">
+            <td class="px-4 py-3">
+              <a href="{% url 'suppliers:farm_detail' r.farm.pk %}"
+                 class="text-slate-200 hover:text-green transition-colors">
+                {{ r.farm.name }}
+              </a>
+              {% if r.farm.area_hectares %}
+              <span class="ml-2 text-xs text-slate-600">{{ r.farm.area_hectares|floatformat:2 }} ha</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-slate-400 text-xs">
+              {{ r.farm.supplier.name|default:"—" }}
+            </td>
+            <td class="px-4 py-3 text-slate-400 text-right">{{ r.pixels }}</td>
+            <td class="px-4 py-3 text-right
+              {% if r.loss_pixels and r.loss_pixels != '-' and r.loss_pixels > 0 %}text-red-400
+              {% else %}text-slate-500{% endif %}">
+              {{ r.loss_pixels }}
+            </td>
+            <td class="px-4 py-3 text-right
+              {% if r.loss_area_ha and r.loss_area_ha != '-' and r.loss_area_ha > 0 %}text-red-400
+              {% else %}text-slate-500{% endif %}">
+              {% if r.loss_area_ha != '-' %}{{ r.loss_area_ha }}{% else %}—{% endif %}
+            </td>
+            <td class="px-4 py-3 text-slate-400 text-xs">
+              {% if r.loss_years %}
+                {% for y in r.loss_years %}20{{ y }}{% if not forloop.last %}, {% endif %}{% endfor %}
+              {% else %}—{% endif %}
+            </td>
+            <td class="px-4 py-3">
+              {% if r.result == 'CLEAR' %}
+                <span class="px-2 py-0.5 rounded text-xs bg-green/10 text-green border border-green/20">Clear</span>
+              {% elif r.result == 'FLAGGED' %}
+                <span class="px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-400 border border-red-500/20">Flagged</span>
+              {% elif r.result == 'NO TILE' %}
+                <span class="px-2 py-0.5 rounded text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20">No tile</span>
+              {% else %}
+                <span class="px-2 py-0.5 rounded text-xs bg-slate-500/10 text-slate-400 border border-slate-500/20"
+                      title="{{ r.error }}">Error</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="border-t border-border px-4 py-3">
+      <p class="text-xs font-mono text-slate-600">
+        Hansen GFC v1.12 · 30m resolution · pixel value &gt; 20 = loss after 31 Dec 2020 ·
+        results not saved · {{ total }} farm{% if total != 1 %}s{% endif %} checked
+      </p>
+    </div>
+  </div>
+  {% endif %}
+
+  {% endif %}
+
+</div>
+{% endblock %}
