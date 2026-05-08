@@ -22,6 +22,7 @@ def to_json(value):
 
     None becomes the empty object so JSON.parse always succeeds downstream.
     """
+    # escape() HTML-encodes all special chars before mark_safe — output is safe
     if value is None:
-        return mark_safe(escape('{}'))
-    return mark_safe(escape(json.dumps(value)))
+        return mark_safe(escape('{}'))  # nosec
+    return mark_safe(escape(json.dumps(value)))  # nosec
