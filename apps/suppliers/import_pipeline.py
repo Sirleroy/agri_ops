@@ -358,10 +358,9 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                     geom_was_corrected = True
                     reason             = 'geometry_normalised_topology_required'
                     row_warnings.append(
-                        f"Raw GPS polygon had a self-intersection; the normalised version was "
-                        f"used (area delta {area_delta_pct}% — marginally above the 0.5% "
-                        "raw-preserve threshold, but the raw geometry cannot be stored as-is). "
-                        "Verify the farm boundary looks correct on the map."
+                        "GPS track had a self-intersection (boundary crossed itself during "
+                        "capture). Automatically repaired — verify the farm boundary looks "
+                        "correct on the map."
                     )
                 else:
                     geometry           = raw_geometry
