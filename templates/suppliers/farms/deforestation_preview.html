@@ -76,16 +76,6 @@
     </div>
   </div>
 
-  <!-- Missing tiles notice -->
-  {% if no_tile %}
-  <div class="bg-slate-800/50 border border-border rounded-xl px-5 py-3">
-    <p class="text-xs font-mono text-slate-400">
-      <span class="text-amber-400">Missing tiles:</span>
-      {% for t in no_tile %}lossyear_{{ t }}.tif{% if not forloop.last %}, {% endif %}{% endfor %}
-      — download and place in <code class="text-slate-300">data/gfc/</code> to check these farms.
-    </p>
-  </div>
-  {% endif %}
 
   <!-- Results table -->
   {% if results %}

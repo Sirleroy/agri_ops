@@ -20,20 +20,37 @@ EUDR_CUTOFF_YEAR = 20   # pixel value > 20 → loss after 2020 (EUDR reference d
 TILE_NODATA      = 255
 
 
+GFC_GCS_BASE = (
+    "https://storage.googleapis.com/earthenginepartners-hansen/"
+    "GFC-2024-v1.12/Hansen_GFC-2024-v1.12_lossyear_{tile}.tif"
+)
+
+
+def _tile_label(lon, lat):
+    import math
+    top_lat  = int(math.ceil(lat  / 10) * 10)
+    left_lon = int(math.floor(lon / 10) * 10)
+    return (f"{abs(top_lat):02d}{'N' if top_lat >= 0 else 'S'}_"
+            f"{abs(left_lon):03d}{'E' if left_lon >= 0 else 'W'}")
+
+
 def _find_tile(lon, lat):
     """
-    Return the GFC tile path that contains the given lon/lat, or None if not on disk.
-    Hansen tiles are named lossyear_{TOP_LAT}_{LEFT_LON}.tif where TOP_LAT and
-    LEFT_LON define the top-left corner of a 10° × 10° cell.
+    Return a tile path/URL for the given lon/lat.
+
+    Priority:
+      1. Local file in GFC_TILE_DIR — fast, works offline, preferred for dev.
+      2. /vsicurl/ streaming from GCS — works on any server with internet access,
+         fetches only the bytes covering the farm polygon via HTTP range requests.
+
+    Returns a string (local path or /vsicurl/ URL), or None if both are unavailable.
     """
-    import math
-    tile_dir  = Path(getattr(settings, 'GFC_TILE_DIR', ''))
-    top_lat   = int(math.ceil(lat  / 10) * 10)
-    left_lon  = int(math.floor(lon / 10) * 10)
-    lat_label = f"{abs(top_lat):02d}{'N' if top_lat >= 0 else 'S'}"
-    lon_label = f"{abs(left_lon):03d}{'E' if left_lon >= 0 else 'W'}"
-    fname     = tile_dir / f"lossyear_{lat_label}_{lon_label}.tif"
-    return fname if fname.exists() else None
+    label    = _tile_label(lon, lat)
+    tile_dir = Path(getattr(settings, 'GFC_TILE_DIR', ''))
+    local    = tile_dir / f"lossyear_{label}.tif"
+    if local.exists():
+        return str(local)
+    return f"/vsicurl/{GFC_GCS_BASE.format(tile=label)}"
 
 
 def _check_farm(geojson, tile_path):
@@ -96,9 +113,8 @@ class DeforestationPreviewView(StaffRequiredMixin, View):
         if supplier_id:
             farms_qs = farms_qs.filter(supplier_id=supplier_id)
 
-        results   = []
-        no_tile   = set()
-        no_geom   = 0
+        results = []
+        no_geom = 0
 
         for farm in farms_qs.order_by('name'):
             if not farm.geolocation:
@@ -115,17 +131,7 @@ class DeforestationPreviewView(StaffRequiredMixin, View):
                 no_geom += 1
                 continue
 
-            tile = _find_tile(lon, lat)
-            if tile is None:
-                tile_label = _tile_label(lon, lat)
-                no_tile.add(tile_label)
-                results.append({
-                    'farm': farm, 'pixels': '-', 'loss_pixels': '-',
-                    'loss_area_ha': '-', 'loss_years': [], 'result': 'NO TILE',
-                    'error': f'Tile {tile_label} not on disk',
-                })
-                continue
-
+            tile  = _find_tile(lon, lat)
             check = _check_farm(geom, tile)
             results.append({'farm': farm, **check})
 
@@ -134,21 +140,12 @@ class DeforestationPreviewView(StaffRequiredMixin, View):
         errors  = sum(1 for r in results if r['result'] == 'ERROR')
 
         return render(request, 'suppliers/farms/deforestation_preview.html', {
-            'suppliers':     self._suppliers(request),
-            'selected_id':   int(supplier_id) if supplier_id else None,
-            'results':       results,
-            'flagged':       flagged,
-            'clear':         clear,
-            'errors':        errors,
-            'no_geom':       no_geom,
-            'no_tile':       sorted(no_tile),
-            'total':         len(results),
+            'suppliers':   self._suppliers(request),
+            'selected_id': int(supplier_id) if supplier_id else None,
+            'results':     results,
+            'flagged':     flagged,
+            'clear':       clear,
+            'errors':      errors,
+            'no_geom':     no_geom,
+            'total':       len(results),
         })
-
-
-def _tile_label(lon, lat):
-    import math
-    top_lat  = int(math.ceil(lat  / 10) * 10)
-    left_lon = int(math.floor(lon / 10) * 10)
-    return (f"{abs(top_lat):02d}{'N' if top_lat >= 0 else 'S'}_"
-            f"{abs(left_lon):03d}{'E' if left_lon >= 0 else 'W'}")
