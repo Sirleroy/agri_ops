@@ -5,7 +5,9 @@ title: "ADR-008: Cloudflare Email Routing as Interim Founder Email"
 # ADR-008: Cloudflare Email Routing as Interim Founder Email
 
 **Date:** 2026-03-21
-**Status:** Accepted (interim)
+**Status:** Superseded — Google Workspace MX live as of 2026-05-08
+
+> **Note (2026-05-08):** Google Workspace is now live for `agriops.io`. The Cloudflare Email Routing forwarding rule from this ADR is no longer the active mail path; `founder@agriops.io` now resolves to a Google Workspace mailbox directly. This ADR is preserved for history. Any references to "Cloudflare forwards inbound to Gmail" in onboarding, settings, or runbook docs should be updated to the Workspace-direct setup.
 
 ## Context
 

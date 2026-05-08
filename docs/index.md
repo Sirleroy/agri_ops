@@ -54,10 +54,11 @@ AgriOps is a secure, multi-tenant SaaS platform for agricultural SMEs and cooper
 | [ADR 005](adr/005-eudr-farm-model-separation.md) | Farm model separation from Supplier |
 | [ADR 006](adr/006-ops-event-log-separation.md) | Separate OpsEventLog from tenant AuditLog |
 | [ADR 007](adr/007-totp-over-ip-restriction.md) | TOTP over IP restriction for ops dashboard |
-| [ADR 008](adr/008-cloudflare-email-routing-interim.md) | Cloudflare Email Routing as interim MX |
+| [ADR 008](adr/008-cloudflare-email-routing-interim.md) | Cloudflare Email Routing as interim MX *(superseded — Google Workspace live 2026-05-08)* |
 | [ADR 009](adr/009-production-hardening-indexes-async-email-env-validation.md) | Production hardening — DB indexes, async email, env validation |
 | [ADR 010](adr/010-billing-architecture.md) | Billing architecture — dual processor (Paystack/Stripe), isolated app, plan-gated access |
 | [ADR 011](adr/011-postgres-row-level-security-deferral.md) | PostgreSQL Row-Level Security — deferral criteria and implementation shape |
+| [ADR 012](adr/012-enterprise-api-integration-deferral.md) | Enterprise tenant API integration — deferral criteria and P0 build sequence |
 
 ---
 
