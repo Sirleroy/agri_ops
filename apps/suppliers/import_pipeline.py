@@ -344,7 +344,30 @@ def run_farm_geojson_import(company, supplier, features, default_commodity='', d
                 if centroid_shift_m is not None and centroid_shift_m > 15:
                     threshold_breach.append(f"centroid_shift {centroid_shift_m:.1f}m > 15m threshold")
 
-            if threshold_breach:
+            if threshold_breach and not raw_is_valid:
+                # Raw is self-intersecting — it cannot be stored regardless of the
+                # threshold. Use the candidate if it's valid; otherwise fall through
+                # and let the validator surface a clear error.
+                try:
+                    from shapely.geometry import shape as _shp_cand
+                    _cand_valid = bool(candidate and _shp_cand(candidate).is_valid)
+                except Exception:
+                    _cand_valid = False
+                if _cand_valid:
+                    geometry           = candidate
+                    geom_was_corrected = True
+                    reason             = 'geometry_normalised_topology_required'
+                    row_warnings.append(
+                        f"Raw GPS polygon had a self-intersection; the normalised version was "
+                        f"used (area delta {area_delta_pct}% — marginally above the 0.5% "
+                        "raw-preserve threshold, but the raw geometry cannot be stored as-is). "
+                        "Verify the farm boundary looks correct on the map."
+                    )
+                else:
+                    geometry           = raw_geometry
+                    geom_was_corrected = False
+                    reason             = 'geometry_raw_preserved'
+            elif threshold_breach:
                 geometry            = raw_geometry
                 geom_was_corrected  = False
                 reason              = 'geometry_raw_preserved'

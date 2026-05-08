@@ -254,10 +254,12 @@ def _validate_geojson_polygon(value):
         poly = shapely_shape({'type': geo_type, 'coordinates': coordinates})
         if not poly.is_valid:
             raise forms.ValidationError(
-                "This polygon's boundary crosses itself (self-intersecting geometry) "
-                "and could not be repaired automatically. The GPS track likely looped "
-                "back across itself in a way that cannot be resolved without re-mapping. "
-                "Re-walk the farm boundary and re-export."
+                "This polygon is not a valid closed area (OGC/QGIS topology violation). "
+                "After stripping elevation, removing duplicate points, simplifying, and "
+                "attempting automatic repair, the geometry is still invalid — likely because "
+                "the GPS walk did not trace a complete closed boundary (e.g. walked in a "
+                "straight line, all points at the same location, or the traced area collapsed "
+                "to near-zero). Re-walk the full farm perimeter and re-export as a polygon."
             )
     except forms.ValidationError:
         raise

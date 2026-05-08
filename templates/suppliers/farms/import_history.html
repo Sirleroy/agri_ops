@@ -161,12 +161,14 @@
                         {# Reason chip — severity-coloured for area cross-check (>15% red, >5% amber) #}
                         <span class="shrink-0 text-[10px] font-mono
                           {% if t.reason == 'geometry_raw_preserved' %}text-amber-300/80
+                          {% elif t.reason == 'geometry_normalised_topology_required' %}text-amber-400/80
                           {% elif t.reason == 'area_source_comparison' and t.detail.delta_pct and t.detail.delta_pct > 15 %}text-red-400/90
                           {% elif t.reason == 'area_source_comparison' and t.detail.delta_pct and t.detail.delta_pct > 5 %}text-amber-300/80
                           {% else %}text-slate-500{% endif %}">
                           {% if t.reason == 'fuzzy_match' %}LGA matched
                           {% elif t.reason == 'canonical_name' %}spelling corrected
                           {% elif t.reason == 'geometry_normalised' %}geometry corrected
+                          {% elif t.reason == 'geometry_normalised_topology_required' %}self-intersection repaired — normalised geometry used
                           {% elif t.reason == 'geometry_clean' %}validated — no changes
                           {% elif t.reason == 'geometry_raw_preserved' %}raw GPS preserved — normalisation skipped
                           {% elif t.reason == 'area_source_comparison' %}area cross-check{% if t.detail.delta_pct is not None %} · Δ {{ t.detail.delta_pct }}%{% endif %}
@@ -211,9 +213,13 @@
                           {% if t.detail.had_duplicates %}<span class="text-blue-400/70">dupes removed</span>{% endif %}
                           {% if t.detail.topology_repaired %}<span class="text-amber-400/80">topology repaired</span>{% endif %}
                         {% endif %}
-                        {# Vertex count — only show reduction % when before != after,
-                           so legacy log entries with stale stored percentages can't display
-                           "414→414 (98% reduced)" nonsense after a pipeline fix #}
+                        {% if t.reason == 'geometry_raw_preserved' %}
+                          <span class="text-slate-400">stored geometry kept as raw GPS trace</span>
+                        {% elif t.reason == 'geometry_normalised' %}
+                          <span class="text-slate-400">stored geometry normalised safely</span>
+                        {% elif t.reason == 'geometry_normalised_topology_required' %}
+                          <span class="text-amber-300/70">self-intersecting raw — normalised geometry stored; original in audit trail</span>
+                        {% endif %}
                         {% if t.detail.vertex_count_before %}
                           {% if t.detail.vertex_count_before == t.detail.vertex_count_after %}
                             <span>{{ t.detail.vertex_count_before }}→{{ t.detail.vertex_count_after }} vertices</span>
