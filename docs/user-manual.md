@@ -88,15 +88,71 @@ Farmers are the individual people who own or manage farm plots. Building a farme
 4. NIN (National Identification Number) is optional but useful for deduplication
 5. Tick **Consent given** and record the consent date if you have verbal or written consent
 
-**Bulk import:**
-1. Download the **CSV Template** from the import page, or export directly from your field data collection app if farmer data was collected there
-2. Fill it in — one row per farmer (SW Maps exports are accepted as-is — column names are recognised automatically)
-3. Upload and review the summary
-4. Any rows with errors are listed — download the error file, fix the rows, and re-upload
+### Bulk farmer import
 
-**Column names recognised automatically (SW Maps exports):** `first name` · `last name` · `phone number` · `Village` · `LGA` · `commodity` · `NIN`. Column matching is case-insensitive — you do not need to reformat SW Maps exports before uploading.
+Use this when migrating an existing farmer registry from Excel, a field app export, or any CSV source. The pipeline is designed for real-world data — messy column names, inconsistent date formats, and duplicate rows are all handled without requiring a clean file before you start.
 
-**Farmer profile completeness:** After importing farmers, any record missing phone, NIN, or village shows an amber **Incomplete** badge on the farmer list. The farmer detail page shows exactly which fields are missing and links directly to the edit form. Fill these in before your first compliance audit.
+**Step 1 — Get the template**
+
+Go to **Suppliers → Farmers → Import Farmers** and download the CSV template (`AgriOps_Farmer_Import_Template.csv`). It includes a pre-filled example row so the expected format is clear.
+
+Columns: `first_name`, `last_name`, `gender`, `phone`, `village`, `lga`, `nin`, `crops`, `consent_date`
+
+Paste your existing registry below the example row and delete the example before uploading.
+
+**Step 2 — Column name flexibility**
+
+The importer recognises both AgriOps template column names and SW Maps export column names. You do not need to reformat a SW Maps export before uploading.
+
+| AgriOps template | SW Maps equivalent |
+|---|---|
+| `first_name` | `First Name` |
+| `last_name` | `Last Name` |
+| `nin` | `NIN` |
+| `crops` | `Commodity` |
+| `phone` | `Phone Number` |
+
+Column matching is case-insensitive throughout.
+
+**Step 3 — Date and gender tolerance**
+
+- `consent_date` accepts `YYYY-MM-DD`, `DD/MM/YYYY`, and `DD-MM-YYYY` — use whichever your source data uses
+- `gender` accepts `M`, `F`, or `O` (other). Any other value is cleared rather than erroring the row
+
+**Step 4 — Upload and review the summary**
+
+After uploading you will see a summary with three counts:
+
+| Count | Meaning |
+|---|---|
+| **Created** | New farmer records added to your registry |
+| **Duplicates skipped** | Rows that matched an existing farmer — not an error, not re-added |
+| **Errors** | Rows that could not be imported — see step 5 |
+
+**Duplicate detection** runs two independent checks per row:
+1. If a NIN is present, it checks whether a farmer with that NIN already exists for your company
+2. If no NIN, it checks first name + last name + village + LGA together (case-insensitive)
+
+A row that matches an existing farmer on either check is counted as a duplicate and skipped silently — it does not go into the error file.
+
+**Step 5 — Fix errors and re-upload**
+
+Any rows that failed validation are available immediately as a download:
+
+`AgriOps_Farmer_Import_Errors.csv`
+
+This file has the same columns as the import template, with one column appended: `error_reason`. Every rejected row comes back with the exact reason it failed. The most common error is a missing `first_name` — that is the only required field.
+
+To fix: open the error file, correct the rows, delete the `error_reason` column, and re-upload. Rows that were already created will be detected as duplicates and skipped; only the fixed rows will be created.
+
+**Step 6 — Export your registry**
+
+At any point you can export the current farmer registry from the Farmers list page:
+
+- **CSV** — filterable by LGA or village, downloaded as `AgriOps_Farmer_Registry_YYYY-MM-DD.csv`. Useful as a working copy to add rows to and re-import.
+- **PDF** — branded AgriOps layout, paginated. Suitable for printing or attaching to grant documentation.
+
+**Farmer profile completeness:** After importing, any record missing phone, NIN, or village shows an amber **Incomplete** badge on the farmer list. The farmer detail page shows exactly which fields are missing and links directly to the edit form. Fill these in before your first compliance audit.
 
 ---
 
