@@ -90,7 +90,7 @@
               <div style="display:flex;align-items:center;gap:0.5rem">
                 <div style="flex:1;height:4px;background:var(--border);border-radius:99px;min-width:60px">
                   <div style="height:4px;border-radius:99px;width:{{ row.pct }}%;
-                    background:{% if row.pct == 100 %}#4ade80{% elif row.pct >= 50 %}#facc15{% else %}#f87171%};
+                    background:{% if row.pct == 100 %}#4ade80{% elif row.pct >= 50 %}#facc15{% else %}#f87171{% endif %};
                     transition:width 0.3s"></div>
                 </div>
                 <span style="font-size:0.75rem;color:var(--muted);font-family:monospace;white-space:nowrap">
