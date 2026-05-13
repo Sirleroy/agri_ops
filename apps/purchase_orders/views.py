@@ -22,7 +22,22 @@ class PurchaseOrderListView(StaffRequiredMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        return super().get_queryset().filter(company=self.request.user.company).select_related('supplier', 'company')
+        from django.db.models import Q
+        qs = super().get_queryset().filter(company=self.request.user.company).select_related('supplier', 'company')
+        q = self.request.GET.get('q', '').strip()
+        status = self.request.GET.get('status', '').strip()
+        if q:
+            qs = qs.filter(Q(order_number__icontains=q) | Q(supplier__name__icontains=q))
+        if status:
+            qs = qs.filter(status=status)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        params = self.request.GET.copy()
+        params.pop('page', None)
+        ctx['filter_qs'] = params.urlencode()
+        return ctx
 
 
 class PurchaseOrderDetailView(CompanyOwnedMixin, StaffRequiredMixin, DetailView):
@@ -112,7 +127,6 @@ class PurchaseOrderUpdateView(DatePickerMixin, AuditUpdateMixin, CompanyOwnedMix
 
 class PurchaseOrderDeleteView(AuditDeleteMixin, CompanyOwnedMixin, ManagerRequiredMixin, DeleteView):
     model = PurchaseOrder
-    template_name = 'purchase_orders/confirm_delete.html'
     success_url = reverse_lazy('purchase_orders:list')
 
 

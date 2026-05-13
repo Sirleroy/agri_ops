@@ -56,7 +56,6 @@ class CompanyUpdateView(DatePickerMixin, AuditUpdateMixin, OrgAdminRequiredMixin
 
 class CompanyDeleteView(AuditDeleteMixin, OrgAdminRequiredMixin, DeleteView):
     model = Company
-    template_name = 'companies/confirm_delete.html'
     success_url = reverse_lazy('companies:list')
 
     def dispatch(self, request, *args, **kwargs):

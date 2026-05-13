@@ -52,7 +52,18 @@
     {% if result.error_detail %}
     <div class="mt-4">
       <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Error Detail</p>
-      <div class="bg-surface border border-border rounded-lg overflow-x-auto">
+      <!-- Mobile cards -->
+      <div class="sm:hidden space-y-2">
+        {% for err in result.error_detail %}
+        <div class="bg-surface border border-border rounded-lg px-4 py-3 text-xs font-mono">
+          <p class="text-slate-500 mb-1">Row {{ err.row }}</p>
+          <p class="text-slate-300 font-semibold mb-1">{{ err.first_name }} {{ err.last_name }}</p>
+          <p class="text-red-400 leading-relaxed">{{ err.reason }}</p>
+        </div>
+        {% endfor %}
+      </div>
+      <!-- Desktop table -->
+      <div class="hidden sm:block bg-surface border border-border rounded-lg overflow-x-auto">
         <table class="w-full text-xs font-mono">
           <thead>
             <tr class="border-b border-border">

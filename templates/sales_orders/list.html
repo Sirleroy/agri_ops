@@ -8,8 +8,19 @@
   <div class="flex items-center justify-between gap-4">
     <div class="flex items-center gap-3 min-w-0 flex-1">
       <p class="text-sm text-slate-400 font-mono flex-shrink-0 hidden sm:block">{{ page_obj.paginator.count }} order{{ page_obj.paginator.count|pluralize }}</p>
-      <input id="tableSearch" type="text" placeholder="Search orders…"
-        class="bg-bg border border-border rounded-lg px-3 py-1.5 text-sm text-slate-200 placeholder-slate-600 focus:border-green outline-none min-w-0 flex-1 sm:flex-none sm:w-56 transition-colors">
+      <form method="get" class="flex items-center gap-2">
+        <input type="search" name="q" value="{{ request.GET.q }}" placeholder="Search orders…"
+          class="bg-bg border border-border rounded-lg px-3 py-1.5 text-sm text-slate-200 placeholder-slate-600 focus:border-green outline-none w-40 sm:w-48 transition-colors">
+        <select name="status" onchange="this.form.submit()"
+          class="bg-bg border border-border rounded-lg px-2 py-1.5 text-sm text-slate-400 focus:border-green outline-none transition-colors hidden sm:block">
+          <option value="" {% if not request.GET.status %}selected{% endif %}>All status</option>
+          <option value="pending"    {% if request.GET.status == 'pending'    %}selected{% endif %}>Pending</option>
+          <option value="confirmed"  {% if request.GET.status == 'confirmed'  %}selected{% endif %}>Confirmed</option>
+          <option value="dispatched" {% if request.GET.status == 'dispatched' %}selected{% endif %}>Dispatched</option>
+          <option value="completed"  {% if request.GET.status == 'completed'  %}selected{% endif %}>Completed</option>
+          <option value="cancelled"  {% if request.GET.status == 'cancelled'  %}selected{% endif %}>Cancelled</option>
+        </select>
+      </form>
     </div>
     <a href="{% url 'sales_orders:create' %}" class="flex items-center gap-2 bg-green hover:bg-green-dim text-bg text-sm font-bold px-4 py-2 rounded-lg transition-colors flex-shrink-0">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -123,15 +134,14 @@
   {% if page_obj.has_other_pages %}
   <div class="flex items-center justify-center gap-2">
     {% if page_obj.has_previous %}
-    <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">Previous</a>
+    <a href="?{% if filter_qs %}{{ filter_qs }}&{% endif %}page={{ page_obj.previous_page_number }}" class="px-3 py-1 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">Previous</a>
     {% endif %}
     <span class="text-slate-500 text-sm font-mono">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
     {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">Next</a>
+    <a href="?{% if filter_qs %}{{ filter_qs }}&{% endif %}page={{ page_obj.next_page_number }}" class="px-3 py-1 bg-card border border-border rounded-lg text-slate-400 hover:text-slate-100 text-sm transition-colors">Next</a>
     {% endif %}
   </div>
   {% endif %}
 
 </div>
-<script>document.addEventListener('DOMContentLoaded', function(){ initTableSearch('tableSearch', 'tbody'); });</script>
 {% endblock %}

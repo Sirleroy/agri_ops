@@ -19,7 +19,18 @@ class InventoryListView(StaffRequiredMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        return super().get_queryset().filter(company=self.request.user.company).select_related('product', 'company')
+        qs = super().get_queryset().filter(company=self.request.user.company).select_related('product', 'company')
+        q = self.request.GET.get('q', '').strip()
+        if q:
+            qs = qs.filter(product__name__icontains=q)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        params = self.request.GET.copy()
+        params.pop('page', None)
+        ctx['filter_qs'] = params.urlencode()
+        return ctx
 
 
 class InventoryDetailView(CompanyOwnedMixin, StaffRequiredMixin, DetailView):
@@ -53,7 +64,6 @@ class InventoryUpdateView(DatePickerMixin, AuditUpdateMixin, CompanyOwnedMixin, 
 
 class InventoryDeleteView(AuditDeleteMixin, CompanyOwnedMixin, ManagerRequiredMixin, DeleteView):
     model = Inventory
-    template_name = 'inventory/confirm_delete.html'
     success_url = reverse_lazy('inventory:list')
 
 

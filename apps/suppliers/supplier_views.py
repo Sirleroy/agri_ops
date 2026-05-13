@@ -16,7 +16,19 @@ class SupplierListView(StaffRequiredMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        return super().get_queryset().filter(company=self.request.user.company)
+        from django.db.models import Q
+        qs = super().get_queryset().filter(company=self.request.user.company)
+        q = self.request.GET.get('q', '').strip()
+        if q:
+            qs = qs.filter(Q(name__icontains=q) | Q(contact_person__icontains=q))
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        params = self.request.GET.copy()
+        params.pop('page', None)
+        ctx['filter_qs'] = params.urlencode()
+        return ctx
 
 
 class SupplierDetailView(CompanyOwnedMixin, StaffRequiredMixin, DetailView):
@@ -59,5 +71,4 @@ class SupplierUpdateView(OtherRevealMixin, AuditUpdateMixin, CompanyOwnedMixin, 
 
 class SupplierDeleteView(AuditDeleteMixin, CompanyOwnedMixin, ManagerRequiredMixin, DeleteView):
     model = Supplier
-    template_name = 'suppliers/confirm_delete.html'
     success_url = reverse_lazy('suppliers:list')

@@ -50,5 +50,4 @@ class UserSystemRoleUpdateView(AuditUpdateMixin, CompanyOwnedMixin, OrgAdminRequ
 
 class UserDeleteView(AuditDeleteMixin, CompanyOwnedMixin, OrgAdminRequiredMixin, DeleteView):
     model = CustomUser
-    template_name = 'users/confirm_delete.html'
     success_url = reverse_lazy('users:list')

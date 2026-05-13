@@ -342,7 +342,6 @@ class FarmUpdateView(DatePickerMixin, AuditUpdateMixin, CompanyOwnedMixin, Staff
 
 class FarmDeleteView(AuditDeleteMixin, CompanyOwnedMixin, ManagerRequiredMixin, DeleteView):
     model = Farm
-    template_name = 'suppliers/farms/confirm_delete.html'
     success_url = reverse_lazy('suppliers:farm_list')
 
 
