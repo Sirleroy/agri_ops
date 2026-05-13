@@ -2,7 +2,8 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.views import View
 from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404, render
-from .models import Supplier, Farm, FarmCertification
+from django.db.models import OuterRef, Subquery
+from .models import Supplier, Farm, FarmCertification, DeforestationCheck
 from .forms import FarmForm, FarmUpdateForm
 from .import_pipeline import parse_file_to_features, run_farm_geojson_import  # noqa: F401
 from apps.users.permissions import (
@@ -247,7 +248,18 @@ class FarmListView(StaffRequiredMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        qs = Farm.objects.filter(company=self.request.user.company).select_related('supplier', 'farmer')
+        latest_check = DeforestationCheck.objects.filter(
+            farm=OuterRef('pk')
+        ).order_by('-created_at')
+        qs = (
+            Farm.objects
+            .filter(company=self.request.user.company)
+            .select_related('supplier', 'farmer')
+            .annotate(
+                last_check_status=Subquery(latest_check.values('risk_status')[:1]),
+                last_check_date=Subquery(latest_check.values('assessed_at')[:1]),
+            )
+        )
         qs, _ = _farm_filter_qs(qs, self.request.GET)
         return qs
 

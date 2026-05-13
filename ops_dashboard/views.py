@@ -937,3 +937,70 @@ def _send_provisioning_email(user, set_password_url, company):
     )
     msg.attach_alternative(body_html, "text/html")
     msg.send(fail_silently=True)
+
+
+@ops_required
+def ops_deforestation(request):
+    from django.db.models import Q, OuterRef, Subquery, Count
+    from apps.suppliers.models import DeforestationCheck
+
+    # Farms with at least one polygon
+    farms_with_geom = Farm.objects.exclude(geolocation=None)
+
+    # Latest check per farm (subquery)
+    latest_check_qs = DeforestationCheck.objects.filter(
+        farm=OuterRef('pk')
+    ).order_by('-created_at')
+
+    annotated = farms_with_geom.annotate(
+        last_check_status=Subquery(latest_check_qs.values('risk_status')[:1]),
+        last_check_date=Subquery(latest_check_qs.values('assessed_at')[:1]),
+        last_check_hash=Subquery(latest_check_qs.values('geometry_hash_at_assessment')[:1]),
+    ).select_related('company', 'supplier')
+
+    unchecked = [f for f in annotated if f.last_check_status is None]
+    flagged   = [f for f in annotated if f.last_check_status == 'flagged']
+    stale     = [
+        f for f in annotated
+        if f.last_check_status is not None
+        and f.last_check_hash
+        and f.last_check_hash != f.geometry_hash
+    ]
+
+    # Per-tenant summary
+    tenant_rows = []
+    for company in Company.objects.filter(is_active=True).order_by('name'):
+        company_farms = [f for f in annotated if f.company_id == company.pk]
+        total    = len(company_farms)
+        checked  = sum(1 for f in company_farms if f.last_check_status is not None)
+        n_flagged = sum(1 for f in company_farms if f.last_check_status == 'flagged')
+        n_stale  = sum(
+            1 for f in company_farms
+            if f.last_check_status is not None
+            and f.last_check_hash and f.last_check_hash != f.geometry_hash
+        )
+        n_clear  = sum(1 for f in company_farms if f.last_check_status == 'clear')
+        if total:
+            tenant_rows.append({
+                'company':  company,
+                'total':    total,
+                'checked':  checked,
+                'unchecked': total - checked,
+                'clear':    n_clear,
+                'flagged':  n_flagged,
+                'stale':    n_stale,
+                'pct':      round(checked / total * 100),
+            })
+
+    total_with_geom = len(list(annotated))
+
+    return render(request, 'ops_dashboard/deforestation.html', {
+        'total_with_geom': total_with_geom,
+        'unchecked_count': len(unchecked),
+        'flagged_count':   len(flagged),
+        'stale_count':     len(stale),
+        'unchecked':       unchecked[:50],
+        'flagged':         flagged,
+        'stale':           stale,
+        'tenant_rows':     tenant_rows,
+    })

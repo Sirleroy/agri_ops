@@ -1,0 +1,249 @@
+{% extends "ops_dashboard/base.html" %}
+{% block title %}Deforestation Coverage — AgriOps Ops{% endblock %}
+{% block nav_deforestation %}active{% endblock %}
+{% block page_title %}Deforestation Coverage{% endblock %}
+
+{% block content %}
+
+<!-- Summary strip -->
+<div class="grid-4" style="margin-bottom:1.5rem">
+  <div class="card">
+    <div class="card-title">Farms with polygon</div>
+    <div class="card-value">{{ total_with_geom }}</div>
+    <div class="card-sub">eligible for checking</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Not checked</div>
+    <div class="card-value" style="color:{% if unchecked_count > 0 %}#facc15{% else %}#4ade80{% endif %}">
+      {{ unchecked_count }}
+    </div>
+    <div class="card-sub">no check ever run</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Flagged</div>
+    <div class="card-value" style="color:{% if flagged_count > 0 %}#f87171{% else %}#4ade80{% endif %}">
+      {{ flagged_count }}
+    </div>
+    <div class="card-sub">post-2020 loss detected</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Stale checks</div>
+    <div class="card-value" style="color:{% if stale_count > 0 %}#facc15{% else %}#4ade80{% endif %}">
+      {{ stale_count }}
+    </div>
+    <div class="card-sub">polygon changed since check</div>
+  </div>
+</div>
+
+<!-- Per-tenant breakdown -->
+<div style="margin-bottom:2rem">
+  <div class="section-title">Coverage by tenant</div>
+  <div class="card" style="padding:0">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Tenant</th>
+            <th style="text-align:right">Farms</th>
+            <th style="text-align:right">Checked</th>
+            <th style="text-align:right">Unchecked</th>
+            <th style="text-align:right">Clear</th>
+            <th style="text-align:right">Flagged</th>
+            <th style="text-align:right">Stale</th>
+            <th>Coverage</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in tenant_rows %}
+          <tr>
+            <td>
+              <a href="/ops/tenants/{{ row.company.pk }}/"
+                 style="color:var(--text);text-decoration:none;font-weight:500;">
+                {{ row.company.name }}
+              </a>
+            </td>
+            <td style="text-align:right;color:var(--muted)">{{ row.total }}</td>
+            <td style="text-align:right;color:var(--muted)">{{ row.checked }}</td>
+            <td style="text-align:right">
+              {% if row.unchecked > 0 %}
+                <span style="color:#facc15">{{ row.unchecked }}</span>
+              {% else %}
+                <span style="color:var(--dim)">0</span>
+              {% endif %}
+            </td>
+            <td style="text-align:right;color:#4ade80">{{ row.clear }}</td>
+            <td style="text-align:right">
+              {% if row.flagged > 0 %}
+                <span style="color:#f87171">{{ row.flagged }}</span>
+              {% else %}
+                <span style="color:var(--dim)">0</span>
+              {% endif %}
+            </td>
+            <td style="text-align:right">
+              {% if row.stale > 0 %}
+                <span style="color:#facc15">{{ row.stale }}</span>
+              {% else %}
+                <span style="color:var(--dim)">0</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;align-items:center;gap:0.5rem">
+                <div style="flex:1;height:4px;background:var(--border);border-radius:99px;min-width:60px">
+                  <div style="height:4px;border-radius:99px;width:{{ row.pct }}%;
+                    background:{% if row.pct == 100 %}#4ade80{% elif row.pct >= 50 %}#facc15{% else %}#f87171%};
+                    transition:width 0.3s"></div>
+                </div>
+                <span style="font-size:0.75rem;color:var(--muted);font-family:monospace;white-space:nowrap">
+                  {{ row.pct }}%
+                </span>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" style="text-align:center;color:var(--dim);padding:2rem">No active tenants with farms.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Flagged farms -->
+{% if flagged %}
+<div style="margin-bottom:2rem">
+  <div class="section-title">Flagged farms — post-2020 loss detected</div>
+  <div class="card" style="padding:0">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Farm</th>
+            <th>Tenant</th>
+            <th>Supplier</th>
+            <th>Commodity</th>
+            <th>Last check</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for farm in flagged %}
+          <tr>
+            <td>
+              <a href="/suppliers/farms/{{ farm.pk }}/"
+                 style="color:var(--text);text-decoration:none;font-weight:500;">
+                {{ farm.name }}
+              </a>
+            </td>
+            <td style="color:var(--muted)">{{ farm.company.name }}</td>
+            <td style="color:var(--muted)">{{ farm.supplier.name|default:"—" }}</td>
+            <td style="color:var(--muted)">{{ farm.commodity }}</td>
+            <td style="color:var(--muted);font-family:monospace;font-size:0.8rem">
+              {{ farm.last_check_date|date:"d M Y"|default:"—" }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Stale checks -->
+{% if stale %}
+<div style="margin-bottom:2rem">
+  <div class="section-title">Stale checks — polygon changed since last check</div>
+  <div class="card" style="padding:0">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Farm</th>
+            <th>Tenant</th>
+            <th>Last check</th>
+            <th>Check result</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for farm in stale %}
+          <tr>
+            <td>
+              <a href="/suppliers/farms/{{ farm.pk }}/"
+                 style="color:var(--text);text-decoration:none;font-weight:500;">
+                {{ farm.name }}
+              </a>
+            </td>
+            <td style="color:var(--muted)">{{ farm.company.name }}</td>
+            <td style="color:var(--muted);font-family:monospace;font-size:0.8rem">
+              {{ farm.last_check_date|date:"d M Y"|default:"—" }}
+            </td>
+            <td>
+              {% if farm.last_check_status == 'clear' %}
+                <span class="badge-ok">Clear</span>
+              {% elif farm.last_check_status == 'flagged' %}
+                <span class="badge-error">Flagged</span>
+              {% else %}
+                <span class="badge-warning">{{ farm.last_check_status|capfirst }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Unchecked farms -->
+{% if unchecked %}
+<div style="margin-bottom:2rem">
+  <div class="section-title">
+    Unchecked farms
+    {% if unchecked_count > 50 %}
+      <span style="font-size:0.75rem;font-weight:normal;color:var(--dim)">(showing first 50 of {{ unchecked_count }})</span>
+    {% endif %}
+  </div>
+  <div class="card" style="padding:0">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Farm</th>
+            <th>Tenant</th>
+            <th>Supplier</th>
+            <th>Commodity</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for farm in unchecked %}
+          <tr>
+            <td>
+              <a href="/suppliers/farms/{{ farm.pk }}/"
+                 style="color:var(--text);text-decoration:none;font-weight:500;">
+                {{ farm.name }}
+              </a>
+            </td>
+            <td style="color:var(--muted)">{{ farm.company.name }}</td>
+            <td style="color:var(--muted)">{{ farm.supplier.name|default:"—" }}</td>
+            <td style="color:var(--muted)">{{ farm.commodity }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <p style="font-size:0.8rem;color:var(--dim);margin-top:0.75rem">
+    Run <code style="background:var(--surface);padding:0.1rem 0.4rem;border-radius:4px;font-size:0.75rem">
+    python manage.py run_deforestation_checks</code> to check all farms or use the Deforestation Checks page within a tenant session.
+  </p>
+</div>
+{% endif %}
+
+{% if not unchecked and not flagged and not stale %}
+<div class="card" style="text-align:center;padding:3rem">
+  <p style="color:#4ade80;font-size:1.1rem;margin-bottom:0.5rem">✓ All clear</p>
+  <p style="color:var(--dim);font-size:0.85rem">All farms with polygons have been checked and none are flagged or stale.</p>
+</div>
+{% endif %}
+
+{% endblock %}
