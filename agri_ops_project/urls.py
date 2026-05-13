@@ -5,7 +5,7 @@ from django.contrib.auth import views as auth_views
 from django.views.generic import TemplateView
 from agri_ops_project.health import health_check
 from apps.sales_orders.batch_views import PublicTraceView
-from apps.dashboard.access_views import RequestAccessView
+from apps.dashboard.access_views import RequestAccessView, InvitePasswordSetView
 
 
 def _legal(t):
@@ -36,7 +36,7 @@ urlpatterns = [
 
     # Set password — new account welcome email link
     path('set-password/<uidb64>/<token>/',
-         auth_views.PasswordResetConfirmView.as_view(
+         InvitePasswordSetView.as_view(
              template_name='registration/set_password.html',
              post_reset_login=True,
              post_reset_login_backend='django.contrib.auth.backends.ModelBackend',

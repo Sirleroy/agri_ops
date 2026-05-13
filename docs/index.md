@@ -81,6 +81,15 @@ AgriOps is a secure, multi-tenant SaaS platform for agricultural SMEs and cooper
 |---|---|
 | [Threat Model](threat-model.md) | STRIDE threat analysis and mitigations |
 | [Security Testing Log](security-testing.md) | Red team exercises, findings, and resolutions |
+| [Production Readiness](production-readiness.md) | Pre-launch hardening checklist — security, data integrity, compliance, UX |
+
+---
+
+## Legal & Compliance
+
+| Document | Description |
+|---|---|
+| [Data Protection](compliance/data-protection.md) | NDPA 2023 compliance posture — lawful basis, DPIA summary, data subject rights, cross-border transfers |
 
 ---
 

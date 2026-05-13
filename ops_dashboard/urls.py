@@ -16,4 +16,7 @@ urlpatterns = [
     path('ops/health/',    views.ops_health,    name='ops_health'),
     path('ops/corridor/',  views.ops_corridor,  name='ops_corridor'),
     path('ops/geometry/',  views.ops_geometry,  name='ops_geometry'),
+    path('ops/requests/', views.ops_access_requests, name='ops_access_requests'),
+    path('ops/requests/<int:pk>/provision/', views.ops_provision_tenant, name='ops_provision_tenant'),
+    path('ops/requests/<int:pk>/reject/', views.ops_reject_request, name='ops_reject_request'),
 ]

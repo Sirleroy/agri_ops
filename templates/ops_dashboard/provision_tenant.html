@@ -1,0 +1,112 @@
+{% extends "ops_dashboard/base.html" %}
+{% block title %}Provision Tenant — AgriOps Ops{% endblock %}
+{% block nav_requests %}active{% endblock %}
+{% block page_title %}Provision Tenant{% endblock %}
+
+{% block content %}
+
+{% if messages %}
+  {% for message in messages %}
+  <div style="padding:10px 16px;border-radius:6px;margin-bottom:16px;font-size:0.85rem;
+    {% if message.tags == 'error' %}background:#2d1a1a;border:1px solid #7f1d1d;color:#f87171;
+    {% else %}background:#0f2a1a;border:1px solid #14532d;color:#4ade80;{% endif %}">
+    {{ message }}
+  </div>
+  {% endfor %}
+{% endif %}
+
+<div style="max-width:560px;">
+
+  <div class="card" style="margin-bottom:20px;background:#1a2a1a;border-color:#2a4a2a;">
+    <div class="section-title" style="margin-bottom:12px;">Access Request</div>
+    <table style="font-size:0.85rem;width:100%;border-collapse:collapse;">
+      <tr><td style="color:var(--muted);padding:4px 0;width:110px;">Name</td><td style="font-weight:500;">{{ access_request.name }}</td></tr>
+      <tr><td style="color:var(--muted);padding:4px 0;">Email</td><td style="font-family:monospace;">{{ access_request.email }}</td></tr>
+      <tr><td style="color:var(--muted);padding:4px 0;">Company</td><td>{{ access_request.company|default:"—" }}</td></tr>
+      <tr><td style="color:var(--muted);padding:4px 0;">Commodity</td><td>{{ access_request.get_commodity_display|default:"—" }}</td></tr>
+      <tr><td style="color:var(--muted);padding:4px 0;">Submitted</td><td style="color:var(--dim);">{{ access_request.created_at|date:"d M Y H:i" }}</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="section-title" style="margin-bottom:20px;">New Tenant Details</div>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:0.78rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">
+          Company Name *
+        </label>
+        <input type="text" name="company_name"
+               value="{{ access_request.company }}"
+               required
+               style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;
+                      padding:8px 12px;color:var(--text);font-size:0.85rem;box-sizing:border-box;outline:none;">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+        <div>
+          <label style="display:block;font-size:0.78rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">
+            First Name *
+          </label>
+          <input type="text" name="first_name"
+                 value="{{ default_first }}"
+                 required
+                 style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;
+                        padding:8px 12px;color:var(--text);font-size:0.85rem;box-sizing:border-box;outline:none;">
+        </div>
+        <div>
+          <label style="display:block;font-size:0.78rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">
+            Last Name
+          </label>
+          <input type="text" name="last_name"
+                 value="{{ default_last }}"
+                 style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;
+                        padding:8px 12px;color:var(--text);font-size:0.85rem;box-sizing:border-box;outline:none;">
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:0.78rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">
+          Country
+        </label>
+        <input type="text" name="country"
+               placeholder="e.g. Nigeria"
+               style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;
+                      padding:8px 12px;color:var(--text);font-size:0.85rem;box-sizing:border-box;outline:none;">
+      </div>
+
+      <div style="margin-bottom:24px;">
+        <label style="display:block;font-size:0.78rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">
+          Plan Tier
+        </label>
+        <select name="plan_tier"
+                style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;
+                       padding:8px 12px;color:var(--text);font-size:0.85rem;box-sizing:border-box;outline:none;">
+          {% for value, label in plan_choices %}
+          <option value="{{ value }}" {% if value == 'starter' %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="background:#0f2a1a;border:1px solid #1a4a2a;border-radius:6px;padding:12px 16px;margin-bottom:20px;font-size:0.8rem;color:#4ade80;">
+        An email will be sent to <strong>{{ access_request.email }}</strong> with their username and a set-password link.
+      </div>
+
+      <div style="display:flex;gap:12px;">
+        <button type="submit"
+                style="flex:1;background:#4ade80;color:#0a0f1a;border:none;border-radius:6px;
+                       padding:10px;font-size:0.85rem;font-weight:700;cursor:pointer;">
+          Provision &amp; Send Credentials
+        </button>
+        <a href="/ops/requests/"
+           style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;
+                  padding:10px;font-size:0.85rem;text-align:center;color:var(--muted);text-decoration:none;">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

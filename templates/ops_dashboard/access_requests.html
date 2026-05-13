@@ -1,0 +1,107 @@
+{% extends "ops_dashboard/base.html" %}
+{% block title %}Access Requests — AgriOps Ops{% endblock %}
+{% block nav_requests %}active{% endblock %}
+{% block page_title %}Access Requests{% endblock %}
+
+{% block content %}
+
+{% if messages %}
+  {% for message in messages %}
+  <div style="padding:10px 16px;border-radius:6px;margin-bottom:16px;font-size:0.85rem;
+    {% if message.tags == 'error' %}background:#2d1a1a;border:1px solid #7f1d1d;color:#f87171;
+    {% else %}background:#0f2a1a;border:1px solid #14532d;color:#4ade80;{% endif %}">
+    {{ message }}
+  </div>
+  {% endfor %}
+{% endif %}
+
+<div class="card" style="margin-bottom:16px;">
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <span style="font-size:0.8rem;color:var(--muted);">Filter:</span>
+    <a href="?status=pending"
+       style="font-size:0.8rem;padding:4px 12px;border-radius:4px;text-decoration:none;
+              {% if filter_status == 'pending' %}background:#14532d;color:#4ade80;{% else %}color:var(--muted);{% endif %}">
+      Pending {% if pending_count %}<span style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 6px;font-size:0.7rem;margin-left:4px;">{{ pending_count }}</span>{% endif %}
+    </a>
+    <a href="?status=approved"
+       style="font-size:0.8rem;padding:4px 12px;border-radius:4px;text-decoration:none;
+              {% if filter_status == 'approved' %}background:#14532d;color:#4ade80;{% else %}color:var(--muted);{% endif %}">
+      Approved
+    </a>
+    <a href="?status=rejected"
+       style="font-size:0.8rem;padding:4px 12px;border-radius:4px;text-decoration:none;
+              {% if filter_status == 'rejected' %}background:#14532d;color:#4ade80;{% else %}color:var(--muted);{% endif %}">
+      Rejected
+    </a>
+    <a href="?status=all"
+       style="font-size:0.8rem;padding:4px 12px;border-radius:4px;text-decoration:none;
+              {% if filter_status == 'all' %}background:#14532d;color:#4ade80;{% else %}color:var(--muted);{% endif %}">
+      All
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Company</th>
+          <th>Commodity</th>
+          <th>Status</th>
+          <th>Submitted</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in requests %}
+        <tr>
+          <td style="font-weight:500">{{ req.name }}</td>
+          <td style="font-family:monospace;font-size:0.82rem">{{ req.email }}</td>
+          <td>{{ req.company|default:"—" }}</td>
+          <td style="color:var(--muted);font-size:0.82rem">{{ req.get_commodity_display|default:"—" }}</td>
+          <td>
+            {% if req.status == 'pending' %}
+              <span style="background:#78350f;color:#fbbf24;border-radius:4px;padding:2px 8px;font-size:0.75rem;font-weight:600;">Pending</span>
+            {% elif req.status == 'approved' %}
+              <span style="background:#14532d;color:#4ade80;border-radius:4px;padding:2px 8px;font-size:0.75rem;font-weight:600;">Approved</span>
+            {% else %}
+              <span style="background:#2d1a1a;color:#f87171;border-radius:4px;padding:2px 8px;font-size:0.75rem;font-weight:600;">Rejected</span>
+            {% endif %}
+          </td>
+          <td style="color:var(--dim);font-size:0.8rem">{{ req.created_at|date:"d M Y H:i" }}</td>
+          <td>
+            {% if req.status == 'pending' %}
+            <div style="display:flex;gap:8px;align-items:center;">
+              <a href="/ops/requests/{{ req.pk }}/provision/"
+                 style="font-size:0.78rem;padding:4px 10px;background:#14532d;color:#4ade80;
+                        border-radius:4px;text-decoration:none;font-weight:600;">
+                Provision
+              </a>
+              <form method="post" action="/ops/requests/{{ req.pk }}/reject/" style="display:inline"
+                    onsubmit="return confirm('Reject request from {{ req.name|escapejs }}?')">
+                {% csrf_token %}
+                <button type="submit"
+                        style="font-size:0.78rem;padding:4px 10px;background:#2d1a1a;color:#f87171;
+                               border:1px solid #7f1d1d;border-radius:4px;cursor:pointer;">
+                  Reject
+                </button>
+              </form>
+            </div>
+            {% elif req.status == 'approved' %}
+            <span style="color:var(--dim);font-size:0.78rem">{{ req.approved_at|date:"d M Y" }}</span>
+            {% else %}
+            <span style="color:var(--dim);font-size:0.78rem">{{ req.notes|truncatechars:40|default:"—" }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="color:var(--dim)">No {{ filter_status }} requests.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

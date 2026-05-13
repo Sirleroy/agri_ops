@@ -1,5 +1,6 @@
 import hashlib
 import json
+import threading
 import qrcode
 import qrcode.image.svg
 import io
@@ -7,8 +8,12 @@ from datetime import timedelta
 
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib import messages
+from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
 from django.db.models import Count, Sum
 from django.db.models.functions import TruncDate
 
@@ -19,6 +24,7 @@ from django.conf import settings
 
 from apps.audit.models import AuditLog
 from apps.companies.models import Company
+from apps.dashboard.models import AccessRequest
 from apps.inventory.models import Inventory
 from apps.sales_orders.models import SalesOrder
 from apps.purchase_orders.models import PurchaseOrder
@@ -735,3 +741,194 @@ def ops_geometry(request):
         'drifted': drifted,
         'missing': missing,
     })
+
+
+# --- Access request views ---
+
+@ops_required
+def ops_access_requests(request):
+    filter_status = request.GET.get('status', 'pending')
+    if filter_status == 'all':
+        requests_qs = AccessRequest.objects.all()
+    else:
+        requests_qs = AccessRequest.objects.filter(status=filter_status)
+
+    return render(request, 'ops_dashboard/access_requests.html', {
+        'requests':      requests_qs,
+        'filter_status': filter_status,
+        'pending_count': AccessRequest.objects.filter(status='pending').count(),
+    })
+
+
+@ops_required
+def ops_provision_tenant(request, pk):
+    access_request = get_object_or_404(AccessRequest, pk=pk, status='pending')
+
+    # Auto-derive first/last name from the submitted name field
+    parts = access_request.name.strip().split(' ', 1)
+    default_first = parts[0]
+    default_last  = parts[1] if len(parts) > 1 else ''
+
+    if request.method == 'GET':
+        return render(request, 'ops_dashboard/provision_tenant.html', {
+            'access_request': access_request,
+            'default_first':  default_first,
+            'default_last':   default_last,
+            'plan_choices':   Company.PLAN_CHOICES,
+        })
+
+    # POST — create company + user + send credentials
+    company_name = request.POST.get('company_name', '').strip()
+    first_name   = request.POST.get('first_name', '').strip()
+    last_name    = request.POST.get('last_name', '').strip()
+    plan_tier    = request.POST.get('plan_tier', 'starter')
+    country      = request.POST.get('country', '').strip()
+
+    if not company_name or not first_name:
+        messages.error(request, 'Company name and first name are required.')
+        return redirect('ops_provision_tenant', pk=pk)
+
+    if Company.objects.filter(name=company_name).exists():
+        messages.error(request, f'A company named "{company_name}" already exists.')
+        return redirect('ops_provision_tenant', pk=pk)
+
+    if CustomUser.objects.filter(email=access_request.email).exists():
+        messages.error(request, f'A user with email {access_request.email} already exists.')
+        return redirect('ops_provision_tenant', pk=pk)
+
+    # Create tenant
+    company = Company.objects.create(
+        name=company_name,
+        plan_tier=plan_tier,
+        country=country,
+        is_active=True,
+    )
+
+    # Derive username from email prefix
+    username_base = access_request.email.split('@')[0].lower().replace('.', '_')
+    username = username_base
+    counter  = 1
+    while CustomUser.objects.filter(username=username).exists():
+        username = f"{username_base}{counter}"
+        counter += 1
+
+    user = CustomUser.objects.create_user(
+        username=username,
+        email=access_request.email,
+        password=None,
+        first_name=first_name,
+        last_name=last_name,
+        company=company,
+        system_role='org_admin',
+    )
+
+    # Generate set-password link
+    site_url = getattr(settings, 'SITE_URL', 'https://app.agriops.io')
+    uid      = urlsafe_base64_encode(force_bytes(user.pk))
+    token    = default_token_generator.make_token(user)
+    set_password_url = f"{site_url}/set-password/{uid}/{token}/"
+
+    threading.Thread(
+        target=_send_provisioning_email,
+        args=(user, set_password_url, company),
+        daemon=True,
+    ).start()
+
+    # Mark request approved
+    access_request.status      = 'approved'
+    access_request.approved_at = timezone.now()
+    access_request.save(update_fields=['status', 'approved_at'])
+
+    _log_event(
+        request, 'tenant_provisioned', user=request.user,
+        detail=f'company={company.pk}:{company.name} user={user.pk}:{user.username}',
+    )
+
+    messages.success(
+        request,
+        f'"{company.name}" provisioned — credentials sent to {access_request.email}.',
+    )
+    return redirect('ops_access_requests')
+
+
+@ops_required
+def ops_reject_request(request, pk):
+    if request.method != 'POST':
+        return redirect('ops_access_requests')
+
+    access_request = get_object_or_404(AccessRequest, pk=pk, status='pending')
+    note = request.POST.get('note', '').strip()
+    access_request.status = 'rejected'
+    access_request.notes  = note
+    access_request.save(update_fields=['status', 'notes'])
+
+    _log_event(
+        request, 'access_request_rejected', user=request.user,
+        detail=f'{access_request.email} — {note[:100]}',
+    )
+    messages.success(request, f'Request from {access_request.email} rejected.')
+    return redirect('ops_access_requests')
+
+
+def _send_provisioning_email(user, set_password_url, company):
+    from django.core.mail import EmailMultiAlternatives
+    from django.utils.html import conditional_escape
+
+    first_name   = conditional_escape(user.first_name)
+    company_name = conditional_escape(company.name)
+    username     = conditional_escape(user.username)
+    escaped_url  = conditional_escape(set_password_url)
+
+    subject   = f"Your AgriOps account is ready — {company.name}"
+    body_text = (
+        f"Hi {user.first_name},\n\n"
+        f"Your AgriOps account has been set up.\n\n"
+        f"Organisation: {company.name}\n"
+        f"Username: {user.username}\n\n"
+        f"Set your password and sign in here (link valid for 24 hours):\n"
+        f"{set_password_url}\n\n"
+        f"Keep your username safe — you'll need it every time you sign in.\n\n"
+        f"AgriOps · app.agriops.io"
+    )
+    body_html = f"""
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;padding:24px;">
+      <div style="background:#0a0f1a;padding:20px 24px;border-radius:8px 8px 0 0;">
+        <p style="color:#22c55e;font-size:11px;letter-spacing:3px;margin:0 0 4px 0;">AGRIOPS</p>
+        <h1 style="color:#ffffff;font-size:20px;margin:0;">Your account is ready</h1>
+      </div>
+      <div style="background:#ffffff;padding:24px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px;">
+        <p style="color:#1e293b;font-size:14px;">Hi <strong>{first_name}</strong>,</p>
+        <p style="color:#1e293b;font-size:14px;">
+          Your AgriOps account has been set up for <strong>{company_name}</strong>.
+        </p>
+        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:16px;margin:20px 0;">
+          <table style="width:100%;font-size:13px;">
+            <tr><td style="color:#64748b;font-weight:bold;padding:4px 0;width:40%;">Organisation</td>
+                <td style="color:#1e293b;">{company_name}</td></tr>
+            <tr><td style="color:#64748b;font-weight:bold;padding:4px 0;">Username</td>
+                <td style="color:#1e293b;font-family:monospace;">{username}</td></tr>
+          </table>
+        </div>
+        <p style="color:#1e293b;font-size:13px;">
+          Click the button below to set your password and access your account.
+          This link is valid for <strong>24 hours</strong>.
+        </p>
+        <a href="{escaped_url}"
+           style="display:inline-block;background:#22c55e;color:#0a0f1a;padding:10px 20px;
+                  border-radius:6px;text-decoration:none;font-weight:bold;font-size:13px;">
+          Set Password &amp; Sign In
+        </a>
+        <p style="margin-top:20px;color:#64748b;font-size:12px;">
+          Save your username — you'll need it every time you sign in.
+        </p>
+        <p style="margin-top:24px;font-size:11px;color:#94a3b8;">
+          AgriOps · app.agriops.io · Agricultural Supply Chain Intelligence
+        </p>
+      </div>
+    </div>
+    """
+    msg = EmailMultiAlternatives(
+        subject, body_text, settings.DEFAULT_FROM_EMAIL, [user.email]
+    )
+    msg.attach_alternative(body_html, "text/html")
+    msg.send(fail_silently=True)

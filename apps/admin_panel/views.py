@@ -1,3 +1,4 @@
+import threading
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.utils import timezone
@@ -132,15 +133,17 @@ def admin_invite_user(request):
             system_role=system_role,
             job_title=job_title,
         )
-        user.set_unusable_password()
-        user.save()
 
-        # Send invite email with set-password link
         site_url = getattr(settings, 'SITE_URL', 'https://app.agriops.io')
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
         set_password_url = f"{site_url}/set-password/{uid}/{token}/"
-        _send_invite_email(user, set_password_url, company, request.user)
+        invited_by = request.user
+        threading.Thread(
+            target=_send_invite_email,
+            args=(user, set_password_url, company, invited_by),
+            daemon=True,
+        ).start()
 
         messages.success(request, f'Invitation sent to {email}.')
     return redirect('admin_panel:users')
