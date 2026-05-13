@@ -507,7 +507,7 @@ class FarmForm(forms.ModelForm):
         fields = [
             'supplier', 'name', 'farmer', 'country', 'state_region',
             'commodity', 'harvest_year',
-            'deforestation_risk_status', 'deforestation_reference_date',
+            'deforestation_reference_date',
             'land_cleared_after_cutoff', 'mapping_date', 'mapped_by_name', 'geolocation',
         ]
 

@@ -37,6 +37,7 @@ from .farm_views import (  # noqa: F401
     FarmImportErrorsView,
     FarmCertificationCreateView,
     FarmCertificationDeleteView,
+    RunDeforestationCheckView,
     run_farm_geojson_import,
 )
 

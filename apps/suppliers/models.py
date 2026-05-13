@@ -345,6 +345,62 @@ class Farm(models.Model):
         return 'compliant'
 
 
+class DeforestationCheck(models.Model):
+    RISK_STATUS_CHOICES = [
+        ('clear',        'Clear'),
+        ('flagged',      'Flagged'),
+        ('inconclusive', 'Inconclusive'),
+        ('error',        'Error'),
+    ]
+    ENGINE_STATUS_CHOICES = [
+        ('pending',  'Pending'),
+        ('running',  'Running'),
+        ('complete', 'Complete'),
+        ('failed',   'Failed'),
+    ]
+
+    farm                      = models.ForeignKey(Farm, on_delete=models.CASCADE, related_name='deforestation_checks')
+    company                   = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='deforestation_checks')
+    dataset_name              = models.CharField(max_length=100, default='Hansen GFC')
+    dataset_version           = models.CharField(max_length=20, default='v1.12')
+    treecover_threshold       = models.PositiveSmallIntegerField(default=10)
+    cutoff_year               = models.PositiveSmallIntegerField(default=2020)
+    total_pixels              = models.PositiveIntegerField(null=True, blank=True)
+    post_cutoff_loss_pixels   = models.PositiveIntegerField(null=True, blank=True)
+    post_cutoff_loss_area_ha  = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
+    loss_years_detected       = models.JSONField(default=list)
+    risk_status               = models.CharField(max_length=20, choices=RISK_STATUS_CHOICES)
+    engine_status             = models.CharField(max_length=20, choices=ENGINE_STATUS_CHOICES, default='complete')
+    evidence_summary          = models.TextField(blank=True)
+    error_detail              = models.TextField(blank=True)
+    checked_by                = models.ForeignKey(
+                                    'users.CustomUser', null=True, blank=True,
+                                    on_delete=models.SET_NULL, related_name='deforestation_checks'
+                                )
+    geometry_hash_at_assessment = models.CharField(max_length=64, blank=True)
+    created_at                = models.DateTimeField(auto_now_add=True)
+    assessed_at               = models.DateTimeField(null=True, blank=True)
+
+    objects = TenantManager()
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['farm', '-created_at'], name='defcheck_farm_date_idx'),
+            models.Index(fields=['company', 'risk_status'], name='defcheck_company_risk_idx'),
+        ]
+
+    def __str__(self):
+        return f"{self.farm.name} — {self.get_risk_status_display()} ({self.dataset_name} {self.dataset_version})"
+
+    @property
+    def is_stale(self):
+        return bool(
+            self.geometry_hash_at_assessment and
+            self.geometry_hash_at_assessment != self.farm.geometry_hash
+        )
+
+
 class FarmImportLog(models.Model):
     company       = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='farm_import_logs')
     uploaded_by   = models.ForeignKey(

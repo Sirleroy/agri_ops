@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Deforestation Preview — AgriOps{% endblock %}
+{% block title %}Deforestation Checks — AgriOps{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
@@ -8,26 +8,13 @@
   <!-- Header -->
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
     <div>
-      <h1 class="text-xl font-sans font-semibold text-slate-100">Deforestation Check Preview</h1>
+      <h1 class="text-xl font-sans font-semibold text-slate-100">Deforestation Checks</h1>
       <p class="text-xs font-mono text-slate-500 mt-0.5">Hansen GFC v1.12 · 30m resolution · EUDR reference date 31 Dec 2020</p>
     </div>
     <a href="{% url 'suppliers:farm_list' %}"
        class="text-xs font-mono text-slate-400 hover:text-slate-200 transition-colors">
       ← Back to farms
     </a>
-  </div>
-
-  <!-- Preview notice -->
-  <div class="bg-amber-500/10 border border-amber-500/25 rounded-xl px-5 py-3 flex items-start gap-3">
-    <svg class="w-4 h-4 text-amber-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-    </svg>
-    <p class="text-xs font-mono text-amber-300/90 leading-relaxed">
-      Preview only — results are not saved to the farm record. This page runs live intersection checks
-      against locally available Hansen GFC tiles. It will be replaced by the automated
-      <strong class="text-amber-200">DeforestationCheck</strong> system once that is built.
-    </p>
   </div>
 
   <!-- Run form -->
@@ -52,9 +39,10 @@
         Run checks
       </button>
     </div>
+    <p class="text-xs font-mono text-slate-600 mt-3">Results are saved to each farm's deforestation check history and update the farm's risk status.</p>
   </form>
 
-  {% if results is not None %}
+  {% if checks is not None %}
 
   <!-- Summary strip -->
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -72,13 +60,12 @@
     </div>
     <div class="bg-card border border-border rounded-xl p-4 text-center">
       <p class="text-2xl font-mono font-semibold text-slate-400">{{ errors }}</p>
-      <p class="text-xs font-mono text-slate-500 mt-0.5">errors / no tile</p>
+      <p class="text-xs font-mono text-slate-500 mt-0.5">errors</p>
     </div>
   </div>
 
-
   <!-- Results table -->
-  {% if results %}
+  {% if checks %}
   <div class="bg-card border border-border rounded-xl overflow-hidden">
     <div class="overflow-x-auto">
       <table class="w-full text-sm font-mono">
@@ -94,46 +81,44 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-border">
-          {% for r in results %}
+          {% for c in checks %}
           <tr class="hover:bg-white/[0.02] transition-colors">
             <td class="px-4 py-3">
-              <a href="{% url 'suppliers:farm_detail' r.farm.pk %}"
+              <a href="{% url 'suppliers:farm_detail' c.farm.pk %}"
                  class="text-slate-200 hover:text-green transition-colors">
-                {{ r.farm.name }}
+                {{ c.farm.name }}
               </a>
-              {% if r.farm.area_hectares %}
-              <span class="ml-2 text-xs text-slate-600">{{ r.farm.area_hectares|floatformat:2 }} ha</span>
+              {% if c.farm.area_hectares %}
+              <span class="ml-2 text-xs text-slate-600">{{ c.farm.area_hectares|floatformat:2 }} ha</span>
               {% endif %}
             </td>
             <td class="px-4 py-3 text-slate-400 text-xs">
-              {{ r.farm.supplier.name|default:"—" }}
+              {{ c.farm.supplier.name|default:"—" }}
             </td>
-            <td class="px-4 py-3 text-slate-400 text-right">{{ r.pixels }}</td>
+            <td class="px-4 py-3 text-slate-400 text-right">{{ c.check.total_pixels|default:"—" }}</td>
             <td class="px-4 py-3 text-right
-              {% if r.loss_pixels and r.loss_pixels != '-' and r.loss_pixels > 0 %}text-red-400
-              {% else %}text-slate-500{% endif %}">
-              {{ r.loss_pixels }}
+              {% if c.check.post_cutoff_loss_pixels %}text-red-400{% else %}text-slate-500{% endif %}">
+              {{ c.check.post_cutoff_loss_pixels|default:"0" }}
             </td>
             <td class="px-4 py-3 text-right
-              {% if r.loss_area_ha and r.loss_area_ha != '-' and r.loss_area_ha > 0 %}text-red-400
-              {% else %}text-slate-500{% endif %}">
-              {% if r.loss_area_ha != '-' %}{{ r.loss_area_ha }}{% else %}—{% endif %}
+              {% if c.check.post_cutoff_loss_area_ha %}text-red-400{% else %}text-slate-500{% endif %}">
+              {% if c.check.post_cutoff_loss_area_ha %}{{ c.check.post_cutoff_loss_area_ha }}{% else %}—{% endif %}
             </td>
             <td class="px-4 py-3 text-slate-400 text-xs">
-              {% if r.loss_years %}
-                {% for y in r.loss_years %}20{{ y }}{% if not forloop.last %}, {% endif %}{% endfor %}
+              {% if c.check.loss_years_detected %}
+                {{ c.check.loss_years_detected|join:", " }}
               {% else %}—{% endif %}
             </td>
             <td class="px-4 py-3">
-              {% if r.result == 'CLEAR' %}
+              {% if c.check.risk_status == 'clear' %}
                 <span class="px-2 py-0.5 rounded text-xs bg-green/10 text-green border border-green/20">Clear</span>
-              {% elif r.result == 'FLAGGED' %}
+              {% elif c.check.risk_status == 'flagged' %}
                 <span class="px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-400 border border-red-500/20">Flagged</span>
-              {% elif r.result == 'NO TILE' %}
-                <span class="px-2 py-0.5 rounded text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20">No tile</span>
+              {% elif c.check.risk_status == 'inconclusive' %}
+                <span class="px-2 py-0.5 rounded text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20">Inconclusive</span>
               {% else %}
                 <span class="px-2 py-0.5 rounded text-xs bg-slate-500/10 text-slate-400 border border-slate-500/20"
-                      title="{{ r.error }}">Error</span>
+                      title="{{ c.check.error_detail|escapejs }}">Error</span>
               {% endif %}
             </td>
           </tr>
@@ -141,11 +126,10 @@
         </tbody>
       </table>
     </div>
-
     <div class="border-t border-border px-4 py-3">
       <p class="text-xs font-mono text-slate-600">
         Hansen GFC v1.12 · 30m resolution · pixel value &gt; 20 = loss after 31 Dec 2020 ·
-        results not saved · {{ total }} farm{% if total != 1 %}s{% endif %} checked
+        results saved · {{ total }} farm{% if total != 1 %}s{% endif %} checked
       </p>
     </div>
   </div>

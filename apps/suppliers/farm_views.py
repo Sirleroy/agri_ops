@@ -272,6 +272,8 @@ class FarmDetailView(CompanyOwnedMixin, StaffRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context['documents'] = self.object.documents.filter(is_current=True)
         context['certifications'] = self.object.certifications.all()
+        context['deforestation_checks'] = self.object.deforestation_checks.select_related('checked_by').order_by('-created_at')[:10]
+        context['latest_check'] = self.object.deforestation_checks.order_by('-created_at').first()
         return context
 
 
@@ -330,6 +332,30 @@ class FarmDeleteView(AuditDeleteMixin, CompanyOwnedMixin, ManagerRequiredMixin, 
     model = Farm
     template_name = 'suppliers/farms/confirm_delete.html'
     success_url = reverse_lazy('suppliers:farm_list')
+
+
+class RunDeforestationCheckView(CompanyOwnedMixin, StaffRequiredMixin, View):
+    """POST-only: run a deforestation check for a single farm and redirect back to detail."""
+    model = Farm
+
+    def post(self, request, pk):
+        from django.shortcuts import redirect
+        from django.contrib import messages
+        from apps.suppliers.deforestation_engine import run_check
+
+        farm = get_object_or_404(Farm, pk=pk, company=request.user.company)
+        check = run_check(farm, user=request.user)
+
+        if check.risk_status == 'clear':
+            messages.success(request, f'Deforestation check complete — {farm.name} is clear.')
+        elif check.risk_status == 'flagged':
+            messages.warning(request, f'Deforestation check complete — {farm.name} flagged: {check.post_cutoff_loss_area_ha} ha post-2020 loss detected.')
+        elif check.risk_status == 'error':
+            messages.error(request, f'Deforestation check failed: {check.error_detail}')
+        else:
+            messages.info(request, f'Deforestation check inconclusive for {farm.name}.')
+
+        return redirect('suppliers:farm_detail', pk=pk)
 
 
 # ─────────────────────────────────────
