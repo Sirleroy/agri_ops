@@ -61,11 +61,21 @@ def intersect_farm(geojson, tile_path):
         import rasterio
         from rasterio.mask import mask as rio_mask
 
-        coords  = geojson.get('coordinates', [])
-        geom_2d = {
-            'type': 'Polygon',
-            'coordinates': [[[c[0], c[1]] for c in ring] for ring in coords],
-        }
+        geom_type = geojson.get('type', 'Polygon')
+        coords    = geojson.get('coordinates', [])
+        if geom_type == 'MultiPolygon':
+            geom_2d = {
+                'type': 'MultiPolygon',
+                'coordinates': [
+                    [[[c[0], c[1]] for c in ring] for ring in poly]
+                    for poly in coords
+                ],
+            }
+        else:
+            geom_2d = {
+                'type': 'Polygon',
+                'coordinates': [[[c[0], c[1]] for c in ring] for ring in coords],
+            }
 
         with rasterio.open(tile_path) as src:
             pixel_area_ha = (src.res[0] * 111_320) * (src.res[1] * 110_540) / 10_000
@@ -92,14 +102,31 @@ def intersect_farm(geojson, tile_path):
 
 
 def _centroid(geojson):
-    """Return (lon, lat) centroid of the outer ring, or None if unparseable."""
+    """
+    Return (lon, lat) centroid of the outer ring, or (None, reason_string) if unusable.
+    """
+    geom_type = geojson.get('type', '')
+    if geom_type == 'Point':
+        return None, (
+            "Farm geometry is a single GPS point, not a polygon boundary. "
+            "EUDR requires a mapped field boundary — re-export from your mapping app as a polygon."
+        )
+    if geom_type not in ('Polygon', 'MultiPolygon'):
+        return None, (
+            f"Unsupported geometry type '{geom_type}'. "
+            "Farm geometry must be a Polygon — re-export from your mapping app."
+        )
     try:
-        ring = geojson['coordinates'][0]
-        lon  = sum(c[0] for c in ring) / len(ring)
-        lat  = sum(c[1] for c in ring) / len(ring)
-        return lon, lat
+        ring = (
+            geojson['coordinates'][0]
+            if geom_type == 'Polygon'
+            else geojson['coordinates'][0][0]   # first ring of first polygon
+        )
+        lon = sum(c[0] for c in ring) / len(ring)
+        lat = sum(c[1] for c in ring) / len(ring)
+        return (lon, lat), None
     except Exception:
-        return None
+        return None, "Could not compute polygon centroid — geometry may be malformed."
 
 
 def run_check(farm, user=None):
@@ -127,7 +154,7 @@ def run_check(farm, user=None):
         )
         return check
 
-    centroid = _centroid(farm.geolocation)
+    centroid, reason = _centroid(farm.geolocation)
     if centroid is None:
         check = DeforestationCheck.objects.create(
             farm=farm,
@@ -136,7 +163,7 @@ def run_check(farm, user=None):
             dataset_version=DATASET_VERSION,
             risk_status='inconclusive',
             engine_status='failed',
-            error_detail='Could not compute polygon centroid.',
+            error_detail=reason,
             geometry_hash_at_assessment=farm.geometry_hash,
             assessed_at=timezone.now(),
             checked_by=user,
