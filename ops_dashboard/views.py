@@ -44,6 +44,11 @@ def _log_event(request, event, user=None, detail=''):
     )
 
 
+def _mark_ops_otp_verified(request):
+    request.session['otp_verified'] = True
+    request.session.set_expiry(getattr(settings, 'OPS_SESSION_COOKIE_AGE', 7200))
+
+
 # --- Decorators ---
 
 def ops_required(view_func):
@@ -109,8 +114,9 @@ def ops_otp_setup(request):
         if device.verify_token(token):
             device.confirmed = True
             device.save()
+            _mark_ops_otp_verified(request)
             _log_event(request, 'otp_setup', user=user)
-            return redirect('ops_otp_verify')
+            return redirect('ops_dashboard')
         return render(request, 'ops_dashboard/otp_setup.html', {
             'qr_svg': qr_svg,
             'error': 'Invalid code. Try again.'
@@ -130,8 +136,7 @@ def ops_otp_verify(request):
         devices = list(devices_for_user(request.user, confirmed=True))
         for device in devices:
             if device.verify_token(token):
-                request.session['otp_verified'] = True
-                request.session.set_expiry(7200)
+                _mark_ops_otp_verified(request)
                 _log_event(request, 'otp_verified', user=request.user)
                 return redirect('ops_dashboard')
         _log_event(request, 'otp_failed', user=request.user)

@@ -12,3 +12,5 @@ staticfiles/
 CLAUDE.md
 pitch/
 static/agriops_logo.svg
+sandbox.py
+.vscode/
