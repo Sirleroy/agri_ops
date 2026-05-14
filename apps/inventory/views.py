@@ -66,6 +66,9 @@ class InventoryDeleteView(AuditDeleteMixin, CompanyOwnedMixin, ManagerRequiredMi
     model = Inventory
     success_url = reverse_lazy('inventory:list')
 
+    def get(self, request, *args, **kwargs):
+        return redirect(self.success_url)
+
 
 class InventoryAdjustView(StaffRequiredMixin, View):
     """Quick stock adjustment — add or subtract quantity with an optional note."""

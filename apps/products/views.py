@@ -1,5 +1,6 @@
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
+from django.shortcuts import redirect
 from django.utils.http import url_has_allowed_host_and_scheme
 from .models import Product
 from apps.users.permissions import (
@@ -66,3 +67,6 @@ class ProductUpdateView(OtherRevealMixin, AuditUpdateMixin, CompanyOwnedMixin, S
 class ProductDeleteView(AuditDeleteMixin, CompanyOwnedMixin, ManagerRequiredMixin, DeleteView):
     model = Product
     success_url = reverse_lazy('products:list')
+
+    def get(self, request, *args, **kwargs):
+        return redirect(self.success_url)

@@ -1,6 +1,8 @@
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
+from django.shortcuts import redirect
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.db.models import Q
 from .models import Supplier
 from apps.users.permissions import (
     StaffRequiredMixin, ManagerRequiredMixin, OtherRevealMixin,
@@ -16,7 +18,6 @@ class SupplierListView(StaffRequiredMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        from django.db.models import Q
         qs = super().get_queryset().filter(company=self.request.user.company)
         q = self.request.GET.get('q', '').strip()
         if q:
@@ -72,3 +73,6 @@ class SupplierUpdateView(OtherRevealMixin, AuditUpdateMixin, CompanyOwnedMixin, 
 class SupplierDeleteView(AuditDeleteMixin, CompanyOwnedMixin, ManagerRequiredMixin, DeleteView):
     model = Supplier
     success_url = reverse_lazy('suppliers:list')
+
+    def get(self, request, *args, **kwargs):
+        return redirect(self.success_url)

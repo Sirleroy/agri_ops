@@ -1,7 +1,7 @@
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.views import View
 from django.urls import reverse_lazy
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.db.models import OuterRef, Subquery
 from .models import Supplier, Farm, FarmCertification, DeforestationCheck
 from .forms import FarmForm, FarmUpdateForm
@@ -343,6 +343,9 @@ class FarmUpdateView(DatePickerMixin, AuditUpdateMixin, CompanyOwnedMixin, Staff
 class FarmDeleteView(AuditDeleteMixin, CompanyOwnedMixin, ManagerRequiredMixin, DeleteView):
     model = Farm
     success_url = reverse_lazy('suppliers:farm_list')
+
+    def get(self, request, *args, **kwargs):
+        return redirect(self.success_url)
 
 
 class RunDeforestationCheckView(CompanyOwnedMixin, StaffRequiredMixin, View):

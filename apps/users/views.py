@@ -1,6 +1,7 @@
 from apps.audit.mixins import AuditUpdateMixin, AuditDeleteMixin
 from django.views.generic import ListView, DetailView, UpdateView, DeleteView
 from django.urls import reverse_lazy
+from django.shortcuts import redirect
 from django.utils.http import url_has_allowed_host_and_scheme
 from .models import CustomUser
 from .permissions import OrgAdminRequiredMixin, ManagerRequiredMixin, CompanyOwnedMixin
@@ -51,3 +52,6 @@ class UserSystemRoleUpdateView(AuditUpdateMixin, CompanyOwnedMixin, OrgAdminRequ
 class UserDeleteView(AuditDeleteMixin, CompanyOwnedMixin, OrgAdminRequiredMixin, DeleteView):
     model = CustomUser
     success_url = reverse_lazy('users:list')
+
+    def get(self, request, *args, **kwargs):
+        return redirect(self.success_url)

@@ -4,6 +4,7 @@ from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.db.models import Q
 from decimal import Decimal, InvalidOperation
 from .models import SalesOrder, SalesOrderItem
 from apps.products.models import Product
@@ -21,7 +22,6 @@ class SalesOrderListView(StaffRequiredMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        from django.db.models import Q
         qs = super().get_queryset().filter(company=self.request.user.company).select_related('company')
         q = self.request.GET.get('q', '').strip()
         status = self.request.GET.get('status', '').strip()
@@ -108,6 +108,9 @@ class SalesOrderUpdateView(AuditUpdateMixin, CompanyOwnedMixin, StaffRequiredMix
 class SalesOrderDeleteView(AuditDeleteMixin, CompanyOwnedMixin, ManagerRequiredMixin, DeleteView):
     model = SalesOrder
     success_url = reverse_lazy('sales_orders:list')
+
+    def get(self, request, *args, **kwargs):
+        return redirect(self.success_url)
 
 
 class SalesOrderItemCreateView(StaffRequiredMixin, View):

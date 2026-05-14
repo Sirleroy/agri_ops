@@ -4,6 +4,7 @@ from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.db.models import Q
 from decimal import Decimal, InvalidOperation
 from .models import PurchaseOrder, PurchaseOrderItem
 from apps.products.models import Product
@@ -22,7 +23,6 @@ class PurchaseOrderListView(StaffRequiredMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        from django.db.models import Q
         qs = super().get_queryset().filter(company=self.request.user.company).select_related('supplier', 'company')
         q = self.request.GET.get('q', '').strip()
         status = self.request.GET.get('status', '').strip()
@@ -128,6 +128,9 @@ class PurchaseOrderUpdateView(DatePickerMixin, AuditUpdateMixin, CompanyOwnedMix
 class PurchaseOrderDeleteView(AuditDeleteMixin, CompanyOwnedMixin, ManagerRequiredMixin, DeleteView):
     model = PurchaseOrder
     success_url = reverse_lazy('purchase_orders:list')
+
+    def get(self, request, *args, **kwargs):
+        return redirect(self.success_url)
 
 
 class PurchaseOrderMarkReceivedView(StaffRequiredMixin, View):
