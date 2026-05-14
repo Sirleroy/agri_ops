@@ -414,6 +414,15 @@
           <h1 class="text-sm font-bold text-slate-100 tracking-wide">{% block page_title %}{% endblock %}</h1>
         </div>
         <div class="flex items-center gap-3">
+          <!-- Tenant identity — persists on every page, all roles -->
+          {% if request.user.company %}
+          <div class="hidden sm:flex items-center gap-2 text-slate-300" title="{{ request.user.company.name }}">
+            <svg class="w-4 h-4 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+            </svg>
+            <span class="text-xs font-mono font-medium tracking-wide truncate max-w-[180px]">{{ request.user.company.name }}</span>
+          </div>
+          {% endif %}
           <!-- Notification bell -->
           <div class="relative" x-data="{ bellOpen: false, _n: {{ notif_total }}, _seen: parseInt(localStorage.getItem('notifSeen') ?? '-1') }" @click.outside="bellOpen = false">
             <button @click="bellOpen = !bellOpen; if (bellOpen) { _seen = _n; localStorage.setItem('notifSeen', String(_n)); }"
