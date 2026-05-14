@@ -140,7 +140,7 @@
         </p>
       {% endif %}
 
-      <div x-data="{ override: 'unknown' }" x-init="$nextTick(() => override = $refs.overrideSelect.value)" class="mb-6">
+      <div x-data="{ override: 'unknown' }" x-init="$nextTick(() => { if ($refs.overrideSelect) override = $refs.overrideSelect.value })" class="mb-6">
         <div class="grid grid-cols-2 gap-4">
           <!-- Fixed regulatory reference date — not operator-editable -->
           <div>
@@ -149,7 +149,8 @@
             <p class="mt-1 text-xs font-mono text-slate-600">Fixed by EUDR Article 2(28). The deforestation engine assesses tree-cover loss after this date.</p>
           </div>
 
-          <!-- Disqualification override -->
+          {% if form.land_cleared_after_cutoff %}
+          <!-- Disqualification override — manager-only; absent from the form for staff/viewer -->
           <div class="{% if form.land_cleared_after_cutoff.errors %}field-has-error{% endif %}">
             <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">{{ form.land_cleared_after_cutoff.label }}</label>
             <div class="[&>select]:w-full [&>select]:bg-surface [&>select]:border [&>select]:border-border [&>select]:rounded-lg [&>select]:px-4 [&>select]:py-3 [&>select]:text-sm [&>select]:text-slate-100 [&>select]:outline-none">
@@ -160,8 +161,10 @@
               <p class="mt-1 text-xs font-mono text-red-400">{{ form.land_cleared_after_cutoff.errors.0 }}</p>
             {% endif %}
           </div>
+          {% endif %}
         </div>
 
+        {% if form.land_cleared_after_cutoff_reason %}
         <!-- Override reason — revealed when the override is set to Yes/No -->
         <div x-show="override === 'true' || override === 'false'" x-cloak class="mt-4 {% if form.land_cleared_after_cutoff_reason.errors %}field-has-error{% endif %}">
           <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">{{ form.land_cleared_after_cutoff_reason.label }} *</label>
@@ -173,6 +176,7 @@
             <p class="mt-1 text-xs font-mono text-red-400">{{ form.land_cleared_after_cutoff_reason.errors.0 }}</p>
           {% endif %}
         </div>
+        {% endif %}
       </div>
 
       <!-- Section: Geolocation -->

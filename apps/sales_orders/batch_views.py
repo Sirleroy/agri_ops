@@ -32,7 +32,12 @@ class BatchDetailView(CompanyOwnedMixin, StaffRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        farms = list(self.object.farms.all())
+        farms = list(
+            self.object.farms
+            .select_related('supplier')
+            .prefetch_related('deforestation_checks')
+        )
+        context['farms'] = farms
         phyto_certs = list(self.object.phytosanitary_certs.all())
         quality_tests = list(self.object.quality_tests.all())
         context['phytosanitary_certs'] = phyto_certs
@@ -292,7 +297,7 @@ class PublicTraceView(View):
         cache.set(cache_key, hits + 1, timeout=3600)
 
         batch = get_object_or_404(Batch, public_token=token)
-        farms        = list(batch.farms.select_related('supplier', 'verified_by').prefetch_related('certifications').all())
+        farms        = list(batch.farms.select_related('supplier', 'verified_by').prefetch_related('certifications', 'deforestation_checks').all())
         phyto_certs  = list(batch.phytosanitary_certs.all())
         quality_tests = list(batch.quality_tests.all())
         readiness = batch.certificate_readiness(
@@ -330,8 +335,9 @@ class PublicTraceView(View):
         farm_rows = ""
         farm_cards = ""
         for farm in farms:
-            status_color = "#22c55e" if farm.is_eudr_verified else "#f59e0b"
-            status_text  = "Verified" if farm.is_eudr_verified else "Pending"
+            is_ready     = farm.compliance_status == 'compliant'
+            status_color = "#22c55e" if is_ready else "#f59e0b"
+            status_text  = "Verified" if is_ready else "Pending"
             supplier_name = self._e(farm.supplier.name) if farm.supplier else '—'
             area          = f"{self._e(farm.area_hectares)} ha" if farm.area_hectares else '—'
             location      = f"{self._e(farm.country)} / {self._e(farm.state_region)}"
@@ -360,7 +366,7 @@ class PublicTraceView(View):
         evidence_html = ""
         from datetime import date as _date
         for farm in farms:
-            if not farm.is_eudr_verified:
+            if farm.compliance_status != 'compliant':
                 continue
             verifier  = self._e(farm.verified_by.get_full_name() or farm.verified_by.username) if farm.verified_by else '—'
             v_date    = farm.verified_date.strftime('%d %b %Y') if farm.verified_date else '—'

@@ -58,8 +58,12 @@ class FarmViewSet(TenantScopedViewSet):
 
     @action(detail=False, methods=['get'], url_path='eudr-pending')
     def eudr_pending(self, request):
-        qs = self.get_queryset().filter(is_eudr_verified=False)
-        serializer = self.get_serializer(qs, many=True)
+        # "Pending" = not compliance-ready, not merely "the flag is off" — this
+        # catches expired and evidence-invalid sign-offs too. compliance_status
+        # is a property, so filter in Python with the checks prefetched.
+        qs = self.get_queryset().prefetch_related('deforestation_checks')
+        pending = [f for f in qs if f.compliance_status != 'compliant']
+        serializer = self.get_serializer(pending, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=['get'], url_path='high-risk')

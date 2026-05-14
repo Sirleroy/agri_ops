@@ -16,6 +16,7 @@ class SupplierSerializer(serializers.ModelSerializer):
 
 class FarmSerializer(serializers.ModelSerializer):
     compliance_status = serializers.ReadOnlyField()
+    readiness_state = serializers.ReadOnlyField()
 
     class Meta:
         model  = Farm
@@ -23,8 +24,14 @@ class FarmSerializer(serializers.ModelSerializer):
                   'state_region', 'commodity', 'area_hectares',
                   'deforestation_risk_status', 'is_eudr_verified',
                   'verified_date', 'verification_expiry',
-                  'compliance_status', 'created_at']
-        read_only_fields = ['id', 'compliance_status', 'created_at']
+                  'compliance_status', 'readiness_state', 'created_at']
+        # Verification and engine-owned fields are read-only over the API.
+        # A Compliance Readiness sign-off is a manager-only, evidence-gated,
+        # audited action (see ConfirmComplianceReadinessView); deforestation
+        # risk is set by the engine. Neither may be set by a raw API write.
+        read_only_fields = ['id', 'compliance_status', 'readiness_state',
+                            'created_at', 'is_eudr_verified', 'verified_date',
+                            'verification_expiry', 'deforestation_risk_status']
 
     def validate_supplier(self, value):
         company = self.context['request'].user.company

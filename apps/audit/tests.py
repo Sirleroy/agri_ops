@@ -364,8 +364,9 @@ class UserFacingPageSmokeTests(TestCase):
 
     def test_farm_update_form_renders_compliance_readiness_panel(self):
         """Edit farm form must render the rebuilt Compliance Readiness panel and
-        disqualification-override field without a template error — and must no
-        longer expose the old free verification / reference-date inputs."""
+        the manager-only disqualification-override block without a template
+        error — and must no longer expose the old free verification /
+        reference-date inputs."""
         supplier = Supplier.objects.create(
             company=self.company, name='Smoke Supplier Edit', category='cooperative'
         )
@@ -373,7 +374,11 @@ class UserFacingPageSmokeTests(TestCase):
             company=self.company, supplier=supplier, name='Smoke Edit Farm',
             country='Nigeria', commodity='Soy',
         )
-        self.client.force_login(self.staff)
+        # org_admin is manager-or-above, so the disqualification-override block
+        # renders — that block (Alpine x-data/x-init + conditional reveal) is the
+        # part worth smoke-testing. Staff not seeing it is covered at the form
+        # level by ComplianceReadinessSignoffTests.test_override_fields_hidden_from_staff.
+        self.client.force_login(self.org_admin)
         r = self.client.get(reverse('suppliers:farm_update', kwargs={'pk': farm.pk}))
         self.assertEqual(r.status_code, 200)
         body = r.content.decode()

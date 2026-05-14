@@ -184,16 +184,16 @@
   </div>
 
   <div class="bg-card border border-border rounded-xl p-6">
-    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Farms — {{ batch.farms.count }}</p>
-    {% if batch.farms.all %}
+    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Farms — {{ farms|length }}</p>
+    {% if farms %}
     <div class="space-y-2">
-      {% for farm in batch.farms.all %}
+      {% for farm in farms %}
       <div class="flex items-center justify-between py-2 border-b border-border last:border-0">
         <div>
           <p class="text-sm text-slate-100">{{ farm.name }}</p>
           <p class="text-xs text-slate-500 font-mono">{% if farm.supplier %}{{ farm.supplier.name }} · {% endif %}{{ farm.country }} / {{ farm.state_region|default:"—" }} · {{ farm.area_hectares|default:"—" }} ha</p>
         </div>
-        {% if farm.is_eudr_verified %}
+        {% if farm.compliance_status == 'compliant' %}
           <span class="text-xs font-mono text-green">✓ Verified</span>
         {% else %}
           <span class="text-xs font-mono text-yellow-400">Pending</span>

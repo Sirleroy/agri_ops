@@ -511,24 +511,27 @@ class FarmForm(forms.ModelForm):
             'mapping_date', 'mapped_by_name', 'geolocation',
         ]
 
-    def __init__(self, *args, company=None, **kwargs):
+    def __init__(self, *args, company=None, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.company = company
         self.fields['name'].label = 'Farm / Plot Name'
         self.fields['mapped_by_name'].label = 'Field Officer'
-        # Disqualification override — defers to the deforestation engine unless a
-        # manager deliberately sets it. The reason field is revealed by Alpine in
-        # the template when the override is set to Yes/No.
-        self.fields['land_cleared_after_cutoff'].label = 'Disqualification Override'
-        self.fields['land_cleared_after_cutoff'].widget.attrs.update({
-            'x-ref': 'overrideSelect',
-            '@change': 'override = $event.target.value',
-        })
-        self.fields['land_cleared_after_cutoff_reason'].label = 'Override Reason'
-        self.fields['land_cleared_after_cutoff_reason'].widget = forms.Textarea(attrs={
-            'rows': 2,
-            'placeholder': 'e.g. Field officer confirmed clearing not yet visible in satellite data',
-        })
+        # The disqualification override overrides the deforestation engine — it
+        # is a manager-level action, so drop it from the form for staff/viewer.
+        if user is not None and not user.is_manager_or_above:
+            self.fields.pop('land_cleared_after_cutoff', None)
+            self.fields.pop('land_cleared_after_cutoff_reason', None)
+        if 'land_cleared_after_cutoff' in self.fields:
+            self.fields['land_cleared_after_cutoff'].label = 'Disqualification Override'
+            self.fields['land_cleared_after_cutoff'].widget.attrs.update({
+                'x-ref': 'overrideSelect',
+                '@change': 'override = $event.target.value',
+            })
+            self.fields['land_cleared_after_cutoff_reason'].label = 'Override Reason'
+            self.fields['land_cleared_after_cutoff_reason'].widget = forms.Textarea(attrs={
+                'rows': 2,
+                'placeholder': 'e.g. Field officer confirmed clearing not yet visible in satellite data',
+            })
         if company:
             self.fields['supplier'].queryset = Supplier.objects.filter(company=company)
             self.fields['farmer'].queryset   = Farmer.objects.filter(company=company)

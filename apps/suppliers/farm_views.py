@@ -316,6 +316,7 @@ class FarmCreateView(DatePickerMixin, AuditCreateMixin, TenantFormFieldsMixin, C
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['company'] = self.request.user.company
+        kwargs['user'] = self.request.user
         return kwargs
 
     def get_context_data(self, **kwargs):
@@ -333,6 +334,7 @@ class FarmUpdateView(DatePickerMixin, AuditUpdateMixin, TenantFormFieldsMixin, C
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['company'] = self.request.user.company
+        kwargs['user'] = self.request.user
         return kwargs
 
     def get_context_data(self, **kwargs):

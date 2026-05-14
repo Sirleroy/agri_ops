@@ -301,7 +301,11 @@ class Farm(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.name} — {self.supplier.name}"
+        # supplier is nullable — str(farm) is called from audit logging, so it
+        # must not assume a supplier is set.
+        if self.supplier_id:
+            return f"{self.name} — {self.supplier.name}"
+        return self.name
 
     def save(self, *args, **kwargs):
         # Commodity — canonical name
@@ -387,7 +391,11 @@ class Farm(models.Model):
         latest = self.latest_deforestation_check
         if latest is None:
             blockers.append('Deforestation check has not been run.')
-        elif latest.risk_status == 'flagged':
+        elif latest.risk_status == 'flagged' and self.land_cleared_after_cutoff is not False:
+            # A manager override to "not disqualified" (land_cleared_after_cutoff
+            # is False) clears the flagged blocker — they have taken documented,
+            # audited accountability for the deforestation status. A still-stale
+            # check is caught further down the chain regardless.
             blockers.append('Latest deforestation check is flagged for post-2020 tree cover loss.')
         elif latest.risk_status == 'inconclusive':
             blockers.append('Latest deforestation check was inconclusive — needs review.')

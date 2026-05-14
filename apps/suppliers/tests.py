@@ -130,10 +130,26 @@ class FarmComplianceTest(TestCase):
         self.farm.land_cleared_after_cutoff = False
         self.assertFalse(self.farm.is_disqualified)
 
+    def test_override_false_clears_the_flagged_readiness_blocker(self):
+        # An override to "not disqualified" must also clear the flagged blocker,
+        # otherwise the audited override path can't actually reach sign-off.
+        self._make_check('flagged')
+        self.farm.land_cleared_after_cutoff = False
+        self.assertEqual(self.farm.readiness_blockers, [])
+        self.assertEqual(self.farm.readiness_state, 'awaiting_signoff')
+
     def test_no_override_defers_to_engine(self):
         self.assertIsNone(self.farm.land_cleared_after_cutoff)
         self._make_check('clear')
         self.assertFalse(self.farm.is_disqualified)
+
+    def test_str_is_null_safe_without_supplier(self):
+        # supplier is nullable; str(farm) is reached from the audit path.
+        farm = Farm.objects.create(
+            company=self.company, name='Supplierless Farm',
+            country='Nigeria', commodity='Soy',
+        )
+        self.assertEqual(str(farm), 'Supplierless Farm')
 
     # ── readiness_state lifecycle ────────────────────────────────────────────
 
@@ -365,3 +381,38 @@ class ComplianceReadinessSignoffTests(TestCase):
         )
         self.assertIsNotNone(log)
         self.assertEqual(log.changes.get('deforestation_check_run'), 'clear')
+
+    def test_override_fields_hidden_from_staff(self):
+        """The disqualification override is manager-only — staff never see the
+        fields on the farm form, so they can't set it."""
+        from apps.suppliers.forms import FarmUpdateForm
+        staff_form = FarmUpdateForm(company=self.company, user=self.staff, instance=self.farm)
+        self.assertNotIn('land_cleared_after_cutoff', staff_form.fields)
+        self.assertNotIn('land_cleared_after_cutoff_reason', staff_form.fields)
+        manager_form = FarmUpdateForm(company=self.company, user=self.manager, instance=self.farm)
+        self.assertIn('land_cleared_after_cutoff', manager_form.fields)
+        self.assertIn('land_cleared_after_cutoff_reason', manager_form.fields)
+
+    def test_manager_override_lets_flagged_farm_be_signed_off(self):
+        """End-to-end: a flagged farm can't be signed off — but once a manager
+        records a disqualification override, the evidence gate clears and the
+        sign-off goes through."""
+        DeforestationCheck.objects.create(
+            farm=self.farm, company=self.company, risk_status='flagged',
+            engine_status='complete',
+            geometry_hash_at_assessment=self.farm.geometry_hash,
+            assessed_at=timezone.now(),
+        )
+        self.client.force_login(self.manager)
+        # Flagged → sign-off rejected.
+        self.client.post(self._confirm_url())
+        self.farm.refresh_from_db()
+        self.assertFalse(self.farm.is_eudr_verified)
+        # Manager records the override with a reason, then signs off.
+        self.farm.land_cleared_after_cutoff = False
+        self.farm.land_cleared_after_cutoff_reason = 'Clearing predates the cut-off — confirmed on the ground.'
+        self.farm.save()
+        r = self.client.post(self._confirm_url())
+        self.assertEqual(r.status_code, 302)
+        self.farm.refresh_from_db()
+        self.assertTrue(self.farm.is_eudr_verified)

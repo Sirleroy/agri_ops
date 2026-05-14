@@ -310,6 +310,32 @@ class APIFarmActionTests(APITestBase):
         self.assertIn('High Risk Farm', names)
         self.assertNotIn('Beta High Risk', names)
 
+    def test_staff_cannot_set_verification_via_api(self):
+        """is_eudr_verified is read-only over the API — a sign-off is a
+        manager-only, evidence-gated, audited action, not a raw field write.
+        A PATCH that also touches a writable field applies that field and
+        ignores is_eudr_verified."""
+        r = self.client_a.patch(
+            f'/api/v1/farms/{self.farm_eudr.id}/',
+            {'name': 'Renamed Farm', 'is_eudr_verified': True},
+            format='json',
+        )
+        self.assertEqual(r.status_code, 200)
+        self.farm_eudr.refresh_from_db()
+        self.assertEqual(self.farm_eudr.name, 'Renamed Farm')   # writable field applied
+        self.assertFalse(self.farm_eudr.is_eudr_verified)        # read-only field ignored
+
+    def test_staff_cannot_set_deforestation_risk_via_api(self):
+        """deforestation_risk_status is engine-owned — read-only over the API."""
+        r = self.client_a.patch(
+            f'/api/v1/farms/{self.farm_eudr.id}/',
+            {'deforestation_risk_status': 'high'},
+            format='json',
+        )
+        self.assertEqual(r.status_code, 200)
+        self.farm_eudr.refresh_from_db()
+        self.assertEqual(self.farm_eudr.deforestation_risk_status, 'low')
+
 
 # ---------------------------------------------------------------------------
 # Inventory custom action tests

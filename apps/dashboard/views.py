@@ -53,9 +53,16 @@ class DashboardView(StaffRequiredMixin, TemplateView):
 
         # ── EUDR compliance summary ───────────────────────────
         farms = Farm.objects.filter(company=company)
-        context['farms_verified'] = farms.filter(is_eudr_verified=True).count()
-        context['farms_pending'] = farms.filter(is_eudr_verified=False).count()
         context['farms_high_risk'] = farms.filter(deforestation_risk_status='high').count()
+        # compliance_status is an evidence-backed property, not a DB field — a
+        # signed-off farm whose evidence has lapsed is no longer "verified".
+        # Evaluate in Python over a prefetched list; per-tenant farm counts are
+        # bounded (denormalise to a stored field if this ever becomes a hotspot).
+        farm_list = list(farms.prefetch_related('deforestation_checks'))
+        context['farms_verified'] = sum(
+            1 for f in farm_list if f.compliance_status == 'compliant'
+        )
+        context['farms_pending'] = len(farm_list) - context['farms_verified']
 
         # Farms with verification expiring in 30 days
         today = timezone.now().date()
