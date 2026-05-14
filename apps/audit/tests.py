@@ -1,9 +1,10 @@
 from django.test import TestCase, RequestFactory
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.companies.models import Company
 from apps.users.models import CustomUser
-from apps.suppliers.models import Supplier, Farm
+from apps.suppliers.models import Supplier, Farm, DeforestationCheck
 from apps.audit.models import AuditLog
 from apps.audit.mixins import log_action
 
@@ -358,6 +359,28 @@ class UserFacingPageSmokeTests(TestCase):
         self.assertIn('tile.openstreetmap.org', body)         # street layer URL
         self.assertIn('server.arcgisonline.com', body)        # satellite layer URL
 
+    def test_farm_update_form_renders_compliance_readiness_panel(self):
+        """Edit farm form must render the rebuilt Compliance Readiness panel and
+        disqualification-override field without a template error — and must no
+        longer expose the old free verification / reference-date inputs."""
+        supplier = Supplier.objects.create(
+            company=self.company, name='Smoke Supplier Edit', category='cooperative'
+        )
+        farm = Farm.objects.create(
+            company=self.company, supplier=supplier, name='Smoke Edit Farm',
+            country='Nigeria', commodity='Soy',
+        )
+        self.client.force_login(self.staff)
+        r = self.client.get(reverse('suppliers:farm_update', kwargs={'pk': farm.pk}))
+        self.assertEqual(r.status_code, 200)
+        body = r.content.decode()
+        self.assertIn('Compliance Readiness', body)
+        self.assertIn('id_land_cleared_after_cutoff', body)
+        # The free verification checkbox and editable reference date are gone —
+        # both are now engine-/evidence-driven, not operator inputs.
+        self.assertNotIn('id_is_eudr_verified', body)
+        self.assertNotIn('id_deforestation_reference_date', body)
+
     def test_farm_detail_renders_map_with_satellite_default(self):
         """Farm detail map defaults to the satellite layer. The Esri URL must
         be present in markup; if this fails the satellite-tile regression has
@@ -380,3 +403,32 @@ class UserFacingPageSmokeTests(TestCase):
         self.assertIn('farm-map', body)
         self.assertIn('server.arcgisonline.com', body)
         self.assertIn('farm-geojson', body)  # json_script element id
+
+    def test_farm_detail_renders_signoff_action_for_manager(self):
+        """A farm with complete deforestation evidence shows the manager-only
+        Compliance Readiness sign-off control on its detail page."""
+        supplier = Supplier.objects.create(
+            company=self.company, name='Smoke Supplier Signoff', category='cooperative'
+        )
+        farm = Farm.objects.create(
+            company=self.company, supplier=supplier, name='Smoke Signoff Farm',
+            country='Nigeria', commodity='Soy',
+            geolocation={
+                'type': 'Polygon',
+                'coordinates': [[[7.0, 9.0], [7.1, 9.0], [7.1, 9.1], [7.0, 9.1], [7.0, 9.0]]],
+            },
+        )
+        DeforestationCheck.objects.create(
+            farm=farm, company=self.company, risk_status='clear',
+            engine_status='complete', geometry_hash_at_assessment=farm.geometry_hash,
+            assessed_at=timezone.now(),
+        )
+        self.client.force_login(self.org_admin)  # manager-or-above
+        r = self.client.get(reverse('suppliers:farm_detail', kwargs={'pk': farm.pk}))
+        self.assertEqual(r.status_code, 200)
+        body = r.content.decode()
+        self.assertIn('Compliance Readiness', body)
+        self.assertIn('Confirm Sign-off', body)
+        self.assertIn(
+            reverse('suppliers:farm_confirm_readiness', kwargs={'pk': farm.pk}), body
+        )

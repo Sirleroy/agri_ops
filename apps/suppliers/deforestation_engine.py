@@ -213,6 +213,18 @@ def run_check(farm, user=None):
     farm_risk = _RISK_MAP.get(result['risk_status'])
     if farm_risk is not None:
         farm.deforestation_risk_status = farm_risk
-        farm.save(update_fields=['deforestation_risk_status'])
+        update_fields = ['deforestation_risk_status']
+        # A check that is no longer clear voids any existing Compliance Readiness
+        # sign-off — the satellite evidence the manager signed off on has changed.
+        # An 'error' result is treated as indeterminate (farm_risk is None) and
+        # never reaches here, so it leaves an existing sign-off untouched.
+        if result['risk_status'] != 'clear' and farm.is_eudr_verified:
+            farm.is_eudr_verified = False
+            farm.verified_by = None
+            farm.verified_date = None
+            farm.verification_expiry = None
+            update_fields += ['is_eudr_verified', 'verified_by',
+                              'verified_date', 'verification_expiry']
+        farm.save(update_fields=update_fields)
 
     return check

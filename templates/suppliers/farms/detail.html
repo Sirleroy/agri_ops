@@ -8,16 +8,16 @@
   <!-- Status banner -->
   <div class="flex items-center justify-between">
     <div class="flex items-center gap-3">
-      {% if farm.compliance_status == 'compliant' %}
-        <span class="px-3 py-1 rounded-full text-xs font-mono bg-green/10 text-green border border-green/20">✓ Verified</span>
-      {% elif farm.compliance_status == 'disqualified' %}
+      {% if farm.readiness_state == 'ready' %}
+        <span class="px-3 py-1 rounded-full text-xs font-mono bg-green/10 text-green border border-green/20">✓ Compliance Ready</span>
+      {% elif farm.readiness_state == 'disqualified' %}
         <span class="px-3 py-1 rounded-full text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20">✗ Disqualified — post-cutoff deforestation</span>
-      {% elif farm.compliance_status == 'expired' %}
-        <span class="px-3 py-1 rounded-full text-xs font-mono bg-orange-500/10 text-orange-400 border border-orange-500/20">⚠ Verification Expired</span>
-      {% elif farm.compliance_status == 'high_risk' %}
-        <span class="px-3 py-1 rounded-full text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20">⚠ High Risk</span>
+      {% elif farm.readiness_state == 'expired' %}
+        <span class="px-3 py-1 rounded-full text-xs font-mono bg-orange-500/10 text-orange-400 border border-orange-500/20">⚠ Sign-off Expired</span>
+      {% elif farm.readiness_state == 'awaiting_signoff' %}
+        <span class="px-3 py-1 rounded-full text-xs font-mono bg-sky-500/10 text-sky-400 border border-sky-500/20">Awaiting Sign-off</span>
       {% else %}
-        <span class="px-3 py-1 rounded-full text-xs font-mono bg-slate-500/10 text-slate-400 border border-slate-500/20">Pending Verification</span>
+        <span class="px-3 py-1 rounded-full text-xs font-mono bg-slate-500/10 text-slate-400 border border-slate-500/20">Not Ready</span>
       {% endif %}
 
       {% if farm.deforestation_risk_status == 'low' %}
@@ -82,36 +82,81 @@
     </dl>
   </div>
 
-  <!-- Compliance Verification card -->
+  <!-- Compliance Readiness card -->
   <div class="bg-card border border-border rounded-xl p-6">
-    <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Compliance Verification</p>
-    <dl class="grid grid-cols-2 gap-4 text-sm">
-      <div>
-        <dt class="text-xs text-slate-500 font-mono mb-1">Verified</dt>
-        <dd>{% if farm.is_eudr_verified %}
-          <span class="text-green font-mono text-xs">Yes</span>
-        {% else %}
-          <span class="text-slate-500 font-mono text-xs">No</span>
-        {% endif %}</dd>
-      </div>
-      <div>
-        <dt class="text-xs text-slate-500 font-mono mb-1">Verified By</dt>
-        <dd class="text-slate-100">{{ farm.verified_by|default:"—" }}</dd>
-      </div>
-      <div>
-        <dt class="text-xs text-slate-500 font-mono mb-1">Verification Date</dt>
-        <dd class="text-slate-100">{{ farm.verified_date|default:"—" }}</dd>
-      </div>
-      <div>
-        <dt class="text-xs text-slate-500 font-mono mb-1">Expiry Date</dt>
-        <dd class="text-slate-100 flex items-center gap-2 flex-wrap">
-          {% if farm.verification_expiry %}
-            <span>{{ farm.verification_expiry }}</span>
-            <span id="expiry-proximity" class="text-xs font-mono" data-expiry="{{ farm.verification_expiry|date:'Y-m-d' }}"></span>
-          {% else %}—{% endif %}
-        </dd>
-      </div>
-    </dl>
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest">Compliance Readiness</p>
+      {% if farm.readiness_state == 'ready' %}
+        <span class="px-3 py-1 rounded-full text-xs font-mono bg-green/10 text-green border border-green/20">Ready</span>
+      {% elif farm.readiness_state == 'awaiting_signoff' %}
+        <span class="px-3 py-1 rounded-full text-xs font-mono bg-sky-500/10 text-sky-400 border border-sky-500/20">Awaiting sign-off</span>
+      {% elif farm.readiness_state == 'expired' %}
+        <span class="px-3 py-1 rounded-full text-xs font-mono bg-orange-500/10 text-orange-400 border border-orange-500/20">Sign-off expired</span>
+      {% elif farm.readiness_state == 'disqualified' %}
+        <span class="px-3 py-1 rounded-full text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20">Disqualified</span>
+      {% else %}
+        <span class="px-3 py-1 rounded-full text-xs font-mono bg-slate-500/10 text-slate-400 border border-slate-500/20">Not ready</span>
+      {% endif %}
+    </div>
+
+    {% with blockers=farm.readiness_blockers %}
+    {% if blockers %}
+      <ul class="text-sm text-slate-400 space-y-1.5 mb-4">
+        {% for blocker in blockers %}
+        <li class="flex gap-2"><span class="text-slate-600 flex-shrink-0">—</span><span>{{ blocker }}</span></li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    {% endwith %}
+
+    {% if farm.is_eudr_verified %}
+      <dl class="grid grid-cols-2 gap-4 text-sm mb-4">
+        <div>
+          <dt class="text-xs text-slate-500 font-mono mb-1">Signed Off By</dt>
+          <dd class="text-slate-100">{{ farm.verified_by|default:"—" }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-slate-500 font-mono mb-1">Sign-off Date</dt>
+          <dd class="text-slate-100">{{ farm.verified_date|default:"—" }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-slate-500 font-mono mb-1">Valid Until</dt>
+          <dd class="text-slate-100 flex items-center gap-2 flex-wrap">
+            {% if farm.verification_expiry %}
+              <span>{{ farm.verification_expiry }}</span>
+              <span id="expiry-proximity" class="text-xs font-mono" data-expiry="{{ farm.verification_expiry|date:'Y-m-d' }}"></span>
+            {% else %}—{% endif %}
+          </dd>
+        </div>
+      </dl>
+    {% endif %}
+
+    {% if request.user.is_manager_or_above %}
+    <div class="pt-3 border-t border-border">
+      {% if farm.readiness_state == 'awaiting_signoff' or farm.readiness_state == 'expired' %}
+        <form method="post" action="{% url 'suppliers:farm_confirm_readiness' farm.pk %}">
+          {% csrf_token %}
+          <button type="submit"
+                  class="bg-green hover:bg-green-dim text-bg font-bold text-xs px-4 py-2 rounded-lg transition-colors">
+            {% if farm.readiness_state == 'expired' %}Renew Sign-off{% else %}Confirm Sign-off{% endif %}
+          </button>
+        </form>
+        <p class="text-xs font-mono text-slate-600 mt-2">Attests this farm's deforestation evidence is complete and current — valid 12 months.</p>
+      {% elif farm.readiness_state == 'ready' %}
+        <form method="post" action="{% url 'suppliers:farm_withdraw_readiness' farm.pk %}">
+          {% csrf_token %}
+          <button type="submit"
+                  class="border border-border text-slate-400 hover:text-red-400 hover:border-red-400 text-xs px-4 py-2 rounded-lg transition-colors">
+            Withdraw Sign-off
+          </button>
+        </form>
+      {% elif farm.readiness_state == 'disqualified' %}
+        <p class="text-xs font-mono text-red-400">Disqualified — sign-off is unavailable. Resolve the disqualification first.</p>
+      {% else %}
+        <p class="text-xs font-mono text-slate-500">Resolve the blockers above to enable sign-off.</p>
+      {% endif %}
+    </div>
+    {% endif %}
   </div>
 
   <!-- Deforestation Check card -->

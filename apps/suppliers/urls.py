@@ -34,6 +34,8 @@ urlpatterns = [
     path('farms/<int:pk>/edit/', views.FarmUpdateView.as_view(), name='farm_update'),
     path('farms/<int:pk>/delete/', views.FarmDeleteView.as_view(), name='farm_delete'),
     path('farms/<int:pk>/deforestation-check/', views.RunDeforestationCheckView.as_view(), name='run_deforestation_check'),
+    path('farms/<int:pk>/sign-off/', views.ConfirmComplianceReadinessView.as_view(), name='farm_confirm_readiness'),
+    path('farms/<int:pk>/withdraw-sign-off/', views.WithdrawComplianceReadinessView.as_view(), name='farm_withdraw_readiness'),
 
     # Farm certifications
     path('farms/<int:farm_pk>/certifications/add/', views.FarmCertificationCreateView.as_view(), name='farm_cert_create'),

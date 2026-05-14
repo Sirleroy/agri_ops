@@ -237,8 +237,8 @@ class Command(BaseCommand):
                     'geolocation': gd['geolocation'],
                     'harvest_year': 2025,
                     'deforestation_risk_status': 'low',
-                    'deforestation_reference_date': datetime.date(2020, 12, 31),
-                    'land_cleared_after_cutoff': False,
+                    # land_cleared_after_cutoff left null — disqualification defers
+                    # to the deforestation engine (a clear check is seeded below).
                     'mapping_date': datetime.date(2026, 3, 14),
                     'mapped_by': staff,
                     'is_eudr_verified': True,
@@ -260,6 +260,33 @@ class Command(BaseCommand):
             f'  Farms: {", ".join(f.name for f in farms)} '
             f'({sum(gd["area_hectares"] for gd in FARM_GEODATA):.1f} ha total)'
         )
+
+        # ── Deforestation evidence ────────────────────────────────────────────
+        # A clear Hansen GFC check behind every farm, so the demo tenant's
+        # Compliance Readiness sign-offs are genuinely evidence-backed.
+        from apps.suppliers.models import DeforestationCheck
+        from django.utils import timezone as _tz
+        for farm in farms:
+            DeforestationCheck.objects.get_or_create(
+                farm=farm,
+                dataset_name='Hansen GFC',
+                dataset_version='v1.12',
+                defaults={
+                    'company': ake,
+                    'risk_status': 'clear',
+                    'engine_status': 'complete',
+                    'total_pixels': 480,
+                    'post_cutoff_loss_pixels': 0,
+                    'loss_years_detected': [],
+                    'evidence_summary': (
+                        'No post-2020 tree cover loss detected. '
+                        'Dataset: Hansen GFC v1.12.'
+                    ),
+                    'geometry_hash_at_assessment': farm.geometry_hash,
+                    'assessed_at': _tz.now(),
+                    'checked_by': staff,
+                },
+            )
 
         # ── Product ───────────────────────────────────────────────────────────
         prod, _ = Product.objects.get_or_create(

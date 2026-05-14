@@ -80,17 +80,16 @@
         {% endfor %}
       </div>
 
-      <!-- Section: Compliance -->
-      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4 pt-4 border-t border-border">Compliance</p>
+      <!-- Section: Field Mapping -->
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4 pt-4 border-t border-border">Field Mapping</p>
       <div class="grid grid-cols-2 gap-4 mb-6">
         {% for field in form %}
-          {% if field.name in 'deforestation_risk_status,deforestation_reference_date,land_cleared_after_cutoff,mapping_date,mapped_by_name,is_eudr_verified,verified_by,verified_date,verification_expiry' %}
+          {% if field.name == 'mapping_date' or field.name == 'mapped_by_name' %}
           <div class="{% if field.errors %}field-has-error{% endif %}">
             <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">
               {{ field.label }}
             </label>
-            <div class="[&>select]:w-full [&>select]:bg-surface [&>select]:border [&>select]:border-border [&>select]:rounded-lg [&>select]:px-4 [&>select]:py-3 [&>select]:text-sm [&>select]:text-slate-100 [&>select]:outline-none
-                        [&>input]:w-full [&>input]:bg-surface [&>input]:border [&>input]:border-border [&>input]:rounded-lg [&>input]:px-4 [&>input]:py-3 [&>input]:text-sm [&>input]:text-slate-100 [&>input]:outline-none">
+            <div class="[&>input]:w-full [&>input]:bg-surface [&>input]:border [&>input]:border-border [&>input]:rounded-lg [&>input]:px-4 [&>input]:py-3 [&>input]:text-sm [&>input]:text-slate-100 [&>input]:outline-none [&>input]:placeholder-slate-600">
               {{ field }}
             </div>
             {% if field.errors %}
@@ -99,6 +98,81 @@
           </div>
           {% endif %}
         {% endfor %}
+      </div>
+
+      <!-- Section: Compliance Readiness -->
+      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4 pt-4 border-t border-border">Compliance Readiness</p>
+
+      {% if form.instance.pk %}
+        {% with state=form.instance.readiness_state blockers=form.instance.readiness_blockers %}
+        <div class="bg-surface border border-border rounded-lg p-4 mb-4">
+          <div class="flex items-center gap-3 mb-2">
+            {% if state == 'ready' %}
+              <span class="px-3 py-1 rounded-full text-xs font-mono bg-green/10 text-green border border-green/20">Ready</span>
+            {% elif state == 'awaiting_signoff' %}
+              <span class="px-3 py-1 rounded-full text-xs font-mono bg-sky-500/10 text-sky-400 border border-sky-500/20">Awaiting sign-off</span>
+            {% elif state == 'expired' %}
+              <span class="px-3 py-1 rounded-full text-xs font-mono bg-orange-500/10 text-orange-400 border border-orange-500/20">Sign-off expired</span>
+            {% elif state == 'disqualified' %}
+              <span class="px-3 py-1 rounded-full text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20">Disqualified</span>
+            {% else %}
+              <span class="px-3 py-1 rounded-full text-xs font-mono bg-slate-500/10 text-slate-400 border border-slate-500/20">Not ready</span>
+            {% endif %}
+          </div>
+          {% if blockers %}
+          <ul class="text-xs font-mono text-slate-400 space-y-1 mb-2">
+            {% for blocker in blockers %}
+            <li class="flex gap-2"><span class="text-slate-600">—</span><span>{{ blocker }}</span></li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="text-xs font-mono text-slate-500 mb-2">Deforestation evidence is complete and current.</p>
+          {% endif %}
+          <p class="text-xs font-mono text-slate-600">
+            Deforestation checks and Compliance Readiness sign-off are managed on the
+            <a href="{% url 'suppliers:farm_detail' form.instance.pk %}" class="text-green hover:text-green-dim transition-colors">farm detail page</a>.
+          </p>
+        </div>
+        {% endwith %}
+      {% else %}
+        <p class="text-xs font-mono text-slate-600 mb-4">
+          Compliance Readiness is assessed once the farm is saved — after a GPS polygon is on file and a deforestation check has been run.
+        </p>
+      {% endif %}
+
+      <div x-data="{ override: 'unknown' }" x-init="$nextTick(() => override = $refs.overrideSelect.value)" class="mb-6">
+        <div class="grid grid-cols-2 gap-4">
+          <!-- Fixed regulatory reference date — not operator-editable -->
+          <div>
+            <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">Deforestation Reference Date</label>
+            <div class="bg-surface border border-border rounded-lg px-4 py-3 text-sm text-slate-300 font-mono">31 December 2020</div>
+            <p class="mt-1 text-xs font-mono text-slate-600">Fixed by EUDR Article 2(28). The deforestation engine assesses tree-cover loss after this date.</p>
+          </div>
+
+          <!-- Disqualification override -->
+          <div class="{% if form.land_cleared_after_cutoff.errors %}field-has-error{% endif %}">
+            <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">{{ form.land_cleared_after_cutoff.label }}</label>
+            <div class="[&>select]:w-full [&>select]:bg-surface [&>select]:border [&>select]:border-border [&>select]:rounded-lg [&>select]:px-4 [&>select]:py-3 [&>select]:text-sm [&>select]:text-slate-100 [&>select]:outline-none">
+              {{ form.land_cleared_after_cutoff }}
+            </div>
+            <p class="mt-1 text-xs font-mono text-slate-600">Leave as “Unknown” to defer to the deforestation engine. Set Yes/No only to override its result.</p>
+            {% if form.land_cleared_after_cutoff.errors %}
+              <p class="mt-1 text-xs font-mono text-red-400">{{ form.land_cleared_after_cutoff.errors.0 }}</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Override reason — revealed when the override is set to Yes/No -->
+        <div x-show="override === 'true' || override === 'false'" x-cloak class="mt-4 {% if form.land_cleared_after_cutoff_reason.errors %}field-has-error{% endif %}">
+          <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">{{ form.land_cleared_after_cutoff_reason.label }} *</label>
+          <div class="[&>textarea]:w-full [&>textarea]:bg-surface [&>textarea]:border [&>textarea]:border-border [&>textarea]:rounded-lg [&>textarea]:px-4 [&>textarea]:py-3 [&>textarea]:text-sm [&>textarea]:text-slate-100 [&>textarea]:outline-none [&>textarea]:placeholder-slate-600">
+            {{ form.land_cleared_after_cutoff_reason }}
+          </div>
+          <p class="mt-1 text-xs font-mono text-slate-600">Recorded in the audit log — explains the basis for overriding the engine.</p>
+          {% if form.land_cleared_after_cutoff_reason.errors %}
+            <p class="mt-1 text-xs font-mono text-red-400">{{ form.land_cleared_after_cutoff_reason.errors.0 }}</p>
+          {% endif %}
+        </div>
       </div>
 
       <!-- Section: Geolocation -->

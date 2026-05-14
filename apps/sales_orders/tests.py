@@ -4,13 +4,22 @@ from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.companies.models import Company
 from apps.purchase_orders.models import PurchaseOrder
 from apps.sales_orders.batch import Batch
 from apps.sales_orders.quality import PhytosanitaryCertificate, BatchQualityTest
-from apps.suppliers.models import Farm, Supplier
+from apps.suppliers.models import Farm, Supplier, DeforestationCheck
 from apps.users.models import CustomUser
+
+
+_POLYGON = {
+    'type': 'Polygon',
+    'coordinates': [[
+        [8.50, 9.00], [8.51, 9.00], [8.51, 9.01], [8.50, 9.01], [8.50, 9.00],
+    ]],
+}
 
 
 class CertificateDownloadBlockerTests(TestCase):
@@ -39,16 +48,30 @@ class CertificateDownloadBlockerTests(TestCase):
         )
 
     def make_compliant_farm(self, name='Verified Farm'):
-        return Farm.objects.create(
+        """
+        A genuinely compliant farm: GPS polygon on file, a clear and current
+        deforestation check behind it, and a sign-off that rests on that evidence.
+        """
+        farm = Farm.objects.create(
             company=self.company,
             supplier=self.supplier,
             name=name,
             country='Nigeria',
             commodity='Soy',
+            geolocation=_POLYGON,
             deforestation_risk_status='low',
             is_eudr_verified=True,
             verification_expiry=datetime.date.today() + datetime.timedelta(days=90),
         )
+        DeforestationCheck.objects.create(
+            farm=farm,
+            company=self.company,
+            risk_status='clear',
+            engine_status='complete',
+            geometry_hash_at_assessment=farm.geometry_hash,
+            assessed_at=timezone.now(),
+        )
+        return farm
 
     def add_current_phyto(self):
         return PhytosanitaryCertificate.objects.create(

@@ -38,6 +38,8 @@ from .farm_views import (  # noqa: F401
     FarmCertificationCreateView,
     FarmCertificationDeleteView,
     RunDeforestationCheckView,
+    ConfirmComplianceReadinessView,
+    WithdrawComplianceReadinessView,
     run_farm_geojson_import,
 )
 

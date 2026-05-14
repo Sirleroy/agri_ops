@@ -4,6 +4,7 @@ import re
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils.functional import cached_property
 from apps.companies.models import Company
 from apps.companies.managers import TenantManager
 
@@ -214,7 +215,14 @@ class Farm(models.Model):
     )
     land_cleared_after_cutoff = models.BooleanField(
         null=True, blank=True,
-        help_text="Was this land cleared or subject to deforestation after 31 December 2020? Yes = disqualified from EUDR."
+        help_text="Manual disqualification override. Leave blank to defer to the "
+                  "deforestation engine. Set to Yes/No only to override the engine "
+                  "result — a reason is required when set."
+    )
+    land_cleared_after_cutoff_reason = models.TextField(
+        blank=True, default='',
+        help_text="Manager's basis for manually overriding the deforestation engine's "
+                  "disqualification result. Required whenever the override is set."
     )
     harvest_year   = models.PositiveSmallIntegerField(
         null=True, blank=True,
@@ -311,6 +319,21 @@ class Farm(models.Model):
             self.geometry_hash = hashlib.sha256(canonical.encode()).hexdigest()
         else:
             self.geometry_hash = ''
+        # Void an existing Compliance Readiness sign-off when the polygon changes —
+        # the satellite evidence no longer matches the boundary on file. Only runs
+        # on full saves; partial saves (update_fields) never change geometry.
+        if self.pk and self.is_eudr_verified and kwargs.get('update_fields') is None:
+            prior_hash = (
+                type(self)._base_manager
+                .filter(pk=self.pk)
+                .values_list('geometry_hash', flat=True)
+                .first()
+            )
+            if prior_hash is not None and prior_hash != self.geometry_hash:
+                self.is_eudr_verified = False
+                self.verified_by = None
+                self.verified_date = None
+                self.verification_expiry = None
         super().save(*args, **kwargs)
 
     @property
@@ -318,10 +341,28 @@ class Farm(models.Model):
         """True if this farm's commodity falls under EUDR 2023/1115 scope."""
         return self.commodity.lower().strip() in EUDR_COMMODITIES
 
+    @cached_property
+    def latest_deforestation_check(self):
+        """
+        Most recent DeforestationCheck for this farm, or None.
+        Uses the prefetch cache when `deforestation_checks` was prefetched
+        (the related manager is already ordered newest-first by Meta.ordering).
+        """
+        checks = list(self.deforestation_checks.all()[:1])
+        return checks[0] if checks else None
+
     @property
     def is_disqualified(self):
-        """True if land was cleared after the 31 Dec 2020 cut-off — automatically ineligible for EUDR."""
-        return self.land_cleared_after_cutoff is True
+        """
+        True if the farm is ineligible for EUDR.
+        A manual override (`land_cleared_after_cutoff` set to True/False) always
+        wins; otherwise the latest deforestation check decides — a flagged result
+        (post-2020 tree cover loss) disqualifies the farm.
+        """
+        if self.land_cleared_after_cutoff is not None:
+            return self.land_cleared_after_cutoff
+        latest = self.latest_deforestation_check
+        return bool(latest and latest.risk_status == 'flagged')
 
     @property
     def is_verification_current(self):
@@ -333,6 +374,50 @@ class Farm(models.Model):
         return self.verification_expiry >= timezone.now().date()
 
     @property
+    def readiness_blockers(self):
+        """
+        Human-readable reasons the farm is not certificate-ready.
+        An empty list means the deforestation evidence is complete and current.
+        """
+        if self.is_disqualified:
+            return ['Farm is disqualified — deforestation after the 31 Dec 2020 cut-off.']
+        blockers = []
+        if not self.geolocation:
+            blockers.append('No GPS polygon on file — a mapped boundary is required.')
+        latest = self.latest_deforestation_check
+        if latest is None:
+            blockers.append('Deforestation check has not been run.')
+        elif latest.risk_status == 'flagged':
+            blockers.append('Latest deforestation check is flagged for post-2020 tree cover loss.')
+        elif latest.risk_status == 'inconclusive':
+            blockers.append('Latest deforestation check was inconclusive — needs review.')
+        elif latest.risk_status == 'error':
+            blockers.append('Latest deforestation check failed to complete — re-run the check.')
+        elif latest.geometry_hash_at_assessment != self.geometry_hash:
+            blockers.append('Deforestation check is stale — the polygon changed since it was run.')
+        return blockers
+
+    @property
+    def readiness_state(self):
+        """
+        Compliance Readiness lifecycle:
+          disqualified     — ineligible (post-cutoff deforestation)
+          not_ready        — deforestation evidence is incomplete or stale
+          awaiting_signoff — evidence complete, manager sign-off pending
+          expired          — signed off, but the sign-off has lapsed
+          ready            — signed off and evidence-backed
+        """
+        if self.is_disqualified:
+            return 'disqualified'
+        if self.readiness_blockers:
+            return 'not_ready'
+        if not self.is_eudr_verified:
+            return 'awaiting_signoff'
+        if not self.is_verification_current:
+            return 'expired'
+        return 'ready'
+
+    @property
     def compliance_status(self):
         if self.is_disqualified:
             return 'disqualified'
@@ -340,6 +425,10 @@ class Farm(models.Model):
             return 'pending'
         if not self.is_verification_current:
             return 'expired'
+        # A sign-off must rest on current satellite evidence — the same gate the
+        # Compliance Readiness panel and the sign-off action enforce.
+        if self.readiness_blockers:
+            return 'pending'
         if self.deforestation_risk_status == 'high':
             return 'high_risk'
         return 'compliant'

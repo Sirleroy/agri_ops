@@ -106,7 +106,7 @@
           <th class="text-left px-4 py-3 text-xs font-mono text-slate-500 uppercase tracking-wider">Supplier</th>
           <th class="text-left px-4 py-3 text-xs font-mono text-slate-500 uppercase tracking-wider">Commodity</th>
           <th class="text-left px-4 py-3 text-xs font-mono text-slate-500 uppercase tracking-wider">Risk</th>
-          <th class="text-left px-4 py-3 text-xs font-mono text-slate-500 uppercase tracking-wider">Compliance Status</th>
+          <th class="text-left px-4 py-3 text-xs font-mono text-slate-500 uppercase tracking-wider">Compliance Readiness</th>
           <th class="text-left px-4 py-3 text-xs font-mono text-slate-500 uppercase tracking-wider">Actions</th>
         </tr>
       </thead>
@@ -140,14 +140,16 @@
           </td>
           <td class="px-4 py-3">
             <div class="flex flex-col gap-1">
-              {% if farm.compliance_status == 'compliant' %}
-                <span class="px-2 py-1 rounded text-xs font-mono bg-green/10 text-green border border-green/20 w-fit">✓ Verified</span>
-              {% elif farm.compliance_status == 'expired' %}
+              {% if farm.readiness_state == 'ready' %}
+                <span class="px-2 py-1 rounded text-xs font-mono bg-green/10 text-green border border-green/20 w-fit">✓ Ready</span>
+              {% elif farm.readiness_state == 'awaiting_signoff' %}
+                <span class="px-2 py-1 rounded text-xs font-mono bg-sky-500/10 text-sky-400 border border-sky-500/20 w-fit">Awaiting sign-off</span>
+              {% elif farm.readiness_state == 'expired' %}
                 <span class="px-2 py-1 rounded text-xs font-mono bg-orange-500/10 text-orange-400 border border-orange-500/20 w-fit">Expired</span>
-              {% elif farm.compliance_status == 'high_risk' %}
-                <span class="px-2 py-1 rounded text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20 w-fit">High Risk</span>
+              {% elif farm.readiness_state == 'disqualified' %}
+                <span class="px-2 py-1 rounded text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20 w-fit">Disqualified</span>
               {% else %}
-                <span class="px-2 py-1 rounded text-xs font-mono bg-slate-500/10 text-slate-400 border border-slate-500/20 w-fit">Pending</span>
+                <span class="px-2 py-1 rounded text-xs font-mono bg-slate-500/10 text-slate-400 border border-slate-500/20 w-fit">Not ready</span>
               {% endif %}
               {% if farm.verification_expiry %}
                 <span class="expiry-badge text-xs font-mono text-slate-500" data-expiry="{{ farm.verification_expiry|date:'Y-m-d' }}"></span>
@@ -198,14 +200,16 @@
           {% if farm.supplier %}<p class="text-xs text-slate-600 mt-0.5 truncate">{{ farm.supplier.name }}</p>{% endif %}
         </div>
         <div class="flex flex-col items-end gap-1 flex-shrink-0">
-          {% if farm.compliance_status == 'compliant' %}
-            <span class="px-2 py-1 rounded text-xs font-mono bg-green/10 text-green border border-green/20">✓ Verified</span>
-          {% elif farm.compliance_status == 'expired' %}
+          {% if farm.readiness_state == 'ready' %}
+            <span class="px-2 py-1 rounded text-xs font-mono bg-green/10 text-green border border-green/20">✓ Ready</span>
+          {% elif farm.readiness_state == 'awaiting_signoff' %}
+            <span class="px-2 py-1 rounded text-xs font-mono bg-sky-500/10 text-sky-400 border border-sky-500/20">Awaiting sign-off</span>
+          {% elif farm.readiness_state == 'expired' %}
             <span class="px-2 py-1 rounded text-xs font-mono bg-orange-500/10 text-orange-400 border border-orange-500/20">Expired</span>
-          {% elif farm.compliance_status == 'high_risk' %}
-            <span class="px-2 py-1 rounded text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20">High Risk</span>
+          {% elif farm.readiness_state == 'disqualified' %}
+            <span class="px-2 py-1 rounded text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20">Disqualified</span>
           {% else %}
-            <span class="px-2 py-1 rounded text-xs font-mono bg-slate-500/10 text-slate-400 border border-slate-500/20">Pending</span>
+            <span class="px-2 py-1 rounded text-xs font-mono bg-slate-500/10 text-slate-400 border border-slate-500/20">Not ready</span>
           {% endif %}
           {% if farm.verification_expiry %}
             <span class="expiry-badge text-xs font-mono text-slate-500" data-expiry="{{ farm.verification_expiry|date:'Y-m-d' }}"></span>

@@ -507,8 +507,8 @@ class FarmForm(forms.ModelForm):
         fields = [
             'supplier', 'name', 'farmer', 'country', 'state_region',
             'commodity', 'harvest_year',
-            'deforestation_reference_date',
-            'land_cleared_after_cutoff', 'mapping_date', 'mapped_by_name', 'geolocation',
+            'land_cleared_after_cutoff', 'land_cleared_after_cutoff_reason',
+            'mapping_date', 'mapped_by_name', 'geolocation',
         ]
 
     def __init__(self, *args, company=None, **kwargs):
@@ -516,6 +516,19 @@ class FarmForm(forms.ModelForm):
         self.company = company
         self.fields['name'].label = 'Farm / Plot Name'
         self.fields['mapped_by_name'].label = 'Field Officer'
+        # Disqualification override — defers to the deforestation engine unless a
+        # manager deliberately sets it. The reason field is revealed by Alpine in
+        # the template when the override is set to Yes/No.
+        self.fields['land_cleared_after_cutoff'].label = 'Disqualification Override'
+        self.fields['land_cleared_after_cutoff'].widget.attrs.update({
+            'x-ref': 'overrideSelect',
+            '@change': 'override = $event.target.value',
+        })
+        self.fields['land_cleared_after_cutoff_reason'].label = 'Override Reason'
+        self.fields['land_cleared_after_cutoff_reason'].widget = forms.Textarea(attrs={
+            'rows': 2,
+            'placeholder': 'e.g. Field officer confirmed clearing not yet visible in satellite data',
+        })
         if company:
             self.fields['supplier'].queryset = Supplier.objects.filter(company=company)
             self.fields['farmer'].queryset   = Farmer.objects.filter(company=company)
@@ -542,15 +555,6 @@ class FarmForm(forms.ModelForm):
                 raise forms.ValidationError("Harvest year is not valid.")
         return year
 
-    def clean_deforestation_reference_date(self):
-        ref_date = self.cleaned_data.get('deforestation_reference_date')
-        if ref_date and ref_date > datetime.date(2020, 12, 31):
-            raise forms.ValidationError(
-                "Deforestation reference date must be on or before 31 December 2020 "
-                "for EUDR compliance."
-            )
-        return ref_date
-
     # ── Layer 3 + 4: Duplicate detection and spatial overlap ──────────────────
 
     def clean(self):
@@ -559,6 +563,19 @@ class FarmForm(forms.ModelForm):
         supplier = cleaned_data.get('supplier')
         geojson  = cleaned_data.get('geolocation')
         exclude_pk = self.instance.pk if self.instance and self.instance.pk else None
+
+        # Disqualification override requires a documented reason — it overrides
+        # the deforestation engine, so the manager's basis must be on record.
+        override = cleaned_data.get('land_cleared_after_cutoff')
+        reason   = (cleaned_data.get('land_cleared_after_cutoff_reason') or '').strip()
+        if override is not None and not reason:
+            self.add_error(
+                'land_cleared_after_cutoff_reason',
+                'A reason is required when you manually override the deforestation engine result.'
+            )
+        elif override is None and reason:
+            # A reason with no override is meaningless — drop it.
+            cleaned_data['land_cleared_after_cutoff_reason'] = ''
 
         # Layer 3: duplicate name+supplier
         if name and supplier:
@@ -605,29 +622,17 @@ class FarmForm(forms.ModelForm):
 # ── Farm (update — adds verification fields) ──────────────────────────────────
 
 class FarmUpdateForm(FarmForm):
+    """
+    Edit form — adds the Field Verification Form (FVF) fields, transcribed from
+    the signed paper form after the farm is imported.
+
+    Compliance Readiness sign-off (`is_eudr_verified` and its metadata) is no
+    longer an editable field. It is an evidence-gated action on the farm detail
+    page, not a free input here.
+    """
     class Meta(FarmForm.Meta):
         fields = FarmForm.Meta.fields + [
-            'is_eudr_verified', 'verified_by', 'verified_date', 'verification_expiry',
             'fvf_land_acquisition', 'fvf_land_tenure', 'fvf_years_farming',
             'fvf_untouched_forest', 'fvf_expansion_intent',
             'fvf_consent_given', 'fvf_consent_date',
         ]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.company:
-            from apps.users.models import CustomUser
-            self.fields['verified_by'].queryset = CustomUser.objects.filter(company=self.company)
-
-    def clean(self):
-        cleaned_data = super().clean()
-        verified_date      = cleaned_data.get('verified_date')
-        verification_expiry = cleaned_data.get('verification_expiry')
-
-        if verified_date and verification_expiry and verification_expiry <= verified_date:
-            self.add_error(
-                'verification_expiry',
-                "Verification expiry must be after the verified date."
-            )
-
-        return cleaned_data

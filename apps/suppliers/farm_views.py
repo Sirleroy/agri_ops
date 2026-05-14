@@ -255,6 +255,7 @@ class FarmListView(StaffRequiredMixin, ListView):
             Farm.objects
             .filter(company=self.request.user.company)
             .select_related('supplier', 'farmer')
+            .prefetch_related('deforestation_checks')  # feeds Farm.latest_deforestation_check → readiness_state
             .annotate(
                 last_check_status=Subquery(latest_check.values('risk_status')[:1]),
                 last_check_date=Subquery(latest_check.values('assessed_at')[:1]),
@@ -369,6 +370,92 @@ class RunDeforestationCheckView(CompanyOwnedMixin, StaffRequiredMixin, View):
         else:
             messages.info(request, f'Deforestation check inconclusive for {farm.name}.')
 
+        return redirect('suppliers:farm_detail', pk=pk)
+
+
+class ConfirmComplianceReadinessView(CompanyOwnedMixin, ManagerRequiredMixin, View):
+    """
+    POST-only: sign off Compliance Readiness for a farm.
+
+    The sign-off is evidence-gated. It is re-checked here server-side — never
+    trust the button being shown — and is rejected unless the farm currently
+    has complete, non-stale deforestation evidence (no readiness blockers and
+    not disqualified). On success the verification metadata is derived, not
+    operator-entered: the signer is the current manager, the date is today,
+    and the sign-off is valid for 12 months.
+    """
+    model = Farm
+
+    def post(self, request, pk):
+        import datetime
+        from django.contrib import messages
+        from apps.audit.mixins import log_action
+
+        farm = get_object_or_404(Farm, pk=pk, company=request.user.company)
+
+        if farm.is_disqualified:
+            messages.error(request, f'{farm.name} is disqualified and cannot be signed off.')
+            return redirect('suppliers:farm_detail', pk=pk)
+
+        blockers = farm.readiness_blockers
+        if blockers:
+            messages.error(request, f'{farm.name} is not ready for sign-off — {blockers[0]}')
+            return redirect('suppliers:farm_detail', pk=pk)
+
+        if farm.is_eudr_verified and farm.is_verification_current:
+            messages.info(request, f'{farm.name} is already signed off.')
+            return redirect('suppliers:farm_detail', pk=pk)
+
+        today = datetime.date.today()
+        farm.is_eudr_verified = True
+        farm.verified_by = request.user
+        farm.verified_date = today
+        farm.verification_expiry = today + datetime.timedelta(days=365)
+        farm.save(update_fields=[
+            'is_eudr_verified', 'verified_by', 'verified_date', 'verification_expiry',
+        ])
+
+        log_action(request, 'update', farm, changes={
+            'compliance_readiness': 'signed off',
+            'verified_by': request.user.get_username(),
+            'verified_date': today.isoformat(),
+            'verification_expiry': farm.verification_expiry.isoformat(),
+        })
+
+        messages.success(
+            request,
+            f'Compliance Readiness signed off for {farm.name} — valid until {farm.verification_expiry}.'
+        )
+        return redirect('suppliers:farm_detail', pk=pk)
+
+
+class WithdrawComplianceReadinessView(CompanyOwnedMixin, ManagerRequiredMixin, View):
+    """POST-only: withdraw an existing Compliance Readiness sign-off."""
+    model = Farm
+
+    def post(self, request, pk):
+        from django.contrib import messages
+        from apps.audit.mixins import log_action
+
+        farm = get_object_or_404(Farm, pk=pk, company=request.user.company)
+
+        if not farm.is_eudr_verified:
+            messages.info(request, f'{farm.name} has no active sign-off to withdraw.')
+            return redirect('suppliers:farm_detail', pk=pk)
+
+        farm.is_eudr_verified = False
+        farm.verified_by = None
+        farm.verified_date = None
+        farm.verification_expiry = None
+        farm.save(update_fields=[
+            'is_eudr_verified', 'verified_by', 'verified_date', 'verification_expiry',
+        ])
+
+        log_action(request, 'update', farm, changes={
+            'compliance_readiness': 'sign-off withdrawn',
+        })
+
+        messages.success(request, f'Compliance Readiness sign-off withdrawn for {farm.name}.')
         return redirect('suppliers:farm_detail', pk=pk)
 
 
