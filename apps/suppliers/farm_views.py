@@ -357,9 +357,13 @@ class RunDeforestationCheckView(CompanyOwnedMixin, StaffRequiredMixin, View):
         from django.shortcuts import redirect
         from django.contrib import messages
         from apps.suppliers.deforestation_engine import run_check
+        from apps.audit.mixins import log_action
 
         farm = get_object_or_404(Farm, pk=pk, company=request.user.company)
         check = run_check(farm, user=request.user)
+        log_action(request, 'update', farm, changes={
+            'deforestation_check_run': check.risk_status,
+        })
 
         if check.risk_status == 'clear':
             messages.success(request, f'Deforestation check complete — {farm.name} is clear.')

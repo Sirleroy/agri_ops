@@ -195,6 +195,20 @@ class FarmComplianceTest(TestCase):
         self.assertIsNone(self.farm.verified_date)
         self.assertEqual(self.farm.compliance_status, 'disqualified')
 
+        # The engine-triggered sign-off withdrawal must land in the audit log,
+        # the same as a manual withdrawal would.
+        from apps.audit.models import AuditLog
+        log = (
+            AuditLog.objects
+            .filter(company=self.company, model_name='Farm', object_id=self.farm.pk)
+            .order_by('-timestamp')
+            .first()
+        )
+        self.assertIsNotNone(log)
+        self.assertEqual(
+            log.changes.get('compliance_readiness'), 'sign-off withdrawn — automated'
+        )
+
 
 class ComplianceReadinessSignoffTests(TestCase):
     """
@@ -325,3 +339,29 @@ class ComplianceReadinessSignoffTests(TestCase):
         )
         self.assertIsNotNone(log)
         self.assertEqual(log.changes.get('compliance_readiness'), 'signed off')
+
+    def test_run_deforestation_check_is_audit_logged(self):
+        """A manual 'Run Check' is a user action on a tenant record — it must
+        appear in the central audit log, not only as a DeforestationCheck row."""
+        from unittest.mock import patch
+        from apps.suppliers import deforestation_engine
+        from apps.audit.models import AuditLog
+
+        clear_result = {
+            'pixels': 200, 'loss_pixels': 0, 'loss_area_ha': 0,
+            'loss_years': [], 'risk_status': 'clear', 'error': None,
+        }
+        self.client.force_login(self.staff)
+        with patch.object(deforestation_engine, 'intersect_farm', return_value=clear_result):
+            r = self.client.post(
+                reverse('suppliers:run_deforestation_check', kwargs={'pk': self.farm.pk})
+            )
+        self.assertEqual(r.status_code, 302)
+        log = (
+            AuditLog.objects
+            .filter(company=self.company, model_name='Farm', object_id=self.farm.pk)
+            .order_by('-timestamp')
+            .first()
+        )
+        self.assertIsNotNone(log)
+        self.assertEqual(log.changes.get('deforestation_check_run'), 'clear')

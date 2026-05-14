@@ -218,7 +218,8 @@ def run_check(farm, user=None):
         # sign-off — the satellite evidence the manager signed off on has changed.
         # An 'error' result is treated as indeterminate (farm_risk is None) and
         # never reaches here, so it leaves an existing sign-off untouched.
-        if result['risk_status'] != 'clear' and farm.is_eudr_verified:
+        signoff_voided = result['risk_status'] != 'clear' and farm.is_eudr_verified
+        if signoff_voided:
             farm.is_eudr_verified = False
             farm.verified_by = None
             farm.verified_date = None
@@ -226,5 +227,25 @@ def run_check(farm, user=None):
             update_fields += ['is_eudr_verified', 'verified_by',
                               'verified_date', 'verification_expiry']
         farm.save(update_fields=update_fields)
+
+        # An automated sign-off withdrawal is a material compliance change — log
+        # it centrally, the same as a manual withdrawal. Runs for every caller
+        # (single-farm view, preview batch, CLI command).
+        if signoff_voided:
+            from apps.audit.models import AuditLog
+            AuditLog.objects.create(
+                company=farm.company,
+                user=user,
+                action='update',
+                model_name='Farm',
+                object_id=farm.pk,
+                object_repr=str(farm),
+                changes={
+                    'compliance_readiness': 'sign-off withdrawn — automated',
+                    'reason': f"deforestation re-check returned '{result['risk_status']}', no longer clear",
+                    'deforestation_risk_status': farm_risk,
+                },
+                ip_address=None,
+            )
 
     return check

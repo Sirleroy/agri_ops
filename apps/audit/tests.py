@@ -265,6 +265,9 @@ class CSPCoverageTests(TestCase):
         # Image / tile sources
         ('tile.openstreetmap.org',      'img-src'),
         ('server.arcgisonline.com',     'img-src'),
+        # Leaflet / Leaflet Draw sprite images (layers-control icon, draw toolbar)
+        ('unpkg.com',                   'img-src'),
+        ('cdnjs.cloudflare.com',        'img-src'),
     ]
 
     def setUp(self):

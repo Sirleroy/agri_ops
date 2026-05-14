@@ -347,7 +347,9 @@
       // ── Basemaps ──────────────────────────────────────────────────────────
       const satellite = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        { attribution: 'Tiles &copy; Esri', maxZoom: 20, maxNativeZoom: 19 }
+        // maxNativeZoom 17: Esri lacks native high-zoom imagery in rural Nigeria —
+        // upscale z17 tiles past that point rather than request blank tiles.
+        { attribution: 'Tiles &copy; Esri', maxZoom: 20, maxNativeZoom: 17 }
       );
       const street = L.tileLayer(
         'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
