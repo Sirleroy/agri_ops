@@ -104,3 +104,35 @@ class DatePickerMixin:
                     format='%Y-%m-%d',
                 )
         return form
+
+
+class TenantFormFieldsMixin:
+    """
+    Scopes every relation field on a CreateView/UpdateView form down to the
+    requesting user's company.
+
+    Django's auto-generated ModelForm (views that set ``fields = [...]`` rather
+    than a custom ``form_class``) builds each FK/M2M as a ModelChoiceField whose
+    queryset defaults to ``Model.objects.all()`` — every tenant's rows. That
+    both leaks other tenants' records into dropdowns and *accepts* their PKs on
+    POST (a cross-tenant write). This mixin closes that class of bug centrally,
+    so it cannot recur per-view.
+
+    Apply to every tenant-facing CreateView / UpdateView. ModelMultipleChoiceField
+    is a ModelChoiceField subclass, so M2M fields are covered too. It is a safe
+    no-op on forms with no tenant-scoped relation field.
+    """
+    def get_form(self, form_class=None):
+        from django import forms
+        form = super().get_form(form_class)
+        company = self.request.user.company
+        for field in form.fields.values():
+            if not isinstance(field, forms.ModelChoiceField):
+                continue
+            queryset = getattr(field, 'queryset', None)
+            if queryset is None:
+                continue
+            model = queryset.model
+            if any(f.name == 'company' for f in model._meta.concrete_fields):
+                field.queryset = queryset.filter(company=company)
+        return form

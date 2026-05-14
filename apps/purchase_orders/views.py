@@ -10,7 +10,7 @@ from .models import PurchaseOrder, PurchaseOrderItem
 from apps.products.models import Product
 from apps.users.permissions import (
     StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin,
-    CompanyOwnedMixin, CompanySetMixin,
+    CompanyOwnedMixin, CompanySetMixin, TenantFormFieldsMixin,
 )
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 from apps.audit.mixins import log_action
@@ -73,7 +73,7 @@ class PurchaseOrderDetailView(CompanyOwnedMixin, StaffRequiredMixin, DetailView)
         return context
 
 
-class PurchaseOrderCreateView(DatePickerMixin, AuditCreateMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
+class PurchaseOrderCreateView(DatePickerMixin, AuditCreateMixin, TenantFormFieldsMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
     model = PurchaseOrder
     template_name = 'purchase_orders/form.html'
     fields = ['supplier', 'expected_delivery', 'notes']
@@ -90,7 +90,7 @@ class PurchaseOrderCreateView(DatePickerMixin, AuditCreateMixin, CompanySetMixin
         return super().form_valid(form)
 
 
-class PurchaseOrderUpdateView(DatePickerMixin, AuditUpdateMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
+class PurchaseOrderUpdateView(DatePickerMixin, AuditUpdateMixin, TenantFormFieldsMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
     model = PurchaseOrder
     template_name = 'purchase_orders/form.html'
     fields = ['supplier', 'order_number', 'status', 'expected_delivery', 'notes']

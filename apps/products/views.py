@@ -5,7 +5,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from .models import Product
 from apps.users.permissions import (
     StaffRequiredMixin, ManagerRequiredMixin, OtherRevealMixin,
-    CompanyOwnedMixin, CompanySetMixin,
+    CompanyOwnedMixin, CompanySetMixin, TenantFormFieldsMixin,
 )
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 
@@ -37,7 +37,7 @@ class ProductDetailView(CompanyOwnedMixin, StaffRequiredMixin, DetailView):
     context_object_name = 'product'
 
 
-class ProductCreateView(OtherRevealMixin, AuditCreateMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
+class ProductCreateView(OtherRevealMixin, AuditCreateMixin, TenantFormFieldsMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
     model = Product
     template_name = 'products/form.html'
     fields = ['name', 'description', 'category', 'unit', 'unit_price', 'hs_code',
@@ -49,7 +49,7 @@ class ProductCreateView(OtherRevealMixin, AuditCreateMixin, CompanySetMixin, Sta
         return reverse_lazy('products:detail', kwargs={'pk': self.object.pk})
 
 
-class ProductUpdateView(OtherRevealMixin, AuditUpdateMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
+class ProductUpdateView(OtherRevealMixin, AuditUpdateMixin, TenantFormFieldsMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
     model = Product
     template_name = 'products/form.html'
     fields = ['name', 'description', 'category', 'unit', 'unit_price', 'hs_code',

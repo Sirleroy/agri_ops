@@ -7,7 +7,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from .models import Inventory
 from apps.users.permissions import (
     StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin,
-    CompanyOwnedMixin, CompanySetMixin,
+    CompanyOwnedMixin, CompanySetMixin, TenantFormFieldsMixin,
 )
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin, log_action
 
@@ -39,7 +39,7 @@ class InventoryDetailView(CompanyOwnedMixin, StaffRequiredMixin, DetailView):
     context_object_name = 'item'
 
 
-class InventoryCreateView(DatePickerMixin, AuditCreateMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
+class InventoryCreateView(DatePickerMixin, AuditCreateMixin, TenantFormFieldsMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
     model = Inventory
     template_name = 'inventory/form.html'
     fields = ['product', 'quantity', 'warehouse_location', 'low_stock_threshold',
@@ -49,7 +49,7 @@ class InventoryCreateView(DatePickerMixin, AuditCreateMixin, CompanySetMixin, St
         return reverse_lazy('inventory:detail', kwargs={'pk': self.object.pk})
 
 
-class InventoryUpdateView(DatePickerMixin, AuditUpdateMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
+class InventoryUpdateView(DatePickerMixin, AuditUpdateMixin, TenantFormFieldsMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
     model = Inventory
     template_name = 'inventory/form.html'
     fields = ['product', 'quantity', 'warehouse_location', 'low_stock_threshold',

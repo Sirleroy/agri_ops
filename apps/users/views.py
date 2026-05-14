@@ -4,7 +4,10 @@ from django.urls import reverse_lazy
 from django.shortcuts import redirect
 from django.utils.http import url_has_allowed_host_and_scheme
 from .models import CustomUser
-from .permissions import OrgAdminRequiredMixin, ManagerRequiredMixin, CompanyOwnedMixin
+from .permissions import (
+    OrgAdminRequiredMixin, ManagerRequiredMixin, CompanyOwnedMixin,
+    TenantFormFieldsMixin,
+)
 
 
 class UserListView(ManagerRequiredMixin, ListView):
@@ -24,7 +27,7 @@ class UserDetailView(CompanyOwnedMixin, ManagerRequiredMixin, DetailView):
     context_object_name = 'profile'
 
 
-class UserUpdateView(AuditUpdateMixin, CompanyOwnedMixin, OrgAdminRequiredMixin, UpdateView):
+class UserUpdateView(AuditUpdateMixin, TenantFormFieldsMixin, CompanyOwnedMixin, OrgAdminRequiredMixin, UpdateView):
     model = CustomUser
     template_name = 'users/form.html'
     fields = ['username', 'first_name', 'last_name', 'email',
@@ -37,7 +40,7 @@ class UserUpdateView(AuditUpdateMixin, CompanyOwnedMixin, OrgAdminRequiredMixin,
         return reverse_lazy('users:detail', kwargs={'pk': self.object.pk})
 
 
-class UserSystemRoleUpdateView(AuditUpdateMixin, CompanyOwnedMixin, OrgAdminRequiredMixin, UpdateView):
+class UserSystemRoleUpdateView(AuditUpdateMixin, TenantFormFieldsMixin, CompanyOwnedMixin, OrgAdminRequiredMixin, UpdateView):
     """
     Separate view for changing system_role.
     OrgAdmin only. Isolated so system_role is never

@@ -10,7 +10,7 @@ from .models import SalesOrder, SalesOrderItem
 from apps.products.models import Product
 from apps.users.permissions import (
     StaffRequiredMixin, ManagerRequiredMixin,
-    CompanyOwnedMixin, CompanySetMixin,
+    CompanyOwnedMixin, CompanySetMixin, TenantFormFieldsMixin,
 )
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin, log_action
 
@@ -75,7 +75,7 @@ class SalesOrderDetailView(CompanyOwnedMixin, StaffRequiredMixin, DetailView):
         return context
 
 
-class SalesOrderCreateView(AuditCreateMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
+class SalesOrderCreateView(AuditCreateMixin, TenantFormFieldsMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
     model = SalesOrder
     template_name = 'sales_orders/form.html'
     fields = ['customer_name', 'customer_email', 'customer_phone', 'is_eu_export', 'nxp_reference', 'notes']
@@ -92,7 +92,7 @@ class SalesOrderCreateView(AuditCreateMixin, CompanySetMixin, StaffRequiredMixin
         return reverse_lazy('sales_orders:detail', kwargs={'pk': self.object.pk})
 
 
-class SalesOrderUpdateView(AuditUpdateMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
+class SalesOrderUpdateView(AuditUpdateMixin, TenantFormFieldsMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
     model = SalesOrder
     template_name = 'sales_orders/form.html'
     fields = ['order_number', 'customer_name', 'customer_email', 'customer_phone',

@@ -235,3 +235,58 @@ class TenantCompanyLifecycleTests(TestCase):
         r = self.client.post(reverse('companies:delete', kwargs={'pk': self.company.pk}))
         self.assertEqual(r.status_code, 403)
         self.assertTrue(Company.objects.filter(pk=self.company.pk).exists())
+
+
+class FormFieldTenantIsolationTests(TestCase):
+    """
+    Relation fields on auto-generated ModelForms (views with `fields = [...]`)
+    must be scoped to the requesting user's company by TenantFormFieldsMixin.
+
+    An unscoped ModelChoiceField both leaks other tenants' rows into dropdowns
+    and *accepts* their PKs on POST — a cross-tenant write. These tests guard
+    the two confirmed-leaking forms (PO supplier, Inventory product) at both
+    the display and the write layer.
+    """
+
+    def setUp(self):
+        self.co_a = make_company('Form Alpha')
+        self.co_b = make_company('Form Beta')
+        self.user_a = make_user(self.co_a, role='staff', username='form_staff_a')
+
+        self.sup_a = Supplier.objects.create(company=self.co_a, name='Sup Alpha', category='cooperative')
+        self.sup_b = Supplier.objects.create(company=self.co_b, name='Sup Beta', category='cooperative')
+        self.prod_a = Product.objects.create(company=self.co_a, name='Prod Alpha', unit='kg')
+        self.prod_b = Product.objects.create(company=self.co_b, name='Prod Beta', unit='kg')
+
+    # ── Purchase Order — supplier field ──────────────────────────────────────
+
+    def test_po_create_form_supplier_excludes_other_tenant(self):
+        self.client.force_login(self.user_a)
+        r = self.client.get(reverse('purchase_orders:create'))
+        self.assertEqual(r.status_code, 200)
+        qs = r.context['form'].fields['supplier'].queryset
+        self.assertIn(self.sup_a, qs)
+        self.assertNotIn(self.sup_b, qs)
+
+    def test_po_create_rejects_other_tenant_supplier(self):
+        self.client.force_login(self.user_a)
+        r = self.client.post(reverse('purchase_orders:create'), {'supplier': self.sup_b.pk})
+        # Form re-renders with an error rather than redirecting on success.
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(PurchaseOrder.objects.filter(supplier=self.sup_b).exists())
+
+    # ── Inventory — product field ────────────────────────────────────────────
+
+    def test_inventory_create_form_product_excludes_other_tenant(self):
+        self.client.force_login(self.user_a)
+        r = self.client.get(reverse('inventory:create'))
+        self.assertEqual(r.status_code, 200)
+        qs = r.context['form'].fields['product'].queryset
+        self.assertIn(self.prod_a, qs)
+        self.assertNotIn(self.prod_b, qs)
+
+    def test_inventory_create_rejects_other_tenant_product(self):
+        self.client.force_login(self.user_a)
+        r = self.client.post(reverse('inventory:create'), {'product': self.prod_b.pk})
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(Inventory.objects.filter(product=self.prod_b).exists())

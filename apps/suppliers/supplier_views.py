@@ -6,7 +6,7 @@ from django.db.models import Q
 from .models import Supplier
 from apps.users.permissions import (
     StaffRequiredMixin, ManagerRequiredMixin, OtherRevealMixin,
-    CompanyOwnedMixin, CompanySetMixin,
+    CompanyOwnedMixin, CompanySetMixin, TenantFormFieldsMixin,
 )
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 
@@ -45,7 +45,7 @@ class SupplierDetailView(CompanyOwnedMixin, StaffRequiredMixin, DetailView):
         return context
 
 
-class SupplierCreateView(OtherRevealMixin, AuditCreateMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
+class SupplierCreateView(OtherRevealMixin, AuditCreateMixin, TenantFormFieldsMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
     model = Supplier
     template_name = 'suppliers/form.html'
     fields = ['name', 'category', 'contact_person', 'phone', 'email',
@@ -56,7 +56,7 @@ class SupplierCreateView(OtherRevealMixin, AuditCreateMixin, CompanySetMixin, St
         return reverse_lazy('suppliers:detail', kwargs={'pk': self.object.pk})
 
 
-class SupplierUpdateView(OtherRevealMixin, AuditUpdateMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
+class SupplierUpdateView(OtherRevealMixin, AuditUpdateMixin, TenantFormFieldsMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
     model = Supplier
     template_name = 'suppliers/form.html'
     fields = ['name', 'category', 'contact_person', 'phone', 'email',

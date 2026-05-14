@@ -7,7 +7,7 @@ from .models import Farmer
 from .forms import FarmerForm
 from apps.users.permissions import (
     StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin,
-    CompanyOwnedMixin, CompanySetMixin,
+    CompanyOwnedMixin, CompanySetMixin, TenantFormFieldsMixin,
 )
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 
@@ -64,7 +64,7 @@ class FarmerDetailView(CompanyOwnedMixin, StaffRequiredMixin, DetailView):
         return context
 
 
-class FarmerCreateView(DatePickerMixin, AuditCreateMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
+class FarmerCreateView(DatePickerMixin, AuditCreateMixin, TenantFormFieldsMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
     model = Farmer
     template_name = 'suppliers/farmers/form.html'
     form_class = FarmerForm
@@ -78,7 +78,7 @@ class FarmerCreateView(DatePickerMixin, AuditCreateMixin, CompanySetMixin, Staff
         return reverse_lazy('suppliers:farmer_detail', kwargs={'pk': self.object.pk})
 
 
-class FarmerUpdateView(DatePickerMixin, AuditUpdateMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
+class FarmerUpdateView(DatePickerMixin, AuditUpdateMixin, TenantFormFieldsMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
     model = Farmer
     template_name = 'suppliers/farmers/form.html'
     form_class = FarmerForm

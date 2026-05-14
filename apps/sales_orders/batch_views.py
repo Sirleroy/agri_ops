@@ -8,7 +8,7 @@ from django.core.cache import cache
 from django.utils.http import url_has_allowed_host_and_scheme
 from apps.users.permissions import (
     StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin, OtherRevealMixin,
-    CompanyOwnedMixin, CompanySetMixin,
+    CompanyOwnedMixin, CompanySetMixin, TenantFormFieldsMixin,
 )
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 from .batch import Batch
@@ -53,7 +53,7 @@ class BatchDetailView(CompanyOwnedMixin, StaffRequiredMixin, DetailView):
         return context
 
 
-class BatchCreateView(AuditCreateMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
+class BatchCreateView(AuditCreateMixin, TenantFormFieldsMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
     model = Batch
     template_name = 'sales_orders/batches/form.html'
     fields = ['sales_order', 'commodity', 'quantity_kg', 'farms', 'purchase_orders', 'notes']
@@ -83,7 +83,7 @@ class BatchCreateView(AuditCreateMixin, CompanySetMixin, StaffRequiredMixin, Cre
         return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.object.pk})
 
 
-class BatchUpdateView(AuditUpdateMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
+class BatchUpdateView(AuditUpdateMixin, TenantFormFieldsMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
     model = Batch
     template_name = 'sales_orders/batches/form.html'
     fields = ['sales_order', 'commodity', 'quantity_kg', 'farms', 'purchase_orders', 'notes']
@@ -131,7 +131,7 @@ class BatchUpdateView(AuditUpdateMixin, CompanyOwnedMixin, StaffRequiredMixin, U
 # PHYTOSANITARY CERTIFICATE VIEWS
 # ─────────────────────────────────────
 
-class PhytosanitaryCertCreateView(DatePickerMixin, AuditCreateMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
+class PhytosanitaryCertCreateView(DatePickerMixin, AuditCreateMixin, TenantFormFieldsMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
     model = PhytosanitaryCertificate
     template_name = 'sales_orders/batches/phytosanitary_form.html'
     fields = ['certificate_number', 'issuing_office', 'inspector_name',
@@ -153,7 +153,7 @@ class PhytosanitaryCertCreateView(DatePickerMixin, AuditCreateMixin, CompanySetM
         return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.kwargs['batch_pk']})
 
 
-class PhytosanitaryCertUpdateView(DatePickerMixin, AuditUpdateMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
+class PhytosanitaryCertUpdateView(DatePickerMixin, AuditUpdateMixin, TenantFormFieldsMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
     model = PhytosanitaryCertificate
     template_name = 'sales_orders/batches/phytosanitary_form.html'
     fields = ['certificate_number', 'issuing_office', 'inspector_name',
@@ -179,7 +179,7 @@ class PhytosanitaryCertDeleteView(AuditDeleteMixin, CompanyOwnedMixin, ManagerRe
 # BATCH QUALITY TEST VIEWS
 # ─────────────────────────────────────
 
-class BatchQualityTestCreateView(OtherRevealMixin, DatePickerMixin, AuditCreateMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
+class BatchQualityTestCreateView(OtherRevealMixin, DatePickerMixin, AuditCreateMixin, TenantFormFieldsMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
     model = BatchQualityTest
     template_name = 'sales_orders/batches/quality_form.html'
     fields = ['test_type', 'lab_name', 'lab_certificate_ref', 'test_date', 'result', 'notes']
@@ -201,7 +201,7 @@ class BatchQualityTestCreateView(OtherRevealMixin, DatePickerMixin, AuditCreateM
         return reverse_lazy('sales_orders:batch_detail', kwargs={'pk': self.kwargs['batch_pk']})
 
 
-class BatchQualityTestUpdateView(OtherRevealMixin, DatePickerMixin, AuditUpdateMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
+class BatchQualityTestUpdateView(OtherRevealMixin, DatePickerMixin, AuditUpdateMixin, TenantFormFieldsMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
     model = BatchQualityTest
     template_name = 'sales_orders/batches/quality_form.html'
     fields = ['test_type', 'lab_name', 'lab_certificate_ref', 'test_date', 'result', 'notes']

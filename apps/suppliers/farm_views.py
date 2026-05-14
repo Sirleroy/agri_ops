@@ -8,7 +8,7 @@ from .forms import FarmForm, FarmUpdateForm
 from .import_pipeline import parse_file_to_features, run_farm_geojson_import  # noqa: F401
 from apps.users.permissions import (
     StaffRequiredMixin, ManagerRequiredMixin, DatePickerMixin, OtherRevealMixin,
-    CompanyOwnedMixin, CompanySetMixin,
+    CompanyOwnedMixin, CompanySetMixin, TenantFormFieldsMixin,
 )
 from apps.audit.mixins import AuditCreateMixin, AuditUpdateMixin, AuditDeleteMixin
 
@@ -307,7 +307,7 @@ def _farmer_crops_json(company):
     return raw.replace('&', r'\u0026').replace('<', r'\u003c').replace('>', r'\u003e')
 
 
-class FarmCreateView(DatePickerMixin, AuditCreateMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
+class FarmCreateView(DatePickerMixin, AuditCreateMixin, TenantFormFieldsMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
     model = Farm
     template_name = 'suppliers/farms/form.html'
     form_class = FarmForm
@@ -324,7 +324,7 @@ class FarmCreateView(DatePickerMixin, AuditCreateMixin, CompanySetMixin, StaffRe
         return context
 
 
-class FarmUpdateView(DatePickerMixin, AuditUpdateMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
+class FarmUpdateView(DatePickerMixin, AuditUpdateMixin, TenantFormFieldsMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
     model = Farm
     template_name = 'suppliers/farms/form.html'
     form_class = FarmUpdateForm
@@ -463,7 +463,7 @@ class WithdrawComplianceReadinessView(CompanyOwnedMixin, ManagerRequiredMixin, V
 # FARM CERTIFICATION VIEWS
 # ─────────────────────────────────────
 
-class FarmCertificationCreateView(OtherRevealMixin, DatePickerMixin, AuditCreateMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
+class FarmCertificationCreateView(OtherRevealMixin, DatePickerMixin, AuditCreateMixin, TenantFormFieldsMixin, CompanySetMixin, StaffRequiredMixin, CreateView):
     model = FarmCertification
     template_name = 'suppliers/farms/certification_form.html'
     fields = ['cert_type', 'certifying_body', 'certificate_number', 'issued_date', 'expiry_date', 'notes']
