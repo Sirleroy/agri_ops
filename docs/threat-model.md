@@ -1,6 +1,6 @@
 # AgriOps — Threat Model
 
-**Version:** 1.3
+**Version:** 1.4
 **Date:** May 2026
 **Status:** Living document — updated as attack surface changes per phase
 **Framework:** STRIDE (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege)
@@ -94,7 +94,7 @@ The threat model identifies what we are protecting, who might attempt to comprom
 | Threat | Attack Vector | Likelihood | Impact | Control | Status |
 |---|---|---|---|---|---|
 | EUDR compliance data tampering | Authenticated user modifies farm verification records | Medium | Critical | Audit log on all writes, OrgAdmin-only verification fields, immutable audit trail | ✅ Active |
-| Cross-tenant data modification | Crafted PUT/PATCH request to another org's record URL or cross-tenant foreign-key reference | Medium | Critical | Top-level object lookup is tenant-scoped; related-object tenant validation is part of ongoing hardening work | 🔄 Hardening |
+| Cross-tenant data modification | Crafted PUT/PATCH request to another org's record URL or cross-tenant foreign-key reference | Medium | Critical | Top-level object lookup is tenant-scoped; relation fields on every Create/Update form are scoped by `TenantFormFieldsMixin` and every serializer FK is tenant-validated — a cross-tenant FK is rejected on both read (dropdown) and write (POST) | ✅ Active |
 | CSRF attack | Forged form submission from malicious site | Medium | High | Django CSRF middleware enabled by default | ✅ Active |
 | Mass assignment | Extra POST fields used to overwrite sensitive model fields | Medium | High | Explicit `fields` lists on all forms and serializers | ✅ Active |
 | Audit log tampering | User attempts to delete or modify audit entries | Low | Critical | Audit log is append-only, no delete/update views exposed, admin-only access | ✅ Active |
@@ -155,7 +155,7 @@ The compliance module introduces additional threats specific to regulatory data:
 
 | Threat | Description | Control |
 |---|---|---|
-| False verification | User marks unverified farm as EUDR verified | `verified_by` and `verified_date` required. Audit logged. Manager+ permission only. |
+| False verification | User marks unverified farm as EUDR verified | Verification is an evidence-gated **Compliance Readiness sign-off** (ADR 013), not a free checkbox — a clear, current, non-stale `DeforestationCheck` must sit behind it. Manager-only action, re-checked server-side, audit logged. The verification fields are read-only over the API. Auto-invalidated when the polygon changes or a re-check is no longer clear. |
 | Geolocation spoofing | Farm polygon submitted does not match actual farm location | Satellite imagery cross-check (manual, Phase 5). SW Maps GPS accuracy field stored. |
 | Corrupt geospatial data at import | Self-intersecting polygon, coordinate bomb, swapped lat/lon, or degenerate ring enters the database and silently corrupts area calculations and risk status downstream | 15-point GeoJSON validation suite runs in CI on every deployment. Validator catches all known failure modes before data reaches the database. ✅ Phase 4.8 |
 | Document forgery | Fraudulent compliance documents uploaded | Document hash stored on upload. Out-of-scope for platform to validate content — operator responsibility. |
@@ -206,8 +206,12 @@ The compliance module introduces additional threats specific to regulatory data:
 - Corridor export audit logging — PDF + CSV downloads logged to AuditLog
 - Sentry PII scrubbing, tenant context tagging, release tracking, cron monitor
 
+### Compliance Readiness + Tenant Form Scoping ✅ Complete (2026-05-14)
+- Evidence-gated Compliance Readiness sign-off — verification is a manager-only, server-side-re-checked, audited action backed by a clear `DeforestationCheck` (ADR 013); the verification + risk fields are read-only over the API; auto-invalidated on polygon change or non-clear re-check
+- Relation-field tenant scoping — `TenantFormFieldsMixin` on every Create/Update view plus serializer FK validation; closes the cross-tenant FK read/write vector
+- Deforestation check side effects — an automated sign-off withdrawal (a flagged re-check) is now audit-logged, matching the manual withdrawal path
+
 ### Current Hardening Work 🔄 In Progress
-- Related-object tenant validation on serializer and form foreign keys
 - Public onboarding path gated before live tenant rollout
 - Compliance document upload validation
 

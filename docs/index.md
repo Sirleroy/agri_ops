@@ -59,6 +59,7 @@ AgriOps is a secure, multi-tenant SaaS platform for agricultural SMEs and cooper
 | [ADR 010](adr/010-billing-architecture.md) | Billing architecture — dual processor (Paystack/Stripe), isolated app, plan-gated access |
 | [ADR 011](adr/011-postgres-row-level-security-deferral.md) | PostgreSQL Row-Level Security — deferral criteria and implementation shape |
 | [ADR 012](adr/012-enterprise-api-integration-deferral.md) | Enterprise tenant API integration — deferral criteria and P0 build sequence |
+| [ADR 013](adr/013-evidence-gated-compliance-readiness-signoff.md) | Evidence-gated Compliance Readiness sign-off — engine produces evidence, a manager signs off |
 
 ---
 

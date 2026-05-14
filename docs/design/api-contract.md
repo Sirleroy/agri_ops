@@ -130,7 +130,9 @@ Update a farm. Staff or above required.
 Delete a farm. Manager or above required.
 
 `GET /api/v1/farms/eudr-pending/`
-List farms where `is_eudr_verified=false`.
+List farms that are **not compliance-ready** — `compliance_status != "compliant"`.
+This catches expired and evidence-invalid sign-offs, not just farms with the
+verification flag off.
 
 `GET /api/v1/farms/high-risk/`
 List farms where `deforestation_risk_status=high`.
@@ -138,13 +140,20 @@ List farms where `deforestation_risk_status=high`.
 `POST /api/v1/farms/import/`
 Run the farm GeoJSON bulk import pipeline for a tenant supplier.
 
+**Read-only fields:** `is_eudr_verified`, `verified_date`, `verification_expiry`,
+and `deforestation_risk_status` are read-only over the API. A Compliance
+Readiness sign-off is a manager-only, evidence-gated, audited action (not a raw
+field write), and deforestation risk is set by the deforestation engine. A
+write to any of these fields is silently ignored. `compliance_status` and
+`readiness_state` are computed read-only properties.
+
 **Example response**
 ```json
 {
   "id": 1,
   "supplier": 1,
   "name": "Plot 01 — Barkin Ladi",
-  "farmer": 1,
+  "farmer_name": "Amina Bello",
   "country": "Nigeria",
   "state_region": "Plateau",
   "commodity": "shea",
@@ -153,7 +162,8 @@ Run the farm GeoJSON bulk import pipeline for a tenant supplier.
   "is_eudr_verified": true,
   "verified_date": "2026-02-20",
   "verification_expiry": "2027-02-20",
-  "compliance_status": "verified",
+  "compliance_status": "compliant",
+  "readiness_state": "ready",
   "created_at": "2026-03-01T10:00:00Z"
 }
 ```

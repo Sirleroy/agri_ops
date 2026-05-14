@@ -1,8 +1,8 @@
 # AgriOps — Data Model Documentation
 
-**Version:** 2.2
-**Date:** 8 April 2026
-**Status:** Current — updated through Phase 4.9
+**Version:** 2.3
+**Date:** 14 May 2026
+**Status:** Current — updated through the deforestation engine + evidence-gated Compliance Readiness sign-off
 
 ---
 
@@ -132,9 +132,10 @@ The physical plot of land. The EUDR compliance unit. Linked to Supplier (the agg
 | country | CharField(100) | |
 | state_region | CharField(100) | |
 | commodity | CharField(100) | e.g. Soy, Maize, Cocoa |
-| deforestation_risk_status | CharField | Choices: low, standard, high |
-| deforestation_reference_date | DateField | Default: 2020-12-31. Evidence baseline per EUDR Article 2(28) |
-| land_cleared_after_cutoff | BooleanField | nullable. True = disqualified from EUDR |
+| deforestation_risk_status | CharField | Choices: low, standard, high. Set by the deforestation engine (`run_check`) — not operator-editable |
+| deforestation_reference_date | DateField | Default: 2020-12-31. Fixed regulatory constant per EUDR Article 2(28) — not operator-editable |
+| land_cleared_after_cutoff | BooleanField | nullable. Manager disqualification override: null = defer to the deforestation engine, True/False = manager overrides the engine result |
+| land_cleared_after_cutoff_reason | TextField | blank. Manager's documented basis for a disqualification override — required when the override is set |
 | harvest_year | PositiveSmallIntegerField | nullable. Production period proxy per Article 9(1)(d) |
 | mapping_date | DateField | When GPS mapping was performed |
 | mapped_by | ForeignKey(CustomUser) | Field agent who performed mapping |
@@ -159,9 +160,49 @@ The physical plot of land. The EUDR compliance unit. Linked to Supplier (the agg
 
 > The paper FVF (farmer + village head signatures) is the legal record. AgriOps holds the searchable digital copy.
 
-**Computed properties:** `is_eudr_commodity`, `is_disqualified`, `is_verification_current`, `compliance_status`
+**Computed properties:** `is_eudr_commodity`, `is_disqualified`, `is_verification_current`, `compliance_status`, `readiness_state`, `readiness_blockers`, `latest_deforestation_check`
+
+- `is_disqualified` — manager override (`land_cleared_after_cutoff`) wins; otherwise a flagged latest `DeforestationCheck` disqualifies.
+- `compliance_status` / `readiness_state` — **evidence-backed**: a sign-off (`is_eudr_verified`) only counts as `compliant` / `ready` when a clear, current, non-stale `DeforestationCheck` sits behind it. See ADR 013.
 
 See ADR 005 for farm model separation rationale.
+
+---
+
+## DeforestationCheck *(deforestation engine — evidence record)*
+
+One row per deforestation check run against a farm polygon. The auditable
+evidence behind `Farm.deforestation_risk_status` and the Compliance Readiness
+sign-off — produced by the deforestation engine (`run_check`), never by an
+operator. See ADR 013 and `/docs/design/compliance-module.md`.
+
+**Manager:** `objects = TenantManager()`.
+
+| Field | Type | Notes |
+|---|---|---|
+| id | AutoField | Primary key |
+| farm | ForeignKey(Farm) | related_name `deforestation_checks` |
+| company | ForeignKey(Company) | Tenant isolation (denormalised for direct scoping) |
+| dataset_name | CharField | e.g. `Hansen GFC` |
+| dataset_version | CharField | e.g. `v1.12` |
+| treecover_threshold | PositiveSmallIntegerField | Canopy-cover % threshold (default 10) |
+| cutoff_year | PositiveSmallIntegerField | EUDR reference year (default 2020) |
+| total_pixels | PositiveIntegerField | nullable. Pixels sampled within the polygon |
+| post_cutoff_loss_pixels | PositiveIntegerField | nullable. Pixels with loss after the cut-off |
+| post_cutoff_loss_area_ha | DecimalField | nullable. Approximate post-cut-off loss area |
+| loss_years_detected | JSONField | List of loss years, e.g. `[2021, 2022]` |
+| risk_status | CharField | Choices: clear, flagged, inconclusive, error |
+| engine_status | CharField | Choices: pending, running, complete, failed |
+| evidence_summary | TextField | Human-readable result summary |
+| error_detail | TextField | blank. Populated on failed/error runs |
+| checked_by | ForeignKey(CustomUser) | nullable — null = automated/CLI run |
+| geometry_hash_at_assessment | CharField(64) | `Farm.geometry_hash` at check time — drives staleness detection |
+| created_at | DateTimeField | Auto |
+| assessed_at | DateTimeField | nullable. Set when the run completes |
+
+**Computed property:** `is_stale` — True when `geometry_hash_at_assessment` no
+longer matches the farm's current `geometry_hash` (the polygon changed since
+the check ran).
 
 ---
 
@@ -377,6 +418,7 @@ Company
   │           └── farmer FK → Farmer       ← Phase 4.6
   │           └── FarmCertification (many) ← Phase 4.5
   │           └── ComplianceDocument (many)
+  │           └── DeforestationCheck (many) ← deforestation engine evidence
   ├── Product (many)
   │     └── Inventory (one per warehouse)
   ├── PurchaseOrder (many)

@@ -1,8 +1,8 @@
 # AgriOps — Tenant Model
 
-**Version:** 1.0
-**Date:** March 2026
-**Status:** Phase 1 architecture in place — Phase 2 enforcement layer being added
+**Version:** 1.1
+**Date:** May 2026
+**Status:** Five enforcement layers in place — centralised in `apps/users/permissions.py`
 
 ---
 
@@ -11,6 +11,12 @@
 AgriOps is a multi-tenant SaaS platform. Every organisation (Company) that uses the platform shares the same database and application instance, but each organisation's data is completely invisible to every other organisation. This document describes exactly how that isolation is implemented, enforced, and tested.
 
 For the architectural decision rationale, see ADR 003.
+
+> **Implementation note.** Isolation is enforced through centralised mixins in
+> `apps/users/permissions.py` — `CompanyOwnedMixin`, `CompanySetMixin`,
+> `TenantFormFieldsMixin` — plus queryset scoping and serializer validation.
+> The inline examples below illustrate the *pattern* each mixin encapsulates;
+> in current code the mixin is applied, not the raw override.
 
 ---
 
@@ -154,6 +160,51 @@ class SupplierSerializer(serializers.ModelSerializer):
 
 ---
 
+## Enforcement Layer 5 — Relation Field Tenant Scoping
+
+Layers 3 and 4 stop the client setting `company`. They do **not** stop a form
+or serializer from offering — or accepting — *another tenant's* `supplier`,
+`product`, `farmer`, or M2M selection. Django's auto-generated `ModelForm`
+(views that set `fields = [...]`) builds each foreign key as a
+`ModelChoiceField` whose queryset defaults to `Model.objects.all()` — every
+tenant's rows. That both leaks other tenants' records into dropdowns **and
+accepts their PKs on POST** — a cross-tenant write, not just a display bug.
+
+**Web forms / CBVs — `TenantFormFieldsMixin`:**
+
+```python
+class TenantFormFieldsMixin:
+    """Scopes every ModelChoiceField / ModelMultipleChoiceField on a Create/
+    Update form to request.user.company, for any related model that is
+    tenant-scoped (has a `company` FK). Safe no-op otherwise."""
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        company = self.request.user.company
+        for field in form.fields.values():
+            if isinstance(field, forms.ModelChoiceField):
+                model = field.queryset.model
+                if any(f.name == 'company' for f in model._meta.concrete_fields):
+                    field.queryset = field.queryset.filter(company=company)
+        return form
+```
+
+Applied to **every** tenant-facing `CreateView` / `UpdateView`.
+`ModelMultipleChoiceField` is a `ModelChoiceField` subclass, so M2M fields are
+covered too.
+
+**API serializers — `validate_<field>()`:** each serializer validates every
+foreign key against the tenant boundary; a cross-tenant FK reference returns
+`400`. Verification and engine-owned fields (`is_eudr_verified`,
+`deforestation_risk_status`, …) are additionally `read_only` so they cannot be
+written over the API at all.
+
+**Why this is a layer of its own:** per-view scoping was relied on and it
+failed — two view authors scoped their FK fields and one did not, leaking
+suppliers across tenants. The mixin makes the scoping structural, not a thing
+each author has to remember. See `/docs/threat-model.md` §5.2.
+
+---
+
 ## User — Company Relationship
 
 A user belongs to exactly one company. This is enforced at the model level.
@@ -264,6 +315,7 @@ Before submitting any PR that adds or modifies a view:
 - [ ] `form_valid()` assigns `form.instance.company = self.request.user.company`
 - [ ] `company` is NOT in the `fields` list of any CreateView or UpdateView
 - [ ] `company` is a `read_only_field` in any DRF serializer
+- [ ] `TenantFormFieldsMixin` is applied to any CreateView/UpdateView, and every serializer FK has a `validate_<field>()`
 - [ ] Tenant isolation tests exist and pass for the new view
 
 ---

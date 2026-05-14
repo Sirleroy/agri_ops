@@ -1,8 +1,8 @@
 # AgriOps — EUDR Compliance Module
 
-**Version:** 3.0
-**Date:** April 2026
-**Status:** Phase 4.7 Complete — full import pipeline, upload history, compliance PDF with HS code
+**Version:** 4.0
+**Date:** May 2026
+**Status:** Deforestation engine live · evidence-gated Compliance Readiness sign-off
 
 ---
 
@@ -56,25 +56,48 @@ Each `Farm` record stores:
 
 **Risk Classification:**
 - `deforestation_risk_status` — Low / Standard / High
-- Based on country risk profile and third-party assessment
+- Set by the **deforestation engine** (`run_check`), not by an operator — derived
+  from satellite tree-cover-loss data, with a `DeforestationCheck` evidence record
+  behind every value. See "Deforestation Engine" below.
 
-**Verification:**
-- `is_eudr_verified` — boolean
-- `verified_by` — compliance officer
-- `verified_date` — when verification was performed
-- `verification_expiry` — when re-verification is due
+**Disqualification:**
+- `land_cleared_after_cutoff` — manager disqualification override (nullable)
+- `null` defers to the engine (a flagged check disqualifies the farm); `True`/`False`
+  lets a manager override the engine result. An override requires a documented
+  reason (`land_cleared_after_cutoff_reason`), is manager-only, and is audit-logged.
+
+**Compliance Readiness verification:**
+- `is_eudr_verified` / `verified_by` / `verified_date` / `verification_expiry`
+- Set **only** by the evidence-gated Compliance Readiness sign-off — a manager-only,
+  server-side-re-checked, audited action on the farm detail page. It is not a free
+  checkbox, is not on the edit form, and is read-only over the API. See ADR 013.
 
 **Computed properties:**
-- `is_verification_current` — False if expired
-- `compliance_status` — returns: `compliant`, `pending`, `expired`, or `high_risk`
+- `is_verification_current` — False if the sign-off has lapsed
+- `is_disqualified` — manager override wins; otherwise a flagged latest check disqualifies
+- `readiness_blockers` / `readiness_state` — the evidence gate, surfaced as a
+  lifecycle: `not_ready` → `awaiting_signoff` → `ready` (plus `disqualified` / `expired`)
+- `compliance_status` — `compliant`, `pending`, `expired`, `high_risk`, or
+  `disqualified`. **Evidence-backed**: a sign-off only counts as `compliant` when a
+  clear, current, non-stale `DeforestationCheck` sits behind it
 
 **Compliance Documents:**
-- Farm maps, satellite imagery, land registry documents
-- Stored as file attachments per `ComplianceDocument` model
+- Farm maps, land registry, farmer declarations — `ComplianceDocument` model
+- See the ComplianceDocument note below: the model and a read-only display exist;
+  the tenant-facing upload path is not yet built
 
 ---
 
-## ComplianceDocument Model ✅ Phase 2 Complete
+## ComplianceDocument Model ⚠️ Partially Built
+
+> **Status — partially built.** The model, Django-admin registration, and a
+> read-only display on the farm detail page exist. The tenant-facing upload
+> path (view, URL, form, "Add Document" button) is **not** built — today a
+> document can only be added via Django admin. The feature is paused pending a
+> deliberate scoping decision: anchor it on the signed FVF plus an on-demand
+> "other paper document", rather than the broad six-type taxonomy below, to
+> avoid redundancy with the GPS polygon, the deforestation engine, and
+> `FarmCertification`.
 
 Farm compliance documentation with version history.
 ```python
@@ -104,6 +127,58 @@ class ComplianceDocument(models.Model):
 
 ---
 
+## Deforestation Engine ✅ Live
+
+Deforestation risk is **not** an operator judgement — it is produced by an
+in-platform engine that intersects each farm polygon against satellite
+tree-cover-loss data and retains the evidence.
+
+**How it runs:** `apps/suppliers/deforestation_engine.run_check(farm, user=None)`
+loads the farm polygon, finds the Hansen GFC `lossyear` raster tile(s) it
+intersects, masks loss pixels to the polygon boundary, and writes a
+`DeforestationCheck` evidence record. It is callable from the farm detail page
+("Run Check"), the per-supplier preview view, and the
+`run_deforestation_checks` management command.
+
+**`DeforestationCheck`** — one row per run: dataset name + version, pixel
+counts, post-cut-off loss area and loss years, `risk_status`
+(`clear` / `flagged` / `inconclusive` / `error`), `engine_status`, an
+`evidence_summary`, who ran it, and `geometry_hash_at_assessment` (the farm's
+geometry hash at check time, used for staleness detection). It is the auditable
+evidence behind `Farm.deforestation_risk_status`. See `/docs/design/data-model.md`.
+
+**What the engine drives:**
+- `Farm.deforestation_risk_status` — `clear → low`, `flagged → high`,
+  `inconclusive → standard` (`error` leaves it untouched).
+- **Disqualification** — a `flagged` latest check disqualifies the farm unless a
+  manager has set the `land_cleared_after_cutoff` override.
+- **Sign-off auto-invalidation** — a non-clear re-check withdraws an existing
+  Compliance Readiness sign-off (and that withdrawal is audit-logged). Editing
+  the polygon also withdraws the sign-off, via `Farm.save()`.
+
+---
+
+## Compliance Readiness Sign-off ✅ Live
+
+EUDR verification is an **evidence-gated, manager-only, audited sign-off** — not
+a checkbox. See **ADR 013** for the decision rationale.
+
+- **The gate** — `readiness_blockers` must be empty (GPS polygon on file; a
+  latest `DeforestationCheck` that is `clear`, not `inconclusive`/`error`, and
+  not stale) and the farm must not be disqualified.
+- **The action** — `ConfirmComplianceReadinessView` (manager-or-above, POST-only)
+  re-checks the gate server-side, then sets `is_eudr_verified`, `verified_by`,
+  `verified_date`, and a 12-month `verification_expiry`. `WithdrawComplianceReadinessView`
+  reverses it. Both are audit-logged.
+- **Lifecycle** — `readiness_state`: `not_ready` (evidence incomplete) →
+  `awaiting_signoff` (evidence complete, manager hasn't signed) → `ready`
+  (signed off) — plus `disqualified` and `expired`.
+- **Auto-invalidation** — a sign-off is withdrawn automatically when the polygon
+  changes or a re-check is no longer clear, so `is_eudr_verified=True` always
+  reflects current evidence.
+
+---
+
 ## Compliance Dashboard Widget *(Phase 3)*
 
 The main dashboard will surface a compliance summary panel showing:
@@ -120,14 +195,19 @@ Clicking any figure navigates to a filtered farm list.
 
 ---
 
-## API Compliance Endpoints ✅ Phase 2 Complete
+## API Compliance Endpoints ✅ Live
 
 The REST API exposes two EUDR-specific custom actions:
 
-- `GET /api/v1/farms/eudr-pending/` — all farms with `is_eudr_verified=False`
+- `GET /api/v1/farms/eudr-pending/` — farms that are **not compliance-ready**
+  (`compliance_status != "compliant"`); this includes expired and
+  evidence-invalid sign-offs, not just farms with the verification flag off
 - `GET /api/v1/farms/high-risk/` — all farms with `deforestation_risk_status=high`
 
-Both endpoints are tenant-scoped and JWT-authenticated.
+Both endpoints are tenant-scoped and JWT-authenticated. On the `FarmSerializer`,
+`is_eudr_verified`, `verified_date`, `verification_expiry`, and
+`deforestation_risk_status` are **read-only** — a sign-off is the manager-only
+action above, not a raw API write. See `/docs/design/api-contract.md`.
 
 ---
 
@@ -180,9 +260,9 @@ Based on the operational process used by the founding company:
 5. **Review** — field officer or coordinator reviews the dry-run report, fixes issues if needed, re-runs
 6. **Commit upload** — same file uploaded without "Validate only" to write farms to the registry
 7. **History check** — upload appears in `/farms/import/history/` with all counts and per-row detail. Dry-run and commit pair is visible side by side
-8. **Compliance officer review** — reviews polygon on Leaflet map, confirms area, sets `deforestation_risk_status`
-9. **Documentation** — satellite imagery and farmer declaration uploaded as ComplianceDocuments
-10. **Verification** — `is_eudr_verified` set to True, `verified_date` and `verification_expiry` recorded
+8. **Deforestation check** — the deforestation engine runs against each polygon (per-supplier preview, the detail-page "Run Check" button, or the `run_deforestation_checks` command), writing a `DeforestationCheck` and setting `deforestation_risk_status` from the evidence
+9. **Review** — compliance officer reviews the polygon on the Leaflet map, confirms area, and — if the engine flagged a false positive, or the clearing predates the cut-off — a manager records a `land_cleared_after_cutoff` override with a documented reason
+10. **Compliance Readiness sign-off** — once the evidence gate is clear, a manager signs off on the farm detail page; the action sets `is_eudr_verified`, `verified_by`, `verified_date`, and a 12-month `verification_expiry`
 
 ---
 
@@ -203,6 +283,9 @@ Based on the operational process used by the founding company:
 | GeoJSON import validation pipeline | 4.7 | ✅ Complete |
 | Dry-run upload mode | 4.7 | ✅ Complete |
 | Upload history (FarmImportLog) | 4.7 | ✅ Complete |
+| Deforestation engine (Hansen GFC) + DeforestationCheck | — | ✅ Complete |
+| Evidence-gated Compliance Readiness sign-off | — | ✅ Complete |
+| ComplianceDocument tenant upload path | — | ⚠️ Partially built — model + read-only display only |
 | Expiry alerting (email) | — | Planned |
 | DDS submission to EU IS | — | Planned — trigger: active EU export volume |
 | PostGIS polygon migration | — | Planned — trigger: farm count > 10,000 |
@@ -213,5 +296,6 @@ Based on the operational process used by the founding company:
 
 - ADR 004 — Geolocation: JSONField over PostGIS
 - ADR 005 — EUDR Farm Model Separation
+- ADR 013 — Evidence-gated Compliance Readiness Sign-off
 - Diagram: `/docs/diagrams/eudr-traceability-chain.mermaid`
 - Data model: `/docs/design/data-model.md`
