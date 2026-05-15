@@ -51,16 +51,16 @@
       <span class="font-mono text-2xl font-bold text-green flex-shrink-0">{{ c.total }}</span>
     </div>
 
-    <!-- EUDR verification bar -->
+    <!-- Compliance Readiness bar -->
     <div>
       <div class="flex justify-between items-center mb-1.5">
-        <span class="text-xs font-mono text-slate-500">EUDR Verified</span>
-        <span class="text-xs font-mono text-slate-300">{{ c.eudr_verified }} / {{ c.total }}&nbsp;&nbsp;<span class="text-slate-500">({{ c.verified_pct }}%)</span></span>
+        <span class="text-xs font-mono text-slate-500">Compliance Ready</span>
+        <span class="text-xs font-mono text-slate-300">{{ c.compliance_ready }} / {{ c.total }}&nbsp;&nbsp;<span class="text-slate-500">({{ c.ready_pct }}%)</span></span>
       </div>
       <div class="w-full bg-border rounded-full h-1.5">
         <div class="h-1.5 rounded-full transition-all
-          {% if c.verified_pct >= 80 %}bg-green{% elif c.verified_pct >= 40 %}bg-yellow-500{% else %}bg-red-500{% endif %}"
-             style="width: {{ c.verified_pct }}%"></div>
+          {% if c.ready_pct >= 80 %}bg-green{% elif c.ready_pct >= 40 %}bg-yellow-500{% else %}bg-red-500{% endif %}"
+             style="width: {{ c.ready_pct }}%"></div>
       </div>
     </div>
 

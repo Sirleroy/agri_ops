@@ -1,4 +1,5 @@
 import csv
+from collections import defaultdict
 from datetime import timedelta
 from django.contrib import messages
 from django.http import HttpResponse, Http404, HttpResponseRedirect
@@ -10,6 +11,47 @@ from apps.users.permissions import StaffRequiredMixin, ManagerRequiredMixin
 from apps.audit.models import AuditLog
 from apps.audit.mixins import get_client_ip
 from .pdf import generate_compliance_report
+
+
+def _corridor_data(company):
+    """Group farms by (state_region, commodity) and count compliance_ready
+    via the compliance_status property (not the raw is_eudr_verified flag) so
+    expired/disqualified/high-risk sign-offs do not inflate the ready count."""
+    from apps.suppliers.models import Farm
+    farms = (
+        Farm.objects
+        .filter(company=company)
+        .prefetch_related('deforestation_checks')
+    )
+    groups = defaultdict(lambda: {
+        'total': 0, 'low_risk': 0, 'pending': 0, 'high_risk': 0,
+        'compliance_ready': 0, 'total_area': 0.0,
+    })
+    for farm in farms:
+        g = groups[(farm.state_region, farm.commodity)]
+        g['total'] += 1
+        if farm.deforestation_risk_status == 'low':
+            g['low_risk'] += 1
+        elif farm.deforestation_risk_status == 'standard':
+            g['pending'] += 1
+        elif farm.deforestation_risk_status == 'high':
+            g['high_risk'] += 1
+        if farm.compliance_status == 'compliant':
+            g['compliance_ready'] += 1
+        if farm.area_hectares:
+            g['total_area'] += float(farm.area_hectares)
+
+    corridors = []
+    for (state_region, commodity), data in sorted(groups.items(), key=lambda kv: (kv[0][0] or '', kv[0][1] or '')):
+        ready_pct = round(data['compliance_ready'] / data['total'] * 100) if data['total'] else 0
+        corridors.append({
+            'state_region': state_region,
+            'commodity':    commodity,
+            'ready_pct':    ready_pct,
+            'label':        f"{state_region or 'Unknown Region'} · {commodity.title() if commodity else 'Unknown'}",
+            **data,
+        })
+    return corridors
 
 
 class ReportsLandingView(StaffRequiredMixin, TemplateView):
@@ -212,34 +254,11 @@ class CorridorComplianceView(StaffRequiredMixin, TemplateView):
         if not company:
             return context
 
-        from apps.suppliers.models import Farm
-        from django.db.models import Count, Q, Sum
+        corridors = _corridor_data(company)
 
-        corridors = list(
-            Farm.objects
-            .filter(company=company)
-            .values('state_region', 'commodity')
-            .annotate(
-                total=Count('id'),
-                low_risk=Count('id', filter=Q(deforestation_risk_status='low')),
-                pending=Count('id', filter=Q(deforestation_risk_status='standard')),
-                high_risk=Count('id', filter=Q(deforestation_risk_status='high')),
-                eudr_verified=Count('id', filter=Q(is_eudr_verified=True)),
-                total_area=Sum('area_hectares'),
-            )
-            .order_by('state_region', 'commodity')
-        )
-
-        for c in corridors:
-            c['verified_pct'] = round(c['eudr_verified'] / c['total'] * 100) if c['total'] else 0
-            c['label'] = f"{c['state_region'] or 'Unknown Region'} · {c['commodity'].title() if c['commodity'] else 'Unknown'}"
-
-        total_farms = sum(c['total'] for c in corridors)
-        total_area  = sum(c['total_area'] or 0 for c in corridors)
-
-        context['corridors']    = corridors
-        context['total_farms']  = total_farms
-        context['total_area']   = round(total_area, 1)
+        context['corridors']      = corridors
+        context['total_farms']    = sum(c['total'] for c in corridors)
+        context['total_area']     = round(sum(c['total_area'] or 0 for c in corridors), 1)
         context['corridor_count'] = len(corridors)
         return context
 
@@ -251,25 +270,7 @@ class CorridorExportView(StaffRequiredMixin, View):
         if not company:
             raise Http404
 
-        from apps.suppliers.models import Farm
-        from django.db.models import Count, Q, Sum
-
-        corridors = list(
-            Farm.objects
-            .filter(company=company)
-            .values('state_region', 'commodity')
-            .annotate(
-                total=Count('id'),
-                low_risk=Count('id', filter=Q(deforestation_risk_status='low')),
-                pending=Count('id', filter=Q(deforestation_risk_status='standard')),
-                high_risk=Count('id', filter=Q(deforestation_risk_status='high')),
-                eudr_verified=Count('id', filter=Q(is_eudr_verified=True)),
-                total_area=Sum('area_hectares'),
-            )
-            .order_by('state_region', 'commodity')
-        )
-        for c in corridors:
-            c['verified_pct'] = round(c['eudr_verified'] / c['total'] * 100) if c['total'] else 0
+        corridors = _corridor_data(company)
 
         fmt = request.GET.get('format', 'csv')
         if fmt == 'pdf':
@@ -298,17 +299,16 @@ class CorridorExportView(StaffRequiredMixin, View):
         writer.writerow([f'Company: {company.name}'])
         writer.writerow([f'Generated: {timezone.now().strftime("%Y-%m-%d %H:%M UTC")}'])
         writer.writerow([])
-        writer.writerow(['Corridor', 'Total Farms', 'Low Risk', 'Pending Check', 'High Risk', 'EUDR Verified', 'Verified %', 'Area (ha)'])
+        writer.writerow(['Corridor', 'Total Farms', 'Low Risk', 'Pending Check', 'High Risk', 'Compliance Ready', 'Ready %', 'Area (ha)'])
         for c in corridors:
-            label = f"{c['state_region'] or 'Unknown'} · {c['commodity'].title() if c['commodity'] else 'Unknown'}"
             writer.writerow([
-                label,
+                c['label'],
                 c['total'],
                 c['low_risk'],
                 c['pending'],
                 c['high_risk'],
-                c['eudr_verified'],
-                f"{c['verified_pct']}%",
+                c['compliance_ready'],
+                f"{c['ready_pct']}%",
                 f"{c['total_area']:.1f}" if c['total_area'] else '—',
             ])
         writer.writerow([])
@@ -343,8 +343,8 @@ class CorridorExportView(StaffRequiredMixin, View):
         footnote = ParagraphStyle('fn',      fontName='Helvetica',      fontSize=7,  textColor=MUTED,   spaceBefore=6, leading=10)
 
         total_farms    = sum(c['total'] for c in corridors)
-        total_verified = sum(c['eudr_verified'] for c in corridors)
-        platform_pct   = round(total_verified / total_farms * 100) if total_farms else 0
+        total_ready    = sum(c['compliance_ready'] for c in corridors)
+        platform_pct   = round(total_ready / total_farms * 100) if total_farms else 0
         total_area     = sum(c['total_area'] or 0 for c in corridors)
 
         story = [
@@ -357,7 +357,7 @@ class CorridorExportView(StaffRequiredMixin, View):
 
         # Summary strip — 170mm / 4 = 42.5mm per cell
         summary_data = [
-            ['TOTAL FARMS', 'CORRIDORS', 'EUDR VERIFIED', 'TOTAL AREA'],
+            ['TOTAL FARMS', 'CORRIDORS', 'COMPLIANCE READY', 'TOTAL AREA'],
             [str(total_farms), str(len(corridors)), f'{platform_pct}%', f'{total_area:.1f} ha'],
         ]
         summary_table = Table(summary_data, colWidths=[42.5*mm] * 4)
@@ -379,19 +379,18 @@ class CorridorExportView(StaffRequiredMixin, View):
         story += [summary_table, Spacer(1, 6*mm)]
 
         # Corridor table — col widths must sum to exactly 170mm
-        # Corridor(54) + Total(13) + LowRisk(18) + Pending(16) + HighRisk(18) + Verified(18) + Verified%(17) + Area(16) = 170
-        headers = ['Corridor', 'Total', 'Low Risk', 'Pending', 'High Risk', 'Verified', 'Verified %', 'Area (ha)']
+        # Corridor(54) + Total(13) + LowRisk(18) + Pending(16) + HighRisk(18) + Ready(18) + Ready%(17) + Area(16) = 170
+        headers = ['Corridor', 'Total', 'Low Risk', 'Pending', 'High Risk', 'Ready', 'Ready %', 'Area (ha)']
         rows = [headers]
         for c in corridors:
-            label = f"{c['state_region'] or 'Unknown'} · {c['commodity'].title() if c['commodity'] else 'Unknown'}"
             rows.append([
-                label,
+                c['label'],
                 str(c['total']),
                 str(c['low_risk']),
                 str(c['pending']),
                 str(c['high_risk']),
-                str(c['eudr_verified']),
-                f"{c['verified_pct']}%",
+                str(c['compliance_ready']),
+                f"{c['ready_pct']}%",
                 f"{c['total_area']:.1f}" if c['total_area'] else '—',
             ])
 
@@ -639,15 +638,20 @@ class OpsReportView(StaffRequiredMixin, View):
     def _farms_report(self, request, company, date_from, date_to):
         from apps.suppliers.models import Farm
 
-        qs = Farm.objects.filter(company=company).select_related('supplier')
+        qs = (
+            Farm.objects
+            .filter(company=company)
+            .select_related('supplier')
+            .prefetch_related('deforestation_checks')
+        )
 
         filename = f"AgriOps_Farm_Registry_{timezone.now().strftime('%Y%m%d')}.csv"
         response = self._csv_response(filename)
         writer = csv.writer(response)
         writer.writerow([
             'Farm Name', 'Supplier', 'Farmer', 'Commodity', 'Country', 'Region',
-            'Area (ha)', 'Risk Status', 'EUDR Verified', 'Compliance Status',
-            'Verification Expiry', 'GeoJSON Present',
+            'Area (ha)', 'Risk Status', 'Compliance Status',
+            'Sign-off Expiry', 'GeoJSON Present',
         ])
         for farm in qs:
             writer.writerow([
@@ -659,7 +663,6 @@ class OpsReportView(StaffRequiredMixin, View):
                 farm.state_region or '—',
                 farm.area_hectares or '—',
                 farm.get_deforestation_risk_status_display(),
-                'YES' if farm.is_eudr_verified else 'NO',
                 farm.compliance_status.upper(),
                 farm.verification_expiry or '—',
                 'YES' if farm.geolocation else 'NO',

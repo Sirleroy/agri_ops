@@ -158,10 +158,10 @@
         <li><strong>Farms card</strong> — total registered plots and total mapped hectares</li>
         <li><strong>Farmers</strong> — registered individual farmer records</li>
         <li><strong>Low Stock</strong> — inventory items below their alert threshold (amber if any)</li>
-        <li><strong>Verification Expiring</strong> — farms whose EUDR verification lapses within 30 days</li>
+        <li><strong>Sign-off Expiring</strong> — farms whose Compliance Readiness sign-off lapses within 30 days</li>
       </ul>
       <p><strong>Business Intelligence strip</strong> rotates through: top buyer, top supplier, farm compliance rate, top product, open sales, active procurement.</p>
-      <p><strong>Farm Compliance panel</strong> shows verified / pending / high risk / expiring farm counts with a progress bar, and the last bulk upload attempt.</p>
+      <p><strong>Farm Compliance panel</strong> shows compliance-ready / pending / high risk / expiring farm counts with a progress bar, and the last bulk upload attempt.</p>
       <p><strong>Bottom panels:</strong> upcoming PO deliveries (7 days), farms with verification expiring (30 days), low stock items.</p>
       <p><strong>Compliance Report</strong> — download a full PDF traceability report directly from the dashboard, with optional date filtering.</p>
 
@@ -280,16 +280,22 @@
       </table>
       <blockquote>The paper form is the legal record — it carries the farmer's and village head's signatures. AgriOps holds the searchable digital copy.</blockquote>
 
-      <h3 id="eudr-verification">EUDR verification</h3>
-      <p>After a farm is registered, a compliance officer must verify it:</p>
+      <h3 id="compliance-readiness">Compliance Readiness sign-off</h3>
+      <p>Once a farm has been mapped and assessed, a manager signs it off as <strong>Compliance Ready</strong>. The sign-off is evidence-gated — the platform will not accept it until every required check has passed, and the audit log records who signed off and when.</p>
       <ol>
-        <li>Open the farm record and review the polygon on the map</li>
-        <li>Set <strong>Deforestation Risk Status</strong> — Low, Standard, or High</li>
-        <li>Set <strong>Land Cleared After Cutoff</strong> — must be No (cleared before 31 Dec 2020) for EUDR eligibility</li>
-        <li>Upload supporting documents under <strong>Compliance Documents</strong></li>
-        <li>Tick <strong>EUDR Verified</strong>, enter the verified date and expiry date</li>
+        <li>Open the farm record. The <strong>Compliance Readiness</strong> panel lists any remaining blockers (e.g. polygon missing, risk classification not set, supporting documents missing, disqualified).</li>
+        <li>Resolve each blocker:
+          <ul>
+            <li>Confirm the GPS polygon is captured and review it on the map</li>
+            <li>Set <strong>Deforestation Risk Status</strong> — Low, Standard, or High (the deforestation engine can populate this from the polygon)</li>
+            <li>Confirm <strong>Land Cleared After Cutoff</strong> is No (cleared before 31 Dec 2020) for EUDR eligibility, or record an audited override if the farm is being treated as not disqualified</li>
+            <li>Upload supporting evidence under <strong>Compliance Documents</strong></li>
+          </ul>
+        </li>
+        <li>When the panel shows no remaining blockers, click <strong>Confirm Compliance Readiness</strong>. The sign-off is recorded against your name and is valid for 365 days; expiry will surface as a notification before it lapses.</li>
       </ol>
-      <p>Farm compliance statuses: <strong style="color:#22c55e">Compliant</strong> · <strong style="color:#94a3b8">Pending</strong> · <strong style="color:#f59e0b">Expired</strong> · <strong style="color:#ef4444">High Risk</strong> · <strong>Disqualified</strong></p>
+      <p><strong>Who can sign off:</strong> managers and org admins only. Staff and viewer roles can prepare the evidence but do not see the sign-off button. The disqualification override is also manager-only.</p>
+      <p>Farm compliance statuses: <strong style="color:#22c55e">Compliance Ready</strong> · <strong style="color:#94a3b8">Pending</strong> · <strong style="color:#f59e0b">Expired</strong> · <strong style="color:#ef4444">High Risk</strong> · <strong>Disqualified</strong></p>
 
       <!-- Products -->
       <h2 id="products">Products</h2>
@@ -430,7 +436,7 @@
           <a href="#adding-a-single-farm" class="toc-link">↳ Single Farm</a>
           <a href="#bulk-import" class="toc-link">↳ Bulk Import</a>
           <a href="#fvf" class="toc-link">↳ FVF</a>
-          <a href="#eudr-verification" class="toc-link">↳ EUDR Verification</a>
+          <a href="#compliance-readiness" class="toc-link">↳ Compliance Readiness</a>
         </div>
         <a href="#products" class="toc-link">Products</a>
         <a href="#inventory" class="toc-link">Inventory</a>

@@ -220,17 +220,24 @@ def generate_compliance_report(company, user, filters=None):
         story.append(sup_t)
 
     # ── Farm traceability ─────────────────────────────────────
-    farms = Farm.objects.filter(company=company).select_related("supplier", "mapped_by", "verified_by")
+    farms = (
+        Farm.objects.filter(company=company)
+        .select_related("supplier", "mapped_by", "verified_by")
+        .prefetch_related("deforestation_checks")
+    )
+    farm_list = list(farms)
+    ready_count   = sum(1 for f in farm_list if f.compliance_status == 'compliant')
+    pending_count = len(farm_list) - ready_count
     story.append(Paragraph("3. Farm Traceability Records", st["section"]))
     story.append(Paragraph(
-        f"Total farms registered: <b>{farms.count()}</b>  ·  "
-        f"EUDR Verified: <b>{farms.filter(is_eudr_verified=True).count()}</b>  ·  "
-        f"Pending: <b>{farms.filter(is_eudr_verified=False).count()}</b>",
+        f"Total farms registered: <b>{len(farm_list)}</b>  ·  "
+        f"Compliance Ready: <b>{ready_count}</b>  ·  "
+        f"Pending: <b>{pending_count}</b>",
         st["body"]
     ))
     story.append(Spacer(1, 3*mm))
 
-    for farm in farms:
+    for farm in farm_list:
         bg, accent = _farm_status_color(farm)
         block = []
         block.append(Paragraph(f"Farm: {farm.name}", ParagraphStyle(
@@ -254,10 +261,9 @@ def generate_compliance_report(company, user, filters=None):
             ("Risk Classification",         farm.get_deforestation_risk_status_display()),
             ("Mapping Date",                str(farm.mapping_date) if farm.mapping_date else "—"),
             ("Mapped By",                   str(farm.mapped_by) if farm.mapped_by else "—"),
-            ("EUDR Verified",               "YES" if farm.is_eudr_verified else "NO"),
-            ("Verified By",                 str(farm.verified_by) if farm.verified_by else "—"),
-            ("Verification Date",           str(farm.verified_date) if farm.verified_date else "—"),
-            ("Verification Expiry",         str(farm.verification_expiry) if farm.verification_expiry else "—"),
+            ("Signed Off By",               str(farm.verified_by) if farm.verified_by else "—"),
+            ("Sign-off Date",               str(farm.verified_date) if farm.verified_date else "—"),
+            ("Sign-off Expiry",             str(farm.verification_expiry) if farm.verification_expiry else "—"),
             ("Compliance Status",           farm.compliance_status.upper()),
             ("GeoJSON Present",             "YES" if farm.geolocation else "NO"),
         ]))

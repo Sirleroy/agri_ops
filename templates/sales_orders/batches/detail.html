@@ -194,7 +194,7 @@
           <p class="text-xs text-slate-500 font-mono">{% if farm.supplier %}{{ farm.supplier.name }} · {% endif %}{{ farm.country }} / {{ farm.state_region|default:"—" }} · {{ farm.area_hectares|default:"—" }} ha</p>
         </div>
         {% if farm.compliance_status == 'compliant' %}
-          <span class="text-xs font-mono text-green">✓ Verified</span>
+          <span class="text-xs font-mono text-green">✓ Compliance Ready</span>
         {% else %}
           <span class="text-xs font-mono text-yellow-400">Pending</span>
         {% endif %}

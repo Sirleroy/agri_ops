@@ -222,7 +222,7 @@ def generate_certificate(batch):
             if farm.is_disqualified:
                 eudr_text = "✗ Disqualified"
                 eudr_style = ParagraphStyle("eudr_bad", fontName="Helvetica", fontSize=8, textColor=colors.HexColor("#f87171"), leading=11)
-            elif farm.is_eudr_verified:
+            elif farm.compliance_status == 'compliant':
                 eudr_text = "✓ Verified"
                 eudr_style = ParagraphStyle("eudr_ok", fontName="Helvetica", fontSize=8, textColor=GREEN, leading=11)
             else:
@@ -248,7 +248,7 @@ def generate_certificate(batch):
     story.append(farm_t)
 
     # ── Verification Evidence ─────────────────────────────────
-    verified_farms = [f for f in farms if f.is_eudr_verified]
+    verified_farms = [f for f in farms if f.compliance_status == 'compliant']
     if verified_farms:
         story.append(Paragraph("Verification Evidence", ParagraphStyle(
             "s_ve", fontName="Helvetica-Bold", fontSize=11, textColor=DARK,

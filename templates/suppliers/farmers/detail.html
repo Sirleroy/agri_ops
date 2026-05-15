@@ -99,7 +99,7 @@
           </div>
           <div class="flex items-center gap-2">
             {% if farm.compliance_status == 'compliant' %}
-              <span class="px-2 py-0.5 rounded text-xs font-mono bg-green/10 text-green border border-green/20">Verified</span>
+              <span class="px-2 py-0.5 rounded text-xs font-mono bg-green/10 text-green border border-green/20">Compliance Ready</span>
             {% elif farm.compliance_status == 'disqualified' %}
               <span class="px-2 py-0.5 rounded text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20">Disqualified</span>
             {% elif farm.compliance_status == 'expired' %}

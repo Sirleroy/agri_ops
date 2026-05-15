@@ -53,7 +53,7 @@
             <p class="text-xs text-slate-500 font-mono truncate">{% if farm.supplier %}{{ farm.supplier.name }} · {% endif %}{{ farm.commodity }}{% if farm.area_hectares %} · {{ farm.area_hectares }} ha{% endif %}</p>
           </div>
           {% if farm.compliance_status == 'compliant' %}
-            <span class="text-xs font-mono text-green flex-shrink-0">✓ Verified</span>
+            <span class="text-xs font-mono text-green flex-shrink-0">✓ Compliance Ready</span>
           {% elif farm.compliance_status == 'disqualified' %}
             <span class="text-xs font-mono text-red-400 flex-shrink-0">Disqualified</span>
           {% else %}
