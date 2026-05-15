@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk Sign-off — AgriOps{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h1 class="text-xl font-sans font-semibold text-slate-100">Bulk Compliance Sign-off</h1>
+      <p class="text-xs font-mono text-slate-500 mt-0.5">Review and confirm Compliance Readiness for many farms at once · evidence is re-checked per farm at submit</p>
+    </div>
+    <a href="{% url 'suppliers:farm_list' %}"
+       class="text-xs font-mono text-slate-400 hover:text-slate-200 transition-colors">← Back to farms</a>
+  </div>
+
+  <!-- Filter -->
+  <form method="get" class="bg-card border border-border rounded-xl p-5">
+    <div class="flex flex-col sm:flex-row gap-3 items-end">
+      <div class="flex-1">
+        <label class="block text-xs font-mono text-slate-400 mb-1.5">Filter by supplier (leave blank for all)</label>
+        <select name="supplier_id"
+                onchange="this.form.submit()"
+                class="w-full bg-[#0a0f1a] border border-border rounded-lg px-3 py-2 text-sm font-mono text-slate-200
+                       focus:outline-none focus:border-green/50">
+          <option value="">All suppliers</option>
+          {% for s in suppliers %}
+          <option value="{{ s.pk }}" {% if s.pk == selected_id %}selected{% endif %}>{{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </form>
+
+  <!-- Summary strip -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+    <div class="bg-card border border-amber-500/20 rounded-xl p-4 text-center">
+      <p class="text-2xl font-mono font-semibold {% if awaiting_count > 0 %}text-amber-400{% else %}text-slate-500{% endif %}">{{ awaiting_count }}</p>
+      <p class="text-xs font-mono text-slate-500 mt-0.5">awaiting sign-off</p>
+    </div>
+    <div class="bg-card border border-orange-500/20 rounded-xl p-4 text-center">
+      <p class="text-2xl font-mono font-semibold {% if expired_count > 0 %}text-orange-400{% else %}text-slate-500{% endif %}">{{ expired_count }}</p>
+      <p class="text-xs font-mono text-slate-500 mt-0.5">expired (renew eligible)</p>
+    </div>
+    <div class="bg-card border border-green/20 rounded-xl p-4 text-center">
+      <p class="text-2xl font-mono font-semibold text-green">{{ eligible_count }}</p>
+      <p class="text-xs font-mono text-slate-500 mt-0.5">eligible to sign off</p>
+    </div>
+  </div>
+
+  {% if signed_off_now or skipped_now %}
+  <div class="bg-{% if signed_off_now %}green{% else %}amber-500{% endif %}/10 border border-{% if signed_off_now %}green{% else %}amber-500{% endif %}/20 rounded-xl px-4 py-3">
+    <p class="text-xs font-mono {% if signed_off_now %}text-green{% else %}text-amber-400{% endif %}">
+      {% if signed_off_now %}{{ signed_off_now }} farm{{ signed_off_now|pluralize }} signed off.{% endif %}
+      {% if skipped_now %} {{ skipped_now }} farm{{ skipped_now|pluralize }} skipped — evidence had changed since the page loaded, or sign-off was already current.{% endif %}
+    </p>
+  </div>
+  {% endif %}
+
+  {% if eligible_count > 0 %}
+  <form method="post"
+        x-data="{ count: {{ eligible_count }}, total: {{ eligible_count }} }"
+        @change="count = $el.querySelectorAll('input[name=farm_pks]:checked').length">
+    {% csrf_token %}
+    <input type="hidden" name="supplier_id" value="{{ selected_id|default:'' }}">
+
+    <div class="bg-card border border-border rounded-xl overflow-hidden">
+
+      <!-- Toolbar -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 border-b border-border">
+        <div class="flex items-center gap-4 text-xs font-mono text-slate-400">
+          <button type="button"
+                  @click="$el.closest('form').querySelectorAll('input[name=farm_pks]').forEach(cb => cb.checked = true); count = total"
+                  class="text-slate-300 hover:text-green transition-colors">Select all</button>
+          <button type="button"
+                  @click="$el.closest('form').querySelectorAll('input[name=farm_pks]').forEach(cb => cb.checked = false); count = 0"
+                  class="text-slate-300 hover:text-green transition-colors">Clear</button>
+          <span class="text-slate-600"><span x-text="count"></span> of {{ eligible_count }} selected</span>
+        </div>
+        <button type="submit"
+                :disabled="count === 0"
+                :class="count === 0 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-green-dim'"
+                class="px-5 py-2 bg-green text-white text-sm font-mono rounded-lg transition-colors">
+          Sign off <span x-text="count"></span> farm<span x-show="count !== 1">s</span>
+        </button>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm font-mono">
+          <thead>
+            <tr class="border-b border-border text-left">
+              <th class="px-4 py-3 text-xs text-slate-500 font-normal w-10"></th>
+              <th class="px-4 py-3 text-xs text-slate-500 font-normal">Farm</th>
+              <th class="px-4 py-3 text-xs text-slate-500 font-normal">Supplier</th>
+              <th class="px-4 py-3 text-xs text-slate-500 font-normal">Area</th>
+              <th class="px-4 py-3 text-xs text-slate-500 font-normal">Latest check</th>
+              <th class="px-4 py-3 text-xs text-slate-500 font-normal">State</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border">
+            {% for farm in awaiting %}
+            <tr class="hover:bg-white/[0.02] transition-colors">
+              <td class="px-4 py-3">
+                <input type="checkbox" name="farm_pks" value="{{ farm.pk }}" checked
+                       class="w-4 h-4 accent-green">
+              </td>
+              <td class="px-4 py-3">
+                <a href="{% url 'suppliers:farm_detail' farm.pk %}"
+                   class="text-slate-200 hover:text-green transition-colors">{{ farm.name }}</a>
+              </td>
+              <td class="px-4 py-3 text-slate-400 text-xs">{{ farm.supplier.name|default:"—" }}</td>
+              <td class="px-4 py-3 text-slate-400 text-xs">{% if farm.area_hectares %}{{ farm.area_hectares|floatformat:2 }} ha{% else %}—{% endif %}</td>
+              <td class="px-4 py-3 text-xs">
+                {% with chk=farm.latest_deforestation_check %}
+                {% if chk %}
+                  {% if chk.risk_status == 'clear' %}<span class="text-green">Clear</span>
+                  {% elif chk.risk_status == 'flagged' %}<span class="text-red-400">Flagged</span>
+                  {% elif chk.risk_status == 'inconclusive' %}<span class="text-amber-400">Inconclusive</span>
+                  {% else %}<span class="text-slate-500">{{ chk.risk_status|capfirst }}</span>{% endif %}
+                  <span class="text-slate-600 ml-1">{{ chk.assessed_at|date:"d M Y" }}</span>
+                {% else %}
+                  <span class="text-slate-500">—</span>
+                {% endif %}
+                {% endwith %}
+              </td>
+              <td class="px-4 py-3">
+                <span class="px-2 py-0.5 rounded text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20">Awaiting sign-off</span>
+              </td>
+            </tr>
+            {% endfor %}
+            {% for farm in expired %}
+            <tr class="hover:bg-white/[0.02] transition-colors">
+              <td class="px-4 py-3">
+                <input type="checkbox" name="farm_pks" value="{{ farm.pk }}" checked
+                       class="w-4 h-4 accent-green">
+              </td>
+              <td class="px-4 py-3">
+                <a href="{% url 'suppliers:farm_detail' farm.pk %}"
+                   class="text-slate-200 hover:text-green transition-colors">{{ farm.name }}</a>
+                <p class="text-xs text-slate-600 mt-0.5">Expired {{ farm.verification_expiry|date:"d M Y" }}</p>
+              </td>
+              <td class="px-4 py-3 text-slate-400 text-xs">{{ farm.supplier.name|default:"—" }}</td>
+              <td class="px-4 py-3 text-slate-400 text-xs">{% if farm.area_hectares %}{{ farm.area_hectares|floatformat:2 }} ha{% else %}—{% endif %}</td>
+              <td class="px-4 py-3 text-xs">
+                {% with chk=farm.latest_deforestation_check %}
+                {% if chk %}
+                  {% if chk.risk_status == 'clear' %}<span class="text-green">Clear</span>
+                  {% elif chk.risk_status == 'flagged' %}<span class="text-red-400">Flagged</span>
+                  {% elif chk.risk_status == 'inconclusive' %}<span class="text-amber-400">Inconclusive</span>
+                  {% else %}<span class="text-slate-500">{{ chk.risk_status|capfirst }}</span>{% endif %}
+                  <span class="text-slate-600 ml-1">{{ chk.assessed_at|date:"d M Y" }}</span>
+                {% else %}
+                  <span class="text-slate-500">—</span>
+                {% endif %}
+                {% endwith %}
+              </td>
+              <td class="px-4 py-3">
+                <span class="px-2 py-0.5 rounded text-xs bg-orange-500/10 text-orange-400 border border-orange-500/20">Expired (renew)</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="border-t border-border px-4 py-3">
+        <p class="text-xs font-mono text-slate-600">
+          Each farm's evidence is re-checked at submit. A farm whose status has drifted since this page loaded — disqualified, blocker added, or already signed off — will be skipped, never silently signed off.
+        </p>
+      </div>
+    </div>
+  </form>
+  {% else %}
+  <div class="bg-card border border-border rounded-xl px-6 py-12 text-center">
+    <p class="text-slate-400 text-sm">No farms eligible for sign-off right now.</p>
+    <p class="text-slate-600 text-xs mt-2">Farms with missing evidence appear in the <a href="{% url 'suppliers:farm_list' %}" class="text-green hover:text-green-dim">farm list</a>; resolve blockers per-farm to unlock them here.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

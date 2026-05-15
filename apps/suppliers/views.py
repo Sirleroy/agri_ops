@@ -44,3 +44,4 @@ from .farm_views import (  # noqa: F401
 )
 
 from .deforestation_preview import DeforestationPreviewView  # noqa: F401
+from .bulk_signoff import BulkComplianceReadinessView  # noqa: F401

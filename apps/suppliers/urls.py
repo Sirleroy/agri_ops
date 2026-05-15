@@ -24,6 +24,7 @@ urlpatterns = [
 
     # Farms
     path('farms/deforestation-preview/', views.DeforestationPreviewView.as_view(), name='deforestation_preview'),
+    path('farms/bulk-sign-off/', views.BulkComplianceReadinessView.as_view(), name='farm_bulk_signoff'),
     path('farms/', views.FarmListView.as_view(), name='farm_list'),
     path('farms/export/', views.FarmExportView.as_view(), name='farm_export'),
     path('farms/import/', views.FarmImportView.as_view(), name='farm_import'),

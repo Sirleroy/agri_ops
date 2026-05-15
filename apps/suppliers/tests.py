@@ -416,3 +416,179 @@ class ComplianceReadinessSignoffTests(TestCase):
         self.assertEqual(r.status_code, 302)
         self.farm.refresh_from_db()
         self.assertTrue(self.farm.is_eudr_verified)
+
+
+class BulkComplianceReadinessTests(TestCase):
+    """
+    Bulk Compliance Readiness sign-off — the bulk action must enforce the same
+    evidence gate as the single-farm action, per farm, server-side. A stale
+    browser tab (or a farm whose evidence drifted between page-load and submit)
+    must NEVER produce a silent sign-off on an unready farm.
+    """
+
+    def setUp(self):
+        self.company = Company.objects.create(
+            name='Bulk Co', country='Nigeria', plan_tier='starter'
+        )
+        self.other_company = Company.objects.create(
+            name='Bulk Other Co', country='Nigeria', plan_tier='starter'
+        )
+        self.supplier = Supplier.objects.create(
+            company=self.company, name='Bulk Supplier', category='cooperative'
+        )
+        self.manager = CustomUser.objects.create_user(
+            username='bulk_mgr', password='testpass',
+            company=self.company, system_role='manager',
+        )
+        self.staff = CustomUser.objects.create_user(
+            username='bulk_staff', password='testpass',
+            company=self.company, system_role='staff',
+        )
+        self.url = reverse('suppliers:farm_bulk_signoff')
+
+    def _farm(self, name='Bulk Farm', company=None, supplier=None, **kwargs):
+        company = company or self.company
+        supplier = supplier or self.supplier
+        defaults = dict(
+            name=name, country='Nigeria', commodity='Soy',
+            geolocation=_POLYGON, deforestation_risk_status='low',
+        )
+        defaults.update(kwargs)
+        return Farm.objects.create(company=company, supplier=supplier, **defaults)
+
+    def _clear_check(self, farm):
+        return DeforestationCheck.objects.create(
+            farm=farm, company=farm.company, risk_status='clear',
+            engine_status='complete',
+            geometry_hash_at_assessment=farm.geometry_hash,
+            assessed_at=timezone.now(),
+        )
+
+    def test_get_lists_awaiting_signoff_farms(self):
+        ready_farm = self._farm(name='Ready One')
+        self._clear_check(ready_farm)
+        # Second farm with no evidence — has blockers, should NOT appear.
+        self._farm(name='Blocked One')
+
+        self.client.force_login(self.manager)
+        r = self.client.get(self.url)
+
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'Ready One')
+        self.assertNotContains(r, 'Blocked One')
+        self.assertEqual(r.context['awaiting_count'], 1)
+        self.assertEqual(r.context['expired_count'], 0)
+
+    def test_get_lists_expired_farms_with_intact_evidence(self):
+        farm = self._farm(name='Expired Renew')
+        self._clear_check(farm)
+        farm.is_eudr_verified = True
+        farm.verified_by = self.manager
+        farm.verified_date = datetime.date.today() - datetime.timedelta(days=400)
+        farm.verification_expiry = datetime.date.today() - datetime.timedelta(days=35)
+        farm.save()
+
+        self.client.force_login(self.manager)
+        r = self.client.get(self.url)
+
+        self.assertEqual(r.context['expired_count'], 1)
+        self.assertContains(r, 'Expired Renew')
+
+    def test_get_excludes_disqualified_farms(self):
+        farm = self._farm(name='Disqualified One')
+        farm.land_cleared_after_cutoff = True
+        farm.save()
+
+        self.client.force_login(self.manager)
+        r = self.client.get(self.url)
+
+        self.assertNotContains(r, 'Disqualified One')
+        self.assertEqual(r.context['eligible_count'], 0)
+
+    def test_get_does_not_show_other_tenant_farms(self):
+        other_supplier = Supplier.objects.create(
+            company=self.other_company, name='Other Sup', category='cooperative'
+        )
+        other = self._farm(name='Other Tenant Farm', company=self.other_company, supplier=other_supplier)
+        self._clear_check(other)
+
+        self.client.force_login(self.manager)
+        r = self.client.get(self.url)
+
+        self.assertNotContains(r, 'Other Tenant Farm')
+
+    def test_post_signs_off_selected_farms_and_writes_audit_log(self):
+        from apps.audit.models import AuditLog
+        f1 = self._farm(name='Sign One')
+        f2 = self._farm(name='Sign Two')
+        self._clear_check(f1)
+        self._clear_check(f2)
+
+        self.client.force_login(self.manager)
+        r = self.client.post(self.url, {'farm_pks': [str(f1.pk), str(f2.pk)]})
+
+        self.assertEqual(r.status_code, 200)
+        f1.refresh_from_db()
+        f2.refresh_from_db()
+        self.assertTrue(f1.is_eudr_verified)
+        self.assertTrue(f2.is_eudr_verified)
+        self.assertEqual(f1.verified_by, self.manager)
+        self.assertEqual(f2.verified_by, self.manager)
+
+        # Per-farm audit logs (bulk action does NOT short-cut audit).
+        f1_logs = AuditLog.objects.filter(model_name='Farm', object_repr__icontains='Sign One')
+        f2_logs = AuditLog.objects.filter(model_name='Farm', object_repr__icontains='Sign Two')
+        self.assertTrue(f1_logs.exists())
+        self.assertTrue(f2_logs.exists())
+        self.assertEqual(f1_logs.first().changes.get('compliance_readiness'), 'signed off (bulk)')
+
+    def test_post_skips_farm_whose_evidence_drifted(self):
+        """The killer test: between page-load and submit, evidence on one farm
+        becomes invalid. The bulk POST must NOT sign off that farm."""
+        ready = self._farm(name='Still Ready')
+        drifted = self._farm(name='Drifted')
+        self._clear_check(ready)
+        self._clear_check(drifted)
+        # Drift: a second flagged check is added on the drifted farm AFTER the
+        # browser would have rendered the page.
+        DeforestationCheck.objects.create(
+            farm=drifted, company=self.company, risk_status='flagged',
+            engine_status='complete',
+            geometry_hash_at_assessment=drifted.geometry_hash,
+            assessed_at=timezone.now(),
+        )
+
+        self.client.force_login(self.manager)
+        self.client.post(self.url, {'farm_pks': [str(ready.pk), str(drifted.pk)]})
+
+        ready.refresh_from_db()
+        drifted.refresh_from_db()
+        self.assertTrue(ready.is_eudr_verified)
+        self.assertFalse(drifted.is_eudr_verified)
+
+    def test_post_cannot_sign_off_other_tenant_farm(self):
+        other_supplier = Supplier.objects.create(
+            company=self.other_company, name='Other Sup', category='cooperative'
+        )
+        other = self._farm(name='Cross Tenant', company=self.other_company, supplier=other_supplier)
+        self._clear_check(other)
+
+        self.client.force_login(self.manager)
+        self.client.post(self.url, {'farm_pks': [str(other.pk)]})
+
+        other.refresh_from_db()
+        self.assertFalse(other.is_eudr_verified)
+
+    def test_staff_cannot_post_bulk_signoff(self):
+        ready = self._farm(name='Staff Cannot')
+        self._clear_check(ready)
+        self.client.force_login(self.staff)
+        r = self.client.post(self.url, {'farm_pks': [str(ready.pk)]})
+        self.assertEqual(r.status_code, 403)
+        ready.refresh_from_db()
+        self.assertFalse(ready.is_eudr_verified)
+
+    def test_staff_cannot_get_bulk_signoff(self):
+        self.client.force_login(self.staff)
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, 403)
