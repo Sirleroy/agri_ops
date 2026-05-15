@@ -89,7 +89,7 @@
       { label: 'TOP SUPPLIER', value: '{{ top_supplier.supplier__name|escapejs }}', sub: '{{ top_supplier.po_count }} purchase order{{ top_supplier.po_count|pluralize }}', color: 'text-blue-400', dot: 'bg-blue-400' },
       {% endif %}
       {% if eudr_compliance_rate is not None %}
-      { label: 'FARM COMPLIANCE', value: '{{ eudr_compliance_rate }}%', sub: '{{ farms_verified }} of {{ total_farms }} farm{{ total_farms|pluralize }} verified', color: '{% if eudr_compliance_rate >= 80 %}text-green{% elif eudr_compliance_rate >= 50 %}text-yellow-400{% else %}text-red-400{% endif %}', dot: '{% if eudr_compliance_rate >= 80 %}bg-green{% elif eudr_compliance_rate >= 50 %}bg-yellow-400{% else %}bg-red-400{% endif %}' },
+      { label: 'FARM COMPLIANCE', value: '{{ eudr_compliance_rate }}%', sub: '{{ farms_verified }} of {{ total_farms }} farm{{ total_farms|pluralize }} compliance-ready', color: '{% if eudr_compliance_rate >= 80 %}text-green{% elif eudr_compliance_rate >= 50 %}text-yellow-400{% else %}text-red-400{% endif %}', dot: '{% if eudr_compliance_rate >= 80 %}bg-green{% elif eudr_compliance_rate >= 50 %}bg-yellow-400{% else %}bg-red-400{% endif %}' },
       {% endif %}
       {% if top_product %}
       { label: 'TOP PRODUCT', value: '{{ top_product.product__name|escapejs }}', sub: '{{ top_product.total_qty }} units sold', color: 'text-purple-400', dot: 'bg-purple-400' },
@@ -146,7 +146,7 @@
       {% if eudr_compliance_rate is not None %}
       <div class="mb-4">
         <div class="flex items-center justify-between mb-1">
-          <span class="text-xs font-mono text-slate-500">EUDR verified</span>
+          <span class="text-xs font-mono text-slate-500">Compliance Ready</span>
           <span class="text-xs font-mono {% if eudr_compliance_rate >= 80 %}text-green{% elif eudr_compliance_rate >= 50 %}text-yellow-400{% else %}text-red-400{% endif %}">{{ eudr_compliance_rate }}%</span>
         </div>
         <div class="w-full bg-surface rounded-full h-1.5">
