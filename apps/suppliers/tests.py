@@ -623,7 +623,27 @@ class FarmerImportTests(TestCase):
         from django.core.files.uploadedfile import SimpleUploadedFile
         self.client.force_login(self.staff)
         f = SimpleUploadedFile(filename, csv_text.encode(encoding), content_type='text/csv')
-        return self.client.post(self.url, {'csv_file': f})
+        return self.client.post(self.url, {'import_file': f})
+
+    def _make_xlsx_bytes(self, rows):
+        import io
+        import openpyxl
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        headers = ['first_name', 'last_name', 'gender', 'phone', 'village', 'lga', 'nin', 'crops', 'consent_date']
+        ws.append(headers)
+        for row in rows:
+            ws.append([row.get(h, '') for h in headers])
+        buf = io.BytesIO()
+        wb.save(buf)
+        return buf.getvalue()
+
+    def _upload_xlsx(self, xlsx_bytes, filename='farmers.xlsx'):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self.client.force_login(self.staff)
+        ct = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        f = SimpleUploadedFile(filename, xlsx_bytes, content_type=ct)
+        return self.client.post(self.url, {'import_file': f})
 
     # ── Validator unit tests ────────────────────────────────────────────────
 
@@ -789,7 +809,7 @@ class FarmerImportTests(TestCase):
             b'x' * (MAX_FARMER_IMPORT_BYTES + 1),
             content_type='text/csv',
         )
-        r = self.client.post(self.url, {'csv_file': big})
+        r = self.client.post(self.url, {'import_file': big})
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, 'larger than')
         self.assertEqual(self.FarmerImportLog.objects.count(), 0)
@@ -813,3 +833,80 @@ class FarmerImportTests(TestCase):
         body = r.content.decode()
         self.assertIn('error_reason', body)
         self.assertIn('Amina', body)
+
+    # ── Phase 2: XLSX upload tests ──────────────────────────────────────────
+
+    def test_xlsx_creates_farmer_same_as_csv(self):
+        """XLSX upload produces the same result as the equivalent CSV row."""
+        xlsx = self._make_xlsx_bytes([{
+            'first_name': 'Amina', 'last_name': 'Musa', 'gender': 'F',
+            'phone': '08012345678', 'village': 'Shendam', 'lga': 'Shendam',
+            'nin': '12345678901', 'crops': 'Soybeans', 'consent_date': '2026-04-01',
+        }])
+        r = self._upload_xlsx(xlsx)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(self.Farmer.objects.filter(company=self.company).count(), 1)
+        log = self.FarmerImportLog.objects.filter(company=self.company).first()
+        self.assertEqual(log.created, 1)
+        self.assertEqual(log.errors, 0)
+
+    def test_xlsx_rejects_bad_gender_loudly(self):
+        """XLSX rows go through validate_farmer_row — bad gender must still reject."""
+        xlsx = self._make_xlsx_bytes([{'first_name': 'Amina', 'gender': 'X'}])
+        self._upload_xlsx(xlsx)
+        self.assertEqual(self.Farmer.objects.filter(company=self.company).count(), 0)
+        log = self.FarmerImportLog.objects.filter(company=self.company).first()
+        self.assertEqual(log.errors, 1)
+        self.assertIn("'X'", log.error_detail[0]['error_reason'])
+
+    def test_xlsx_records_phone_normalisation_as_transformation(self):
+        """Phone normalisation is surfaced as a transformation for XLSX rows too."""
+        xlsx = self._make_xlsx_bytes([{
+            'first_name': 'Amina', 'phone': '08012345678',
+        }])
+        self._upload_xlsx(xlsx)
+        log = self.FarmerImportLog.objects.filter(company=self.company).first()
+        self.assertEqual(log.created, 1)
+        self.assertEqual(log.auto_corrected, 1)
+        self.assertEqual(log.transformation_log[0]['field'], 'phone')
+
+    def test_xlsx_multi_sheet_warns_and_imports_first_sheet_only(self):
+        """Multiple sheets: import first sheet, attach a sheet_selection warning."""
+        import io
+        import openpyxl
+        wb = openpyxl.Workbook()
+        ws1 = wb.active
+        ws1.title = 'Farmers'
+        ws1.append(['first_name', 'last_name', 'gender', 'phone', 'village', 'lga', 'nin', 'crops', 'consent_date'])
+        ws1.append(['Amina', 'Musa', 'F', '', '', '', '', '', ''])
+        ws2 = wb.create_sheet('Ignore')
+        ws2.append(['do', 'not', 'import', '', '', '', '', '', ''])
+        ws2.append(['Extra', 'Row', '', '', '', '', '', '', ''])
+        buf = io.BytesIO()
+        wb.save(buf)
+        self._upload_xlsx(buf.getvalue())
+        log = self.FarmerImportLog.objects.filter(company=self.company).first()
+        self.assertEqual(log.created, 1)
+        self.assertTrue(any(w.get('field') == 'sheet_selection' for w in log.warning_detail))
+
+    def test_xlsx_magic_bytes_with_csv_extension_is_rejected(self):
+        """An XLSX binary uploaded with .csv extension should return a friendly error."""
+        xlsx = self._make_xlsx_bytes([{'first_name': 'Amina'}])
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self.client.force_login(self.staff)
+        f = SimpleUploadedFile('farmers.csv', xlsx, content_type='text/csv')
+        r = self.client.post(self.url, {'import_file': f})
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'Excel')
+        self.assertEqual(self.Farmer.objects.filter(company=self.company).count(), 0)
+        self.assertEqual(self.FarmerImportLog.objects.count(), 0)
+
+    def test_unsupported_extension_returns_friendly_error(self):
+        """Files with unrecognised extensions (.pdf, .doc, etc.) are rejected."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self.client.force_login(self.staff)
+        f = SimpleUploadedFile('farmers.pdf', b'%PDF-1.4 fake', content_type='application/pdf')
+        r = self.client.post(self.url, {'import_file': f})
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'Unsupported')
+        self.assertEqual(self.FarmerImportLog.objects.count(), 0)

@@ -169,26 +169,27 @@ class FarmerImportView(StaffRequiredMixin, View):
         return render(request, self.template_name)
 
     def post(self, request):
-        from .farmer_import import run_farmer_csv_import, MAX_FARMER_IMPORT_BYTES
+        from .farmer_import import run_farmer_import, MAX_FARMER_IMPORT_BYTES
 
-        csv_file = request.FILES.get('csv_file')
-        if not csv_file:
-            return render(request, self.template_name, {'form_error': 'Please select a CSV file.'})
-        if not csv_file.name.lower().endswith('.csv'):
-            return render(request, self.template_name, {'form_error': 'File must be a .csv file.'})
-        if csv_file.size > MAX_FARMER_IMPORT_BYTES:
+        import_file = request.FILES.get('import_file')
+        if not import_file:
+            return render(request, self.template_name, {'form_error': 'Please select a file to upload.'})
+        if import_file.size > MAX_FARMER_IMPORT_BYTES:
             mb = MAX_FARMER_IMPORT_BYTES // (1024 * 1024)
             return render(request, self.template_name, {
                 'form_error': f'File is larger than {mb} MB. Split it into smaller batches and upload each separately.',
             })
 
         try:
-            result = run_farmer_csv_import(
+            result = run_farmer_import(
                 company=request.user.company,
-                file_bytes=csv_file.read(),
-                filename=csv_file.name,
+                file_bytes=import_file.read(),
+                filename=import_file.name,
+                content_type=import_file.content_type,
                 uploaded_by=request.user,
             )
+        except ValueError as e:
+            return render(request, self.template_name, {'form_error': str(e)})
         except UnicodeDecodeError:
             return render(request, self.template_name, {
                 'form_error': 'Could not decode the file as text. Re-save it as UTF-8 CSV and try again.',
@@ -204,14 +205,14 @@ class FarmerImportView(StaffRequiredMixin, View):
                 user=request.user,
                 action='import',
                 model_name='Farmer',
-                object_repr=f'{result["created"]} farmer{"s" if result["created"] != 1 else ""} — {csv_file.name}'[:255],
+                object_repr=f'{result["created"]} farmer{"s" if result["created"] != 1 else ""} — {import_file.name}'[:255],
                 changes={
                     'created':        result['created'],
                     'auto_corrected': result['auto_corrected'],
                     'duplicates':     result['duplicates'],
                     'errors':         result['errors'],
                     'warnings':       result['warning_count'],
-                    'file':           csv_file.name,
+                    'file':           import_file.name,
                 },
                 ip_address=get_client_ip(request),
             )

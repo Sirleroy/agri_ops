@@ -1,11 +1,11 @@
 """
-Farmer CSV import pipeline.
+Farmer tabular import pipeline.
 
-Phase 1 of the farmer-import redesign: surface every transformation,
-loud-fail on unparseable values, and write an auditable FarmerImportLog.
-
-Future phases extend this module with an XLSX parser layer (Phase 2)
-and a column-mapping wizard (Phase 3).
+Phase 1: surface every transformation, loud-fail on unparseable values,
+         write an auditable FarmerImportLog.
+Phase 2: XLSX upload — parse_tabular_file() routes CSV and XLSX through the
+         same validate_farmer_row() pipeline unchanged.
+Phase 3 (future): column-mapping wizard.
 """
 import csv
 import datetime
@@ -17,25 +17,15 @@ from django.db import transaction
 from .models import Farmer, FarmerImportLog, _normalise_ng_phone
 
 
-# Hard cap on uploaded file size. Even a cooperative with 25 000 farmers
-# fits comfortably under 5 MB; anything larger is almost certainly a wrong
-# file. Surfaced as a friendly error instead of Django's default 2.5 MB
-# DataUploadHandler exception.
 MAX_FARMER_IMPORT_BYTES = 5 * 1024 * 1024
 
-# Encoding fallback chain. UTF-8 covers modern exports; UTF-8-sig handles
-# Excel's BOM; CP1252 / latin-1 cover legacy Windows spreadsheets that
-# crop up on co-op laptops.
 ENCODING_CHAIN = ('utf-8', 'utf-8-sig', 'cp1252', 'latin-1')
 
-# Date formats accepted for consent_date. Matches the farm importer's
-# _parse_mapping_date list so operators learn one set of conventions.
 CONSENT_DATE_FORMATS = (
     '%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y',
     '%d-%m-%Y', '%Y/%m/%d', '%d.%m.%Y',
 )
 
-# Column aliases: AgriOps template name + SW Maps export name.
 FIELD_ALIASES = {
     'first_name':   ('first_name', 'First Name', 'first name'),
     'last_name':    ('last_name',  'Last Name',  'last name'),
@@ -47,6 +37,9 @@ FIELD_ALIASES = {
     'crops':        ('crops',      'Commodity', 'commodity'),
     'consent_date': ('consent_date', 'Consent Date', 'consent date'),
 }
+
+# XLSX files are ZIP archives and always start with this magic sequence.
+XLSX_MAGIC = b'PK\x03\x04'
 
 
 def _pick(row, field):
@@ -85,11 +78,89 @@ def decode_csv_bytes(raw_bytes):
     raise last_error  # noqa — every encoding failed
 
 
+def _parse_xlsx(raw_bytes):
+    """
+    Parse an XLSX file into a list of row dicts (first row = headers).
+    Returns (rows, sheet_warning_or_None).
+    Uses read_only + data_only mode for memory safety on large files.
+    """
+    import openpyxl
+    wb = openpyxl.load_workbook(io.BytesIO(raw_bytes), read_only=True, data_only=True)
+    sheet_names = wb.sheetnames
+
+    sheet_warning = None
+    if len(sheet_names) > 1:
+        preview = ', '.join(sheet_names[:3]) + ('…' if len(sheet_names) > 3 else '')
+        sheet_warning = (
+            f"Your file has {len(sheet_names)} sheets ({preview}). "
+            f"We imported the first sheet ({sheet_names[0]!r}). "
+            f"If your data is on a different sheet, move it to the first position and re-upload."
+        )
+
+    ws = wb.worksheets[0]
+    all_rows = list(ws.rows)
+    wb.close()
+
+    if not all_rows:
+        return [], sheet_warning
+
+    headers = [
+        str(cell.value).strip() if cell.value is not None else ''
+        for cell in all_rows[0]
+    ]
+
+    result = []
+    for row in all_rows[1:]:
+        row_dict = {}
+        for header, cell in zip(headers, row):
+            if header:
+                row_dict[header] = str(cell.value).strip() if cell.value is not None else ''
+        result.append(row_dict)
+
+    return result, sheet_warning
+
+
+def parse_tabular_file(raw_bytes, content_type, filename):
+    """
+    Detect format from magic bytes and file extension; parse into row dicts.
+
+    Returns (rows, encoding, decode_warning, sheet_warning):
+      rows          list[dict]   one dict per data row (header stripped)
+      encoding      str          e.g. 'utf-8', 'cp1252', or 'xlsx'
+      decode_warning str|None    set when CSV encoding fallback triggered
+      sheet_warning  str|None    set when XLSX file has multiple sheets
+
+    Raises ValueError for unrecognised or mismatched format.
+    Raises UnicodeDecodeError if CSV bytes cannot be decoded by any chain member.
+    """
+    ext = ''
+    if filename and '.' in filename:
+        ext = filename.lower().rsplit('.', 1)[-1]
+
+    if ext not in ('csv', 'xlsx', ''):
+        raise ValueError(
+            f"Unsupported file type (.{ext}). Please upload a .csv or .xlsx file."
+        )
+
+    magic = raw_bytes[:4] if len(raw_bytes) >= 4 else raw_bytes
+
+    if magic == XLSX_MAGIC:
+        if ext == 'csv':
+            raise ValueError(
+                "The file looks like an Excel spreadsheet but has a .csv extension. "
+                "Open it in Excel, save as .xlsx, and re-upload."
+            )
+        rows, sheet_warning = _parse_xlsx(raw_bytes)
+        return rows, 'xlsx', None, sheet_warning
+
+    # CSV path — let decode_csv_bytes surface encoding issues clearly.
+    text, encoding, decode_warning = decode_csv_bytes(raw_bytes)
+    reader = csv.DictReader(io.StringIO(text))
+    rows = list(reader)
+    return rows, encoding, decode_warning, None
+
+
 def _parse_consent_date(raw):
-    """
-    Try every accepted format. Returns (date_or_None, error_message_or_None).
-    Empty input returns (None, None) — not an error, just absent.
-    """
     if not raw:
         return None, None
     for fmt in CONSENT_DATE_FORMATS:
@@ -104,7 +175,6 @@ def _parse_consent_date(raw):
 
 
 def _clean_nin(raw):
-    """Mirror Farmer.save()'s NIN normalisation so we can surface the diff."""
     if not raw:
         return ''
     return re.sub(r'[^A-Z0-9]', '', raw.strip().upper())
@@ -112,12 +182,11 @@ def _clean_nin(raw):
 
 def validate_farmer_row(raw_row, row_num):
     """
-    Pure function — no DB access. Takes a CSV row dict, returns a result
-    dict the orchestrator can act on.
+    Pure function — no DB access. Takes a row dict, returns a result dict.
 
     Result keys:
-      row              int            CSV row number (1-based, header is row 1)
-      raw              dict           echo of every field's raw input (for error CSV)
+      row              int            1-based row number (header = 1)
+      raw              dict           echo of every field's raw input
       fields           dict           normalised values, ready for Farmer(**)
       transformations  list of dicts  field-level normalisations that changed the value
       warnings         list of dicts  non-fatal issues (e.g. NIN too short)
@@ -139,7 +208,6 @@ def validate_farmer_row(raw_row, row_num):
     warnings        = []
     errors          = []
 
-    # ── first_name (required) ────────────────────────────────────────────────
     first_name = raw['first_name']
     if not first_name:
         errors.append({
@@ -149,7 +217,6 @@ def validate_farmer_row(raw_row, row_num):
 
     last_name = raw['last_name']
 
-    # ── gender (M/F only — model dropped O) ──────────────────────────────────
     gender_raw = raw['gender']
     gender     = gender_raw.upper()
     if gender_raw and gender not in ('M', 'F'):
@@ -160,9 +227,8 @@ def validate_farmer_row(raw_row, row_num):
                 f"(expected M, F, or blank)"
             ),
         })
-        gender = ''  # keep blank in fields so the dict is still safe to read
+        gender = ''
 
-    # ── phone (E.164 normalisation surfaced as transformation) ───────────────
     phone_raw  = raw['phone']
     phone_norm = _normalise_ng_phone(phone_raw) if phone_raw else ''
     if phone_raw and phone_norm and phone_norm != phone_raw:
@@ -173,7 +239,6 @@ def validate_farmer_row(raw_row, row_num):
             'ts': _utc_now_iso(),
         })
 
-    # ── NIN (strip + uppercase; length warning) ──────────────────────────────
     nin_raw  = raw['nin']
     nin_norm = _clean_nin(nin_raw)
     if nin_raw and nin_norm != nin_raw:
@@ -190,7 +255,6 @@ def validate_farmer_row(raw_row, row_num):
             'reason': f"NIN is {len(nin_norm)} characters (expected 11) — verify",
         })
 
-    # ── consent_date (loud-fail on unparseable) ──────────────────────────────
     consent_raw         = raw['consent_date']
     consent_date, c_err = _parse_consent_date(consent_raw)
     if c_err:
@@ -222,28 +286,20 @@ def validate_farmer_row(raw_row, row_num):
     }
 
 
-def run_farmer_csv_import(company, file_bytes, filename, uploaded_by=None):
+def run_farmer_import(company, file_bytes, filename, content_type='', uploaded_by=None):
     """
-    Orchestrator. Takes the uploaded bytes, returns a result dict and
+    Orchestrator. Accepts CSV or XLSX bytes. Returns a result dict and
     persists a FarmerImportLog row. Caller (the view) handles HTTP.
 
-    Result dict:
-      total           int    rows scanned (excluding header)
-      created         int    rows that produced a Farmer (includes auto-corrected)
-      auto_corrected  int    subset of created where at least one transformation fired
-      duplicates      int    rows that matched an existing farmer (NIN or name+village+LGA)
-      errors          int    rows rejected (sum of len(errors) over rejected rows)
-      warning_count   int    rows that carry at least one warning
-      error_detail        list  echo of rejected raw rows + reason strings (downloadable as CSV)
-      warning_detail      list  per-row warning entries
-      transformation_log  list  per-row transformation entries
-      encoding            str   which encoding decoded the file
-      decode_warning      str   set when fallback past UTF-8-sig triggered
+    Result dict keys:
+      total, created, auto_corrected, duplicates, errors, warning_count,
+      error_detail, warning_detail, transformation_log,
+      encoding, decode_warning, sheet_warning, log_id
     """
-    text, encoding, decode_warning = decode_csv_bytes(file_bytes)
-    reader = csv.DictReader(io.StringIO(text))
+    rows, encoding, decode_warning, sheet_warning = parse_tabular_file(
+        file_bytes, content_type, filename
+    )
 
-    # Pre-load existing NINs + name keys so dedup is one SELECT, not N
     existing_nins = set(
         Farmer.objects.filter(company=company)
         .exclude(nin='')
@@ -264,24 +320,26 @@ def run_farmer_csv_import(company, file_bytes, filename, uploaded_by=None):
     auto_corrected     = 0
     rows_with_warnings = 0
 
-    # Intra-batch dedup so the same row pasted twice doesn't slip through
+    # File-level warnings go in first so they appear at the top of the warning table.
+    if sheet_warning:
+        warning_detail.append({
+            'row': 0, 'field': 'sheet_selection', 'value': '',
+            'reason': sheet_warning,
+        })
+    if decode_warning:
+        warning_detail.append({
+            'row': 1, 'field': 'file_encoding', 'value': encoding,
+            'reason': decode_warning,
+        })
+
     batch_nins      = set()
     batch_name_keys = set()
 
-    row_num = 1  # header is row 1; first data row is 2
-    for raw_row in reader:
+    row_num = 1  # header row = 1; first data row = 2
+    for raw_row in rows:
         row_num += 1
         result = validate_farmer_row(raw_row, row_num)
 
-        if decode_warning and row_num == 2:
-            # Attach the decode warning to the first data row so it appears
-            # alongside per-row warnings in the result UI.
-            warning_detail.append({
-                'row': 1, 'field': 'file_encoding', 'value': encoding,
-                'reason': decode_warning,
-            })
-
-        # Rejected — collect raw + reason, skip
         if result['errors']:
             reasons = '; '.join(e['reason'] for e in result['errors'])
             error_detail.append({**result['raw'], 'row': row_num, 'error_reason': reasons})
@@ -289,14 +347,12 @@ def run_farmer_csv_import(company, file_bytes, filename, uploaded_by=None):
 
         f = result['fields']
 
-        # NIN dedup (DB + intra-batch)
         if f['nin']:
             if f['nin'] in existing_nins or f['nin'] in batch_nins:
                 duplicate_count += 1
                 continue
             batch_nins.add(f['nin'])
 
-        # Name+village+LGA dedup (DB + intra-batch)
         if f['first_name'] and f['village'] and f['lga']:
             key = (f['first_name'].lower(), f['last_name'].lower(),
                    f['village'].lower(), f['lga'].lower())
@@ -305,7 +361,6 @@ def run_farmer_csv_import(company, file_bytes, filename, uploaded_by=None):
                 continue
             batch_name_keys.add(key)
 
-        # Survivor — record transformations + warnings, queue for creation
         if result['transformations']:
             transformation_log.extend(result['transformations'])
             auto_corrected += 1
@@ -315,7 +370,6 @@ def run_farmer_csv_import(company, file_bytes, filename, uploaded_by=None):
 
         to_create.append(Farmer(company=company, **f))
 
-    # Atomic bulk-create — partial commits would defeat the rollback story
     with transaction.atomic():
         Farmer.objects.bulk_create(to_create, batch_size=100)
     created_count = len(to_create)
@@ -332,6 +386,7 @@ def run_farmer_csv_import(company, file_bytes, filename, uploaded_by=None):
         'transformation_log': transformation_log,
         'encoding':           encoding,
         'decode_warning':     decode_warning,
+        'sheet_warning':      sheet_warning,
     }
 
     log = FarmerImportLog.objects.create(

@@ -162,10 +162,10 @@
   <div class="bg-card border border-border rounded-xl p-6">
     <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">How to Import</p>
     <ol class="space-y-2 text-sm text-slate-400 list-decimal list-inside">
-      <li>Download the CSV template below, or export your farmer data from your existing system.</li>
-      <li>Fill one row per farmer in Excel or Google Sheets. <span class="text-slate-300 font-mono">first_name</span> is required; everything else is optional, but more complete data means stronger compliance evidence.</li>
-      <li>Save as CSV (UTF-8 is best — we'll fall back to legacy Windows encodings if needed, but you'll see a warning when that happens).</li>
-      <li>Upload and review the result. You'll see three buckets — <span class="text-green">Created</span>, <span class="text-amber-400">Auto-corrected</span> (skim to confirm corrections look right), and <span class="text-red-400">Rejected</span> (with per-row reasons). Download the rejected rows, fix them, and re-upload.</li>
+      <li>Download the CSV template below, or export your farmer data from your existing system (Excel, Google Sheets, Notion, etc.).</li>
+      <li>Fill one row per farmer. <span class="text-slate-300 font-mono">first_name</span> is required; everything else is optional, but more complete data means stronger compliance evidence.</li>
+      <li>Upload the file directly as <span class="text-slate-300 font-mono">.xlsx</span> or save as <span class="text-slate-300 font-mono">.csv</span>. Both formats are accepted. If your spreadsheet has multiple sheets, we import the first one — move your data there if needed.</li>
+      <li>Review the result. You'll see three buckets — <span class="text-green">Created</span>, <span class="text-amber-400">Auto-corrected</span> (skim to confirm corrections look right), and <span class="text-red-400">Rejected</span> (with per-row reasons). Download the rejected rows, fix them, and re-upload.</li>
     </ol>
     <div class="mt-4 pt-4 border-t border-border">
       <a href="{% url 'suppliers:farmer_import_template' %}"
@@ -190,8 +190,8 @@
       {% endif %}
 
       <div class="mb-4">
-        <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">File *</label>
-        <input type="file" name="csv_file"
+        <label class="block text-xs font-mono text-slate-400 mb-2 uppercase tracking-wide">File * <span class="text-slate-600 normal-case">.csv or .xlsx</span></label>
+        <input type="file" name="import_file" accept=".csv,.xlsx"
           class="w-full bg-surface border border-border rounded-lg px-4 py-3 text-sm text-slate-300 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:bg-green/10 file:text-green file:text-xs file:font-mono file:cursor-pointer outline-none">
       </div>
 
