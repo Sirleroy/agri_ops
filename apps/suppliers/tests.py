@@ -592,3 +592,224 @@ class BulkComplianceReadinessTests(TestCase):
         self.client.force_login(self.staff)
         r = self.client.get(self.url)
         self.assertEqual(r.status_code, 403)
+
+
+class FarmerImportTests(TestCase):
+    """
+    Phase 1 of the farmer-import redesign: surface every transformation,
+    loud-fail on unparseable values, write an auditable FarmerImportLog.
+
+    Each test names the silent-drop path it guards against — these are
+    behaviours the old importer would have hidden under a row count.
+    """
+
+    def setUp(self):
+        from apps.suppliers.models import Farmer, FarmerImportLog
+        self.Farmer = Farmer
+        self.FarmerImportLog = FarmerImportLog
+        self.company = Company.objects.create(
+            name='Import Co', country='Nigeria', plan_tier='starter'
+        )
+        self.other = Company.objects.create(
+            name='Other Co', country='Nigeria', plan_tier='starter'
+        )
+        self.staff = CustomUser.objects.create_user(
+            username='import_staff', password='x',
+            company=self.company, system_role='manager',
+        )
+        self.url = reverse('suppliers:farmer_import')
+
+    def _upload(self, csv_text, filename='farmers.csv', encoding='utf-8'):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self.client.force_login(self.staff)
+        f = SimpleUploadedFile(filename, csv_text.encode(encoding), content_type='text/csv')
+        return self.client.post(self.url, {'csv_file': f})
+
+    # ── Validator unit tests ────────────────────────────────────────────────
+
+    def test_validator_rejects_unknown_gender(self):
+        """Old importer silently blanked unrecognised gender. Must now reject."""
+        from apps.suppliers.farmer_import import validate_farmer_row
+        result = validate_farmer_row(
+            {'first_name': 'Amina', 'gender': 'X'}, row_num=2,
+        )
+        self.assertTrue(result['errors'])
+        self.assertEqual(result['errors'][0]['field'], 'gender')
+
+    def test_validator_rejects_unparseable_consent_date(self):
+        """Old importer silently dropped bad dates. Must now reject with raw echoed."""
+        from apps.suppliers.farmer_import import validate_farmer_row
+        result = validate_farmer_row(
+            {'first_name': 'A', 'consent_date': 'last tuesday'}, row_num=2,
+        )
+        self.assertTrue(result['errors'])
+        self.assertEqual(result['errors'][0]['field'], 'consent_date')
+        self.assertIn("'last tuesday'", result['errors'][0]['reason'])
+
+    def test_validator_accepts_multiple_date_formats(self):
+        from apps.suppliers.farmer_import import validate_farmer_row
+        for raw in ('2026-04-01', '01/04/2026', '01-04-2026', '2026/04/01'):
+            r = validate_farmer_row({'first_name': 'A', 'consent_date': raw}, 2)
+            self.assertFalse(r['errors'], f"format {raw} should parse")
+            self.assertEqual(r['fields']['consent_date'], datetime.date(2026, 4, 1))
+
+    def test_validator_surfaces_phone_normalisation(self):
+        """Old importer silently normalised on save. Must surface as transformation."""
+        from apps.suppliers.farmer_import import validate_farmer_row
+        r = validate_farmer_row({'first_name': 'A', 'phone': '08012345678'}, 2)
+        self.assertEqual(r['fields']['phone'], '+2348012345678')
+        self.assertEqual(len(r['transformations']), 1)
+        self.assertEqual(r['transformations'][0]['field'], 'phone')
+        self.assertEqual(r['transformations'][0]['from'], '08012345678')
+        self.assertEqual(r['transformations'][0]['to'],   '+2348012345678')
+
+    def test_validator_surfaces_nin_cleanup(self):
+        from apps.suppliers.farmer_import import validate_farmer_row
+        r = validate_farmer_row({'first_name': 'A', 'nin': '123-456-78901'}, 2)
+        self.assertEqual(r['fields']['nin'], '12345678901')
+        nin_tx = [t for t in r['transformations'] if t['field'] == 'nin']
+        self.assertEqual(len(nin_tx), 1)
+
+    def test_validator_warns_on_short_nin(self):
+        """NIN with wrong length should warn, not block — co-ops have imperfect records."""
+        from apps.suppliers.farmer_import import validate_farmer_row
+        r = validate_farmer_row({'first_name': 'A', 'nin': '12345'}, 2)
+        self.assertFalse(r['errors'])
+        self.assertTrue(any(w['field'] == 'nin' for w in r['warnings']))
+
+    def test_validator_first_name_required(self):
+        from apps.suppliers.farmer_import import validate_farmer_row
+        r = validate_farmer_row({'first_name': ''}, 2)
+        self.assertTrue(r['errors'])
+        self.assertEqual(r['errors'][0]['field'], 'first_name')
+
+    # ── End-to-end view tests ───────────────────────────────────────────────
+
+    def _csv_header(self):
+        return 'first_name,last_name,gender,phone,village,lga,nin,crops,consent_date\n'
+
+    def test_post_creates_farmer_and_writes_log(self):
+        csv_text = self._csv_header() + 'Amina,Musa,F,08012345678,Shendam,Shendam,12345678901,Soybeans,2026-04-01\n'
+        r = self._upload(csv_text)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(self.Farmer.objects.filter(company=self.company).count(), 1)
+        # Log written, scoped to tenant
+        logs = self.FarmerImportLog.objects.filter(company=self.company)
+        self.assertEqual(logs.count(), 1)
+        self.assertEqual(logs.first().created, 1)
+        self.assertEqual(logs.first().uploaded_by, self.staff)
+
+    def test_post_rejects_bad_gender_loudly(self):
+        csv_text = self._csv_header() + 'Amina,Musa,X,08012345678,Shendam,Shendam,12345678901,Soybeans,2026-04-01\n'
+        r = self._upload(csv_text)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(self.Farmer.objects.filter(company=self.company).count(), 0)
+        log = self.FarmerImportLog.objects.filter(company=self.company).first()
+        self.assertEqual(log.errors, 1)
+        self.assertIn("'X'", log.error_detail[0]['error_reason'])
+
+    def test_post_rejects_bad_consent_date_loudly(self):
+        csv_text = self._csv_header() + 'Amina,Musa,F,08012345678,Shendam,Shendam,12345678901,Soybeans,banana\n'
+        r = self._upload(csv_text)
+        log = self.FarmerImportLog.objects.filter(company=self.company).first()
+        self.assertEqual(log.errors, 1)
+        self.assertIn('banana', log.error_detail[0]['error_reason'])
+        # Raw row is echoed for the error CSV download
+        self.assertEqual(log.error_detail[0]['consent_date'], 'banana')
+
+    def test_post_records_phone_normalisation_as_transformation(self):
+        csv_text = self._csv_header() + 'Amina,Musa,F,08012345678,Shendam,Shendam,,,\n'
+        self._upload(csv_text)
+        log = self.FarmerImportLog.objects.filter(company=self.company).first()
+        self.assertEqual(log.created, 1)
+        self.assertEqual(log.auto_corrected, 1)
+        self.assertEqual(len(log.transformation_log), 1)
+        self.assertEqual(log.transformation_log[0]['field'], 'phone')
+
+    def test_post_records_nin_length_warning_without_blocking(self):
+        csv_text = self._csv_header() + 'Amina,Musa,F,,Shendam,Shendam,12345,,\n'
+        self._upload(csv_text)
+        log = self.FarmerImportLog.objects.filter(company=self.company).first()
+        self.assertEqual(log.created, 1)
+        self.assertEqual(log.warning_count, 1)
+        self.assertEqual(len(log.warning_detail), 1)
+        self.assertEqual(log.warning_detail[0]['field'], 'nin')
+
+    def test_post_dedupes_by_nin(self):
+        self.Farmer.objects.create(
+            company=self.company, first_name='Existing', nin='12345678901',
+        )
+        csv_text = self._csv_header() + 'Amina,Musa,F,,,, 12345678901 ,,\n'
+        self._upload(csv_text)
+        log = self.FarmerImportLog.objects.filter(company=self.company).first()
+        self.assertEqual(log.created, 0)
+        self.assertEqual(log.duplicates, 1)
+
+    def test_post_dedupes_by_name_village_lga(self):
+        self.Farmer.objects.create(
+            company=self.company,
+            first_name='Amina', last_name='Musa', village='Shendam', lga='Shendam',
+        )
+        csv_text = self._csv_header() + 'Amina,Musa,F,,Shendam,Shendam,,,\n'
+        self._upload(csv_text)
+        log = self.FarmerImportLog.objects.filter(company=self.company).first()
+        self.assertEqual(log.created, 0)
+        self.assertEqual(log.duplicates, 1)
+
+    def test_post_intra_batch_dedupe(self):
+        """Same NIN appearing twice in the same upload must dedup, not create twice."""
+        csv_text = self._csv_header() + (
+            'Amina,Musa,F,,Shendam,Shendam,12345678901,,\n'
+            'Amina,Musa,F,,Shendam,Shendam,12345678901,,\n'
+        )
+        self._upload(csv_text)
+        log = self.FarmerImportLog.objects.filter(company=self.company).first()
+        self.assertEqual(log.created, 1)
+        self.assertEqual(log.duplicates, 1)
+
+    def test_encoding_fallback_warns_on_cp1252(self):
+        """Files saved by Excel without UTF-8 should import but emit a fallback warning."""
+        # "Børje" — the ø encodes differently in CP1252 (0xF8) vs UTF-8 (0xC3 0xB8)
+        # so the UTF-8 decode fails and the chain falls back to cp1252.
+        csv_text = self._csv_header() + 'Børje,Musa,F,,Shendam,Shendam,,,\n'
+        r = self._upload(csv_text, encoding='cp1252')
+        self.assertEqual(r.status_code, 200)
+        log = self.FarmerImportLog.objects.filter(company=self.company).first()
+        self.assertEqual(log.created, 1)
+        self.assertTrue(any(
+            w.get('field') == 'file_encoding' for w in log.warning_detail
+        ))
+
+    def test_file_size_limit_returns_friendly_error(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from apps.suppliers.farmer_import import MAX_FARMER_IMPORT_BYTES
+        self.client.force_login(self.staff)
+        big = SimpleUploadedFile(
+            'big.csv',
+            b'x' * (MAX_FARMER_IMPORT_BYTES + 1),
+            content_type='text/csv',
+        )
+        r = self.client.post(self.url, {'csv_file': big})
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'larger than')
+        self.assertEqual(self.FarmerImportLog.objects.count(), 0)
+
+    def test_errors_download_scoped_to_tenant(self):
+        # Create a log on the OTHER company and confirm our staff can't read it
+        other_log = self.FarmerImportLog.objects.create(
+            company=self.other, error_detail=[{'first_name': 'leaked'}],
+        )
+        self.client.force_login(self.staff)
+        r = self.client.get(reverse('suppliers:farmer_import_errors', args=[other_log.pk]))
+        self.assertEqual(r.status_code, 404)
+
+    def test_errors_download_returns_csv(self):
+        csv_text = self._csv_header() + 'Amina,Musa,X,,,,,,\n'
+        self._upload(csv_text)
+        log = self.FarmerImportLog.objects.filter(company=self.company).first()
+        r = self.client.get(reverse('suppliers:farmer_import_errors', args=[log.pk]))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r['Content-Type'], 'text/csv')
+        body = r.content.decode()
+        self.assertIn('error_reason', body)
+        self.assertIn('Amina', body)

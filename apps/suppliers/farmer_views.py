@@ -129,21 +129,25 @@ class FarmerImportTemplateView(StaffRequiredMixin, View):
 
 
 class FarmerImportErrorsView(StaffRequiredMixin, View):
-    """Download error rows from a previous import (stored in session)."""
-    def get(self, request):
+    """Download rejected rows from a previous import, sourced from FarmerImportLog."""
+    def get(self, request, pk):
         import csv
         from django.http import HttpResponse
-        session_key = 'farmer_import_errors'
-        error_rows = request.session.get(session_key, [])
+        from django.shortcuts import get_object_or_404
+        from .models import FarmerImportLog
+        log = get_object_or_404(
+            FarmerImportLog, pk=pk, company=request.user.company
+        )
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="AgriOps_Farmer_Import_Errors.csv"'
         writer = csv.writer(response)
         writer.writerow([
-            'first_name', 'last_name', 'gender', 'phone', 'village', 'lga', 'nin', 'crops',
-            'consent_date', 'error_reason',
+            'row', 'first_name', 'last_name', 'gender', 'phone', 'village',
+            'lga', 'nin', 'crops', 'consent_date', 'error_reason',
         ])
-        for row in error_rows:
+        for row in log.error_detail:
             writer.writerow([
+                row.get('row', ''),
                 row.get('first_name', ''),
                 row.get('last_name', ''),
                 row.get('gender', ''),
@@ -165,116 +169,34 @@ class FarmerImportView(StaffRequiredMixin, View):
         return render(request, self.template_name)
 
     def post(self, request):
-        import csv
-        import io
-        import datetime
-        from django.db import transaction
+        from .farmer_import import run_farmer_csv_import, MAX_FARMER_IMPORT_BYTES
 
         csv_file = request.FILES.get('csv_file')
         if not csv_file:
             return render(request, self.template_name, {'form_error': 'Please select a CSV file.'})
-        if not csv_file.name.endswith('.csv'):
+        if not csv_file.name.lower().endswith('.csv'):
             return render(request, self.template_name, {'form_error': 'File must be a .csv file.'})
-
-        company = request.user.company
-        created_count   = 0
-        duplicate_count = 0
-        error_rows      = []
-        error_detail    = []
+        if csv_file.size > MAX_FARMER_IMPORT_BYTES:
+            mb = MAX_FARMER_IMPORT_BYTES // (1024 * 1024)
+            return render(request, self.template_name, {
+                'form_error': f'File is larger than {mb} MB. Split it into smaller batches and upload each separately.',
+            })
 
         try:
-            decoded = csv_file.read().decode('utf-8-sig')
-            reader  = csv.DictReader(io.StringIO(decoded))
-        except Exception as e:
+            result = run_farmer_csv_import(
+                company=request.user.company,
+                file_bytes=csv_file.read(),
+                filename=csv_file.name,
+                uploaded_by=request.user,
+            )
+        except UnicodeDecodeError:
+            return render(request, self.template_name, {
+                'form_error': 'Could not decode the file as text. Re-save it as UTF-8 CSV and try again.',
+            })
+        except Exception as e:  # noqa — last-resort safety net so the view never 500s on a bad file
             return render(request, self.template_name, {'form_error': f'Could not read file: {e}'})
 
-        to_create = []
-        row_num   = 1  # header is row 0
-
-        for row in reader:
-            row_num += 1
-            # Accept both AgriOps template column names and SW Maps export column names
-            first_name  = (row.get('first_name')   or row.get('First Name')    or '').strip()
-            last_name   = (row.get('last_name')    or row.get('Last Name')     or '').strip()
-            gender      = (row.get('gender')       or row.get('Gender')        or '').strip().upper()
-            phone       = (row.get('phone')        or row.get('Phone Number')  or '').strip()
-            village     = (row.get('village')      or row.get('Village')       or '').strip()
-            lga         = (row.get('lga')          or row.get('LGA')           or '').strip()
-            nin         = (row.get('nin')          or row.get('NIN')           or '').strip()
-            crops       = (row.get('crops')        or row.get('Commodity')     or '').strip()
-            consent_raw = (row.get('consent_date') or '').strip()
-
-            if not first_name:
-                error_rows.append({**row, 'error_reason': 'first_name is required'})
-                error_detail.append({'row': row_num, 'first_name': first_name, 'last_name': last_name, 'reason': 'first_name is required'})
-                continue
-
-            # Validate gender
-            if gender and gender not in ('M', 'F', 'O'):
-                gender = ''
-
-            # Parse consent date
-            consent_date = None
-            if consent_raw:
-                for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y'):
-                    try:
-                        consent_date = datetime.date.fromisoformat(consent_raw) if fmt == '%Y-%m-%d' else datetime.datetime.strptime(consent_raw, fmt).date()
-                        break
-                    except ValueError:
-                        continue
-
-            # NIN uniqueness check
-            if nin:
-                if Farmer.objects.filter(company=company, nin=nin).exists():
-                    duplicate_count += 1
-                    continue
-
-            # Name + village + LGA duplicate check
-            if first_name and village and lga:
-                if Farmer.objects.filter(
-                    company=company,
-                    first_name__iexact=first_name,
-                    last_name__iexact=last_name,
-                    village__iexact=village,
-                    lga__iexact=lga,
-                ).exists():
-                    duplicate_count += 1
-                    continue
-
-            to_create.append(Farmer(
-                company=company,
-                first_name=first_name,
-                last_name=last_name,
-                gender=gender,
-                phone=phone,
-                village=village,
-                lga=lga,
-                nin=nin,
-                crops=crops,
-                consent_given=bool(consent_date or consent_raw),
-                consent_date=consent_date,
-            ))
-
-        # Bulk create in batches of 100
-        batch_size = 100
-        with transaction.atomic():
-            for i in range(0, len(to_create), batch_size):
-                Farmer.objects.bulk_create(to_create[i:i + batch_size])
-                created_count += len(to_create[i:i + batch_size])
-
-        # Store error rows in session for download
-        session_key = 'farmer_import_errors'
-        request.session[session_key] = error_rows
-
-        result = {
-            'created':      created_count,
-            'duplicates':   duplicate_count,
-            'errors':       len(error_rows),
-            'session_key':  session_key,
-            'error_detail': error_detail,
-        }
-
-        if created_count:
+        if result['created']:
             from apps.audit.models import AuditLog
             from apps.audit.mixins import get_client_ip
             AuditLog.objects.create(
@@ -282,12 +204,14 @@ class FarmerImportView(StaffRequiredMixin, View):
                 user=request.user,
                 action='import',
                 model_name='Farmer',
-                object_repr=f'{created_count} farmer{"s" if created_count != 1 else ""} — {csv_file.name}'[:255],
+                object_repr=f'{result["created"]} farmer{"s" if result["created"] != 1 else ""} — {csv_file.name}'[:255],
                 changes={
-                    'created':    created_count,
-                    'duplicates': duplicate_count,
-                    'errors':     len(error_rows),
-                    'file':       csv_file.name,
+                    'created':        result['created'],
+                    'auto_corrected': result['auto_corrected'],
+                    'duplicates':     result['duplicates'],
+                    'errors':         result['errors'],
+                    'warnings':       result['warning_count'],
+                    'file':           csv_file.name,
                 },
                 ip_address=get_client_ip(request),
             )

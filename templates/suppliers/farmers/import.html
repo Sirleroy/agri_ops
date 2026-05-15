@@ -14,25 +14,32 @@
   <div class="bg-card border border-border rounded-xl p-6">
     <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-4">Import Summary</p>
 
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
       <div class="bg-green/10 border border-green/20 rounded-lg p-4 text-center">
         <p class="text-2xl font-bold text-green font-mono">{{ result.created }}</p>
         <p class="text-xs text-slate-400 font-mono mt-1">Created</p>
       </div>
-      <div class="bg-slate-500/10 border border-slate-500/20 rounded-lg p-4 text-center">
-        <p class="text-2xl font-bold text-slate-400 font-mono">{{ result.duplicates }}</p>
-        <p class="text-xs text-slate-400 font-mono mt-1">Duplicates skipped</p>
+      <div class="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 text-center">
+        <p class="text-2xl font-bold text-amber-400 font-mono">{{ result.auto_corrected }}</p>
+        <p class="text-xs text-slate-400 font-mono mt-1">Auto-corrected</p>
       </div>
       <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-center">
         <p class="text-2xl font-bold text-red-400 font-mono">{{ result.errors }}</p>
-        <p class="text-xs text-slate-400 font-mono mt-1">Errors</p>
+        <p class="text-xs text-slate-400 font-mono mt-1">Rejected</p>
       </div>
+    </div>
+
+    <div class="flex flex-wrap gap-x-6 gap-y-1 text-xs font-mono text-slate-500 mb-6">
+      <span>{{ result.total }} row{{ result.total|pluralize }} scanned</span>
+      <span>{{ result.duplicates }} duplicate{{ result.duplicates|pluralize }} skipped</span>
+      {% if result.warning_count %}<span class="text-amber-400">{{ result.warning_count }} row{{ result.warning_count|pluralize }} with warnings</span>{% endif %}
+      <span class="text-slate-600">Encoding: {{ result.encoding }}</span>
     </div>
 
     {% if result.errors > 0 %}
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3 px-4 bg-red-500/5 border border-red-500/20 rounded-lg">
       <p class="text-sm text-slate-400">{{ result.errors }} row{{ result.errors|pluralize }} could not be imported.</p>
-      <a href="{% url 'suppliers:farmer_import_errors' %}?session_key={{ result.session_key }}"
+      <a href="{% url 'suppliers:farmer_import_errors' result.log_id %}"
         class="inline-flex items-center gap-2 bg-card border border-border hover:border-red-500/40 text-red-400 text-xs font-mono px-3 py-1.5 rounded-lg transition-colors self-start sm:self-auto">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
         Download Error Rows
@@ -49,16 +56,76 @@
     </div>
     {% endif %}
 
+    {% if result.transformation_log %}
+    <div class="mt-6">
+      <p class="text-xs font-mono text-amber-400 uppercase tracking-widest mb-2">Auto-corrected ({{ result.transformation_log|length }})</p>
+      <p class="text-xs text-slate-500 mb-2">Values we normalised on the way in. Each row is still imported — review to confirm the corrections are right.</p>
+      <div class="bg-surface border border-border rounded-lg overflow-x-auto">
+        <table class="w-full text-xs font-mono">
+          <thead>
+            <tr class="border-b border-border">
+              <th class="text-left px-4 py-2 text-slate-500">Row</th>
+              <th class="text-left px-4 py-2 text-slate-500">Farmer</th>
+              <th class="text-left px-4 py-2 text-slate-500">Field</th>
+              <th class="text-left px-4 py-2 text-slate-500">From</th>
+              <th class="text-left px-4 py-2 text-slate-500">To</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in result.transformation_log %}
+            <tr class="border-b border-border/50">
+              <td class="px-4 py-2 text-slate-500">{{ t.row }}</td>
+              <td class="px-4 py-2 text-slate-300">{{ t.farmer }}</td>
+              <td class="px-4 py-2 text-slate-400">{{ t.field }}</td>
+              <td class="px-4 py-2 text-slate-500">{{ t.from }}</td>
+              <td class="px-4 py-2 text-amber-400">{{ t.to }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if result.warning_detail %}
+    <div class="mt-6">
+      <p class="text-xs font-mono text-amber-400 uppercase tracking-widest mb-2">Warnings ({{ result.warning_detail|length }})</p>
+      <p class="text-xs text-slate-500 mb-2">Non-fatal — these rows were imported. Verify the values and edit the farmer record if anything is wrong.</p>
+      <div class="bg-surface border border-border rounded-lg overflow-x-auto">
+        <table class="w-full text-xs font-mono">
+          <thead>
+            <tr class="border-b border-border">
+              <th class="text-left px-4 py-2 text-slate-500">Row</th>
+              <th class="text-left px-4 py-2 text-slate-500">Field</th>
+              <th class="text-left px-4 py-2 text-slate-500">Value</th>
+              <th class="text-left px-4 py-2 text-slate-500">Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for w in result.warning_detail %}
+            <tr class="border-b border-border/50">
+              <td class="px-4 py-2 text-slate-500">{{ w.row }}</td>
+              <td class="px-4 py-2 text-slate-400">{{ w.field }}</td>
+              <td class="px-4 py-2 text-slate-300">{{ w.value }}</td>
+              <td class="px-4 py-2 text-amber-400">{{ w.reason }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
     {% if result.error_detail %}
-    <div class="mt-4">
-      <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mb-2">Error Detail</p>
+    <div class="mt-6">
+      <p class="text-xs font-mono text-red-400 uppercase tracking-widest mb-2">Rejected ({{ result.error_detail|length }})</p>
       <!-- Mobile cards -->
       <div class="sm:hidden space-y-2">
         {% for err in result.error_detail %}
         <div class="bg-surface border border-border rounded-lg px-4 py-3 text-xs font-mono">
           <p class="text-slate-500 mb-1">Row {{ err.row }}</p>
           <p class="text-slate-300 font-semibold mb-1">{{ err.first_name }} {{ err.last_name }}</p>
-          <p class="text-red-400 leading-relaxed">{{ err.reason }}</p>
+          <p class="text-red-400 leading-relaxed">{{ err.error_reason }}</p>
         </div>
         {% endfor %}
       </div>
@@ -79,7 +146,7 @@
               <td class="px-4 py-2 text-slate-500">{{ err.row }}</td>
               <td class="px-4 py-2 text-slate-300">{{ err.first_name }}</td>
               <td class="px-4 py-2 text-slate-300">{{ err.last_name }}</td>
-              <td class="px-4 py-2 text-red-400">{{ err.reason }}</td>
+              <td class="px-4 py-2 text-red-400">{{ err.error_reason }}</td>
             </tr>
             {% endfor %}
           </tbody>

@@ -532,6 +532,31 @@ class FarmImportLog(models.Model):
         return f"{self.created_at:%Y-%m-%d %H:%M} — {self.supplier} — {label}"
 
 
+class FarmerImportLog(models.Model):
+    company       = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='farmer_import_logs')
+    uploaded_by   = models.ForeignKey(
+                      'users.CustomUser', on_delete=models.SET_NULL,
+                      null=True, blank=True, related_name='farmer_import_logs'
+                    )
+    filename      = models.CharField(max_length=255, blank=True)
+    total         = models.PositiveIntegerField(default=0)
+    created       = models.PositiveIntegerField(default=0)
+    duplicates    = models.PositiveIntegerField(default=0)
+    errors        = models.PositiveIntegerField(default=0)
+    warning_count = models.PositiveIntegerField(default=0)
+    auto_corrected = models.PositiveIntegerField(default=0)
+    error_detail       = models.JSONField(default=list)
+    warning_detail     = models.JSONField(default=list)
+    transformation_log = models.JSONField(default=list)
+    created_at         = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.created_at:%Y-%m-%d %H:%M} — {self.company.name} — {self.created} created"
+
+
 class FarmCertification(models.Model):
     CERT_TYPE_CHOICES = [
         ('organic_eu',          'Organic EU (2018/848)'),
