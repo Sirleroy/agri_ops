@@ -83,11 +83,23 @@ class PurchaseOrderCreateView(DatePickerMixin, AuditCreateMixin, TenantFormField
         return reverse_lazy('purchase_orders:detail', kwargs={'pk': self.object.pk})
 
     def form_valid(self, form):
-        company = self.request.user.company
+        from django.db import transaction
+        from apps.companies.models import Company
         year = timezone.now().year
-        count = PurchaseOrder.objects.filter(company=company).count()
-        form.instance.order_number = f"{year}-{count + 1:04d}"
-        return super().form_valid(form)
+        prefix = f"{year}-"
+        with transaction.atomic():
+            company = Company.objects.select_for_update().get(pk=self.request.user.company.pk)
+            last = (
+                PurchaseOrder.objects
+                .filter(company=company, order_number__startswith=prefix)
+                .order_by('-order_number')
+                .values_list('order_number', flat=True)
+                .first()
+            )
+            last_seq = int(last.rsplit('-', 1)[-1]) if last else 0
+            form.instance.order_number = f"{year}-{last_seq + 1:04d}"
+            form.instance.company = company
+            return super().form_valid(form)
 
 
 class PurchaseOrderUpdateView(DatePickerMixin, AuditUpdateMixin, TenantFormFieldsMixin, CompanyOwnedMixin, StaffRequiredMixin, UpdateView):
